@@ -26215,6 +26215,14 @@ function App() {
     fetchModels();
   }, []);
   useEffect5(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      api("/models").then((d) => setModels(d.models)).catch(() => void 0);
+      api("/news").then((d) => setNews(d)).catch(() => void 0);
+    }, 6e4);
+    return () => clearInterval(id);
+  }, []);
+  useEffect5(() => {
     api("/hermes-profiles").then((d) => setHermesProfiles(d.profiles || ["default"])).catch(() => setHermesProfiles(["default"]));
   }, []);
   const fetchNews = () => {
@@ -26226,10 +26234,7 @@ function App() {
   }, []);
   const refresh = () => {
     setLoading(true);
-    api("/refresh", { method: "POST" }).then((d) => setModels(d.models)).finally(() => {
-      setLoading(false);
-      fetchNews();
-    });
+    api("/refresh", { method: "POST" }).then(() => api("/models")).then((d) => setModels(d.models)).then(() => fetchNews()).catch((err) => console.error("[leaderboard] refresh failed:", err)).finally(() => setLoading(false));
   };
   const addModel = (id) => {
     setAdding(true);
@@ -26494,83 +26499,55 @@ function App() {
   const byCtx = [...active].sort((a2, b) => (b.context_length ?? 0) - (a2.context_length ?? 0));
   return /* @__PURE__ */ jsxs2("div", { style: S.wrap, children: [
     /* @__PURE__ */ jsx2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 8 }, children: /* @__PURE__ */ jsxs2("div", { children: [
-      /* @__PURE__ */ jsx2("h1", { style: { marginBottom: 4, marginTop: 0, color: "var(--ui-text-primary)", fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }, children: i18n.title }),
+      /* @__PURE__ */ jsx2("h1", { style: { marginBottom: 4, marginTop: 0, color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650, letterSpacing: "-0.01em" }, children: i18n.title }),
       /* @__PURE__ */ jsx2("p", { style: { color: "var(--ui-text-tertiary)", fontSize: 13, marginTop: 0 }, children: i18n.subtitle })
     ] }) }),
+    /* @__PURE__ */ jsxs2("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }, children: [
+      /* @__PURE__ */ jsx2("span", { style: { fontSize: 12, fontWeight: 500, color: "var(--ui-text-secondary)" }, children: i18n.appliesTo }),
+      /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: (hermesProfiles.length ? hermesProfiles : ["default"]).map((name) => {
+        const active2 = name === selectedProfileId;
+        return /* @__PURE__ */ jsx2(
+          "button",
+          {
+            onClick: () => {
+              setSelectedProfileId(name);
+              localStorage.setItem("llm-dash-profile", name);
+              setSortCol(null);
+            },
+            style: {
+              borderRadius: 999,
+              padding: "4px 12px",
+              cursor: "pointer",
+              fontSize: 12,
+              border: `1px solid ${active2 ? "var(--ui-stroke-secondary)" : "var(--ui-stroke-tertiary)"}`,
+              background: active2 ? "var(--ui-bg-tertiary)" : "var(--ui-bg-editor)",
+              color: active2 ? "var(--ui-text-primary)" : "var(--ui-text-tertiary)"
+            },
+            children: name
+          },
+          name
+        );
+      }) })
+    ] }),
     /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 10, alignItems: "flex-start" }, children: [
       /* @__PURE__ */ jsxs2("div", { style: { flex: 1, minWidth: 0 }, children: [
-        /* @__PURE__ */ jsxs2("div", { style: { ...S.flexRow, marginBottom: 16 }, children: [
-          /* @__PURE__ */ jsxs2("div", { style: S.gap, children: [
-            /* @__PURE__ */ jsx2("button", { onClick: refresh, style: { padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer", fontWeight: 600 }, children: i18n.refresh }),
-            /* @__PURE__ */ jsx2("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") })
-          ] }),
-          /* @__PURE__ */ jsxs2("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }, children: [
-            /* @__PURE__ */ jsx2("span", { style: { fontSize: 12, fontWeight: 500, color: "var(--ui-text-secondary)" }, children: i18n.appliesTo }),
-            /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: (hermesProfiles.length ? hermesProfiles : ["default"]).map((name) => {
-              const active2 = name === selectedProfileId;
-              return /* @__PURE__ */ jsx2(
-                "button",
-                {
-                  onClick: () => {
-                    setSelectedProfileId(name);
-                    localStorage.setItem("llm-dash-profile", name);
-                    setSortCol(null);
-                  },
-                  style: {
-                    borderRadius: 999,
-                    padding: "4px 12px",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    border: `1px solid ${active2 ? "var(--ui-stroke-secondary)" : "var(--ui-stroke-tertiary)"}`,
-                    background: active2 ? "var(--ui-bg-tertiary)" : "var(--ui-bg-editor)",
-                    color: active2 ? "var(--ui-text-primary)" : "var(--ui-text-tertiary)"
-                  },
-                  children: name
-                },
-                name
-              );
-            }) })
-          ] }),
-          /* @__PURE__ */ jsxs2("div", { style: S.gap, children: [
-            /* @__PURE__ */ jsx2(
-              "input",
-              {
-                placeholder: i18n.searchPlaceholder,
-                value: q,
-                onChange: (e) => setQ(e.target.value),
-                onKeyDown: (e) => e.key === "Enter" && search(),
-                style: { width: 220, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", fontSize: 13 }
-              }
-            ),
-            /* @__PURE__ */ jsx2(
-              "button",
-              {
-                onClick: search,
-                disabled: adding,
-                style: { padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer", fontWeight: 600 },
-                children: i18n.search
-              }
-            ),
-            !showNews && /* @__PURE__ */ jsx2(
-              "button",
-              {
-                onClick: toggleNews,
-                style: {
-                  padding: "6px 12px",
-                  borderRadius: 6,
-                  border: "1px solid var(--ui-accent-secondary)",
-                  background: "var(--ui-bg-editor)",
-                  color: "var(--ui-accent-secondary)",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: "pointer",
-                  marginLeft: 4
-                },
-                children: "📰 Actualités ▶"
-              }
-            )
-          ] })
-        ] }),
+        /* @__PURE__ */ jsx2("div", { style: { ...S.flexRow, marginBottom: 16 }, children: !showNews && /* @__PURE__ */ jsx2(
+          "button",
+          {
+            onClick: toggleNews,
+            style: {
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid var(--ui-accent-secondary)",
+              background: "var(--ui-bg-editor)",
+              color: "var(--ui-accent-secondary)",
+              fontWeight: 700,
+              fontSize: 12,
+              cursor: "pointer"
+            },
+            children: "📰 Actualités ▶"
+          }
+        ) }),
         searchRes.length > 0 && /* @__PURE__ */ jsxs2("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 16, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
           /* @__PURE__ */ jsx2("h3", { style: { marginTop: 0, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.length) }),
           searchRes.map((s2, i) => /* @__PURE__ */ jsxs2("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
@@ -26651,6 +26628,29 @@ function App() {
               m.id
             )) })
           ] }),
+          /* @__PURE__ */ jsx2("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 10, background: "transparent" }, children: /* @__PURE__ */ jsxs2("div", { style: S.gap, children: [
+            /* @__PURE__ */ jsx2(
+              "input",
+              {
+                placeholder: i18n.searchPlaceholder,
+                value: q,
+                onChange: (e) => setQ(e.target.value),
+                onKeyDown: (e) => e.key === "Enter" && search(),
+                style: { width: 220, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", fontSize: 13 }
+              }
+            ),
+            /* @__PURE__ */ jsx2(
+              "button",
+              {
+                onClick: search,
+                disabled: adding,
+                style: { padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer", fontWeight: 600 },
+                children: i18n.search
+              }
+            ),
+            /* @__PURE__ */ jsx2("button", { onClick: refresh, style: { padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer", fontWeight: 600 }, children: i18n.refresh }),
+            /* @__PURE__ */ jsx2("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") })
+          ] }) }),
           /* @__PURE__ */ jsx2("div", { style: { overflowX: "auto", marginBottom: 24, border: "1px solid var(--ui-stroke-tertiary)", borderRadius: 8 }, children: /* @__PURE__ */ jsxs2("table", { style: S.table, children: [
             /* @__PURE__ */ jsx2("thead", { children: /* @__PURE__ */ jsxs2("tr", { children: [
               /* @__PURE__ */ jsx2("th", { style: S.th }),

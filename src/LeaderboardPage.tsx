@@ -375,6 +375,18 @@ export default function App() {
     api('/models').then(d => setModels(d.models)).finally(() => setLoading(false))
   }
   useEffect(() => { fetchModels() }, [])
+  // Auto-reload: the backend caches OpenRouter data for 5 min, so a 60s poll
+  // is cheap; it only fires when the page is actually visible
+  // (document.visibilityState), and never shows the loading spinner.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      api('/models').then(d => setModels(d.models)).catch(() => undefined)
+      api('/news').then(d => setNews(d)).catch(() => undefined)
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => { api('/hermes-profiles').then(d => setHermesProfiles(d.profiles || ['default'])).catch(() => setHermesProfiles(['default'])) }, [])
 
   const fetchNews = () => {
@@ -384,13 +396,16 @@ export default function App() {
   useEffect(() => { fetchNews() }, [])
 
   const refresh = () => {
+    // POST /refresh returns {refreshed, missing} — not the model list:
+    // refetch /models afterwards (a broken .then(d => setModels(d.models))
+    // used to set models to undefined and blank the whole page).
     setLoading(true)
     api('/refresh', { method: 'POST' })
+      .then(() => api('/models'))
       .then(d => setModels(d.models))
-      .finally(() => {
-        setLoading(false)
-        fetchNews()
-      })
+      .then(() => fetchNews())
+      .catch(err => console.error('[leaderboard] refresh failed:', err))
+      .finally(() => setLoading(false))
   }
 
   const addModel = (id: string) => {
@@ -711,25 +726,13 @@ export default function App() {
     <div style={S.wrap}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 8 }}>
         <div>
-          <h1 style={{ marginBottom: 4, marginTop: 0, color: 'var(--ui-text-primary)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>{i18n.title}</h1>
+          <h1 style={{ marginBottom: 4, marginTop: 0, color: 'var(--ui-text-primary)', fontSize: 15, fontWeight: 650, letterSpacing: '-0.01em' }}>{i18n.title}</h1>
           <p style={{ color: 'var(--ui-text-tertiary)', fontSize: 13, marginTop: 0 }}>
             {i18n.subtitle}
           </p>
         </div>
 
       </div>
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          {/* ---- MAIN COLUMN ---- */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* ---- ACTIONS ---- */}
-            <div style={{ ...S.flexRow, marginBottom: 16 }}>
-              <div style={S.gap}>
-                <button onClick={refresh} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer', fontWeight: 600 }}>{i18n.refresh}</button>
-                <span style={{ color: 'var(--ui-text-tertiary)', fontSize: 13 }}>
-                  {i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : '')}
-                </span>
-              </div>
 
               {/* Applies-to profile chips (mirrors Hermes settings) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
@@ -759,41 +762,29 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Search & News Trigger */}
-              <div style={S.gap}>
-                <input
-                  placeholder={i18n.searchPlaceholder}
-                  value={q}
-                  onChange={e => setQ(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && search()}
-                  style={{ width: 220, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', fontSize: 13 }}
-                />
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          {/* ---- MAIN COLUMN ---- */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* ---- ACTIONS ---- */}
+            <div style={{ ...S.flexRow, marginBottom: 16 }}>
+              {!showNews && (
                 <button
-                  onClick={search}
-                  disabled={adding}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={toggleNews}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid var(--ui-accent-secondary)',
+                    background: 'var(--ui-bg-editor)',
+                    color: 'var(--ui-accent-secondary)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
                 >
-                  {i18n.search}
+                  📰 Actualités ▶
                 </button>
-                {!showNews && (
-                  <button
-                    onClick={toggleNews}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      border: '1px solid var(--ui-accent-secondary)',
-                      background: 'var(--ui-bg-editor)',
-                      color: 'var(--ui-accent-secondary)',
-                      fontWeight: 700,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      marginLeft: 4,
-                    }}
-                  >
-                    📰 Actualités ▶
-                  </button>
-                )}
-              </div>
+              )}
             </div>
 
             {/* ---- RÉSULTATS RECHERCHE ---- */}
@@ -863,6 +854,30 @@ export default function App() {
                 </div>
 
 {/* ---- TABLEAU ---- */}
+                {/* ---- TOOLBAR (transparent) : recherche puis rafraîchissement ---- */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, background: 'transparent' }}>
+                  <div style={S.gap}>
+                <input
+                  placeholder={i18n.searchPlaceholder}
+                  value={q}
+                  onChange={e => setQ(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && search()}
+                  style={{ width: 220, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', fontSize: 13 }}
+                />
+                <button
+                  onClick={search}
+                  disabled={adding}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  {i18n.search}
+                </button>
+                  <button onClick={refresh} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer', fontWeight: 600 }}>{i18n.refresh}</button>
+                  <span style={{ color: 'var(--ui-text-tertiary)', fontSize: 13 }}>
+                  {i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : '')}
+                </span>
+                </div>
+                </div>
+
                 <div style={{ overflowX: 'auto', marginBottom: 24, border: '1px solid var(--ui-stroke-tertiary)', borderRadius: 8 }}>
                   <table style={S.table}>
                     <thead>
