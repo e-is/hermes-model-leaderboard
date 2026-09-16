@@ -1,0 +1,215 @@
+/**
+ * i18n for the hermes-model-leaderboard plugin — same pattern as the
+ * kanban-gantt plugin (usePluginI18n + en/fr locales).
+ */
+import { useMemo } from 'react'
+import { usePluginI18n } from '@hermes/plugin-sdk'
+
+const ID = 'hermes-model-leaderboard'
+
+const LOCALES = {
+  en: {
+    title: 'LLM Model Leaderboard',
+    subtitle: 'OpenRouter data — prices, benchmarks and news',
+    refresh: 'Refresh',
+    nVisible: (n: number, extra: string) => `${n} visible${extra}`,
+    nHidden: (n: number) => ` (+${n} hidden)`,
+    appliesTo: 'Applies to',
+    editCriteria: 'Edit scoring criteria',
+    trackingProfile: 'Tracking profile',
+    loading: 'Loading…',
+    searchPlaceholder: 'Search a model…',
+    search: 'Search',
+    results: (n: number) => `Results (${n})`,
+    alreadyTracked: 'Tracked',
+    add: 'Add',
+    ranking: (name: string) => `🏆 Ranking — ${name}`,
+    customCriteria: 'Custom criteria',
+    table: {
+      model: 'Model',
+      context: 'Context',
+      priceIn: 'Input $/M tk',
+      priceOut: 'Output $/M tk',
+      priceCache: 'Cache read',
+      intel: 'Intel.',
+      coding: 'Coding',
+      agentic: 'Agentic',
+      swe: 'SWE',
+      aider: 'Aider',
+      vision: 'Vision',
+      open: 'Open',
+      size: 'Size',
+      gpuOk: 'GPU OK',
+      tools: 'Tools',
+      langs: 'Langs',
+      score: 'Score'
+    },
+    news: {
+      title: 'News & Updates',
+      none: 'No news available.',
+      promos: 'ONGOING PROMOS',
+      priceChanges: 'PRICE CHANGES',
+      newModels: 'NEW MODELS',
+      details: 'Details',
+      follow: 'Follow'
+    },
+    modal: {
+      configTitle: (name: string) => `⚙️ Tracking profile: ${name}`,
+      autoFill: '✨ Auto-fill',
+      autoFillHint: 'Ask the Hermes default model to propose weights for this profile',
+      autoFillRunning: 'Asking the model…',
+      autoFillDone: 'Criteria proposed by the model — review and save.',
+      autoFillFailed: 'Auto-fill failed',
+      save: 'Save',
+      saving: 'Saving…',
+      cancel: 'Cancel',
+      delete: 'Delete profile',
+      deleteConfirm: (name: string) => `Delete the '${name}' tracking profile?`,
+      reset: 'Reset all profiles and criteria to default values?',
+      needId: 'Please provide an identifier for the profile',
+      saveError: 'Error while saving the profile',
+      close: 'Close'
+    },
+    criteria: {
+      intelligence: 'Intelligence',
+      coding: 'Coding',
+      agentic: 'Agentic',
+      price_in: 'Price ↓ input',
+      price_out: 'Price ↓ output',
+      cache_read: 'Price ↓ cache',
+      context: 'Context window',
+      tools: 'Tool calls',
+      has_vision: 'Vision',
+      open_weights: 'Open weights',
+      fits_64gb: 'Local VRAM ≤ 64GB',
+      tools_vision: 'Tools + vision',
+      languages: 'Languages',
+      d_intelligence: 'Global reasoning and knowledge depth',
+      d_coding: 'Code generation quality',
+      d_agentic: 'Agentic capabilities (multi-step autonomy)',
+      d_price_in: 'Importance of cheap input tokens',
+      d_price_out: 'Importance of cheap output tokens',
+      d_cache_read: 'Importance of cheap cached input',
+      d_context: 'Ability to process very long contexts (close to 1M+ tokens)',
+      d_tools: 'Native function/tool calling (API, Bash, etc.)',
+      d_has_vision: 'Ability to process images, screenshots',
+      d_open_weights: 'Open weights, self-hostable',
+      d_fits_64gb: 'Feasibility of local execution on a standard GPU (≤ 64GB)',
+      d_tools_vision: 'Combined tools and vision (QA Playwright)',
+      d_languages: 'Multilingual coverage'
+    }
+  },
+  fr: {
+    title: 'LLM Model Leaderboard',
+    subtitle: 'Données OpenRouter — prix, benchmarks et actualités',
+    refresh: 'Rafraîchir',
+    nVisible: (n: number, extra: string) => `${n} visibles${extra}`,
+    nHidden: (n: number) => ` (+${n} masqués)`,
+    appliesTo: 'S\u2019applique à',
+    editCriteria: 'Modifier les critères de notation',
+    trackingProfile: 'Profil de suivi',
+    loading: 'Chargement…',
+    searchPlaceholder: 'Rechercher un modèle…',
+    search: 'Chercher',
+    results: (n: number) => `Résultats (${n})`,
+    alreadyTracked: 'Déjà suivi',
+    add: 'Ajouter',
+    ranking: (name: string) => `🏆 Classement ${name}`,
+    customCriteria: 'Critères personnalisés',
+    table: {
+      model: 'Modèle',
+      context: 'Contexte',
+      priceIn: 'Prix Input ($/M tk)',
+      priceOut: 'Prix Output ($/M tk)',
+      priceCache: 'Prix Cache Read',
+      intel: 'Intel.',
+      coding: 'Coding',
+      agentic: 'Agentic',
+      swe: 'SWE',
+      aider: 'Aider',
+      vision: 'Vision',
+      open: 'Open',
+      size: 'Taille',
+      gpuOk: 'GPU OK',
+      tools: 'Tools',
+      langs: 'Langues',
+      score: 'Score'
+    },
+    news: {
+      title: 'Actualités & Nouveautés',
+      none: 'Aucune actualité disponible.',
+      promos: 'PROMOS EN COURS',
+      priceChanges: 'CHANGEMENTS DE TARIFS',
+      newModels: 'NOUVEAUX MODÈLES',
+      details: 'Détails',
+      follow: 'Suivre'
+    },
+    modal: {
+      configTitle: (name: string) => `⚙️ Profil de suivi : ${name}`,
+      autoFill: '✨ Remplissage auto',
+      autoFillHint: 'Demander au modèle par défaut Hermes de proposer les critères pour ce profil',
+      autoFillRunning: 'Question au modèle…',
+      autoFillDone: 'Critères proposés par le modèle — vérifiez puis enregistrez.',
+      autoFillFailed: 'Échec du remplissage auto',
+      save: 'Enregistrer',
+      saving: 'Enregistrement…',
+      cancel: 'Annuler',
+      delete: 'Supprimer le profil',
+      deleteConfirm: (name: string) => `Supprimer le profil de suivi '${name}' ?`,
+      reset: 'Réinitialiser tous les profils et critères aux valeurs par défaut ?',
+      needId: 'Veuillez renseigner un identifiant pour le profil',
+      saveError: 'Erreur lors de la sauvegarde du profil',
+      close: 'Fermer'
+    },
+    criteria: {
+      intelligence: 'Intelligence',
+      coding: 'Génération de code',
+      agentic: 'Capacités agentiques',
+      price_in: 'Prix↓input',
+      price_out: 'Prix↓output',
+      price_cache: 'Prix↓cache',
+      cache_read: 'Prix↓cache',
+      context: 'Contexte',
+      tools: 'Support Tool Calls',
+      has_vision: 'Support Vision (Multimodal)',
+      open_weights: 'Open-weights (Poids ouverts)',
+      fits_64gb: 'Local VRAM ≤ 64GB',
+      tools_vision: 'Tools + Vision (QA Playwright)',
+      languages: 'Langues cibles',
+      d_intelligence: 'Intelligence globale',
+      d_coding: 'Génération de code',
+      d_agentic: 'Capacités agentiques',
+      d_price_in: 'Importance d\u2019un prix bas des tokens d\u2019entrée',
+      d_price_out: 'Importance d\u2019un prix bas des tokens de sortie',
+      d_cache_read: 'Importance d\u2019un prix bas du cache en lecture',
+      d_context: 'Capacité à traiter de très longs contextes (à 1M+ tokens)',
+      d_tools: 'Appel natif de fonctions et outils externes (API, Bash, etc.)',
+      d_has_vision: 'Capacité à traiter les images, captures d\u2019écran et diagrammes',
+      d_open_weights: 'Poids ouverts, auto-hébergeable',
+      d_fits_64gb: 'Faisabilité d\u2019exécution locale sur GPU standard (≤ 64GB)',
+      d_tools_vision: 'Outils et vision combinés (QA Playwright)',
+      d_languages: 'Couverture multilingue'
+    }
+  }
+} as const
+
+function bindI18n(t: any, template: any, prefix = ''): any {
+  const out: any = {}
+  for (const [key, value] of Object.entries(template)) {
+    const path = prefix ? `${prefix}.${key}` : key
+    out[key] =
+      typeof value === 'function'
+        ? (...args: any[]) => t(path, ...args)
+        : value && typeof value === 'object'
+          ? bindI18n(t, value, path)
+          : t(path)
+  }
+  return out
+}
+
+function useLeaderboardI18n() {
+  const t = usePluginI18n(ID)
+  return useMemo(() => bindI18n(t, LOCALES.en), [t])
+}
+
+export { LOCALES, useLeaderboardI18n }
