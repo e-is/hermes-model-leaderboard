@@ -1,0 +1,8 @@
+{
+  "name": "hermes-model-leaderboard",
+  "label": "LLM Dashboard",
+  "description": "Comparatif LLM (contexte, prix, benchmarks), scoring par profil avec radar, veille OpenRouter et suivi de consommation.",
+  "icon": "Graph",
+  "version": "0.1.0",
+  "api": "plugin_api.py"
+}
