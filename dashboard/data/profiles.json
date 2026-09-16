@@ -1,0 +1,104 @@
+{
+  "architecte": {
+    "id": "architecte",
+    "name": "Architecte",
+    "weights": {
+      "intelligence": 5,
+      "coding": 4,
+      "context": 3,
+      "price_in": 2,
+      "price_out": 2,
+      "has_vision": 1,
+      "agentic": 0,
+      "tools": 0,
+      "open_weights": 0,
+      "fits_64gb": 0,
+      "cache_read": 0
+    }
+  },
+  "senior-coder": {
+    "id": "senior-coder",
+    "name": "Senior Coder",
+    "weights": {
+      "coding": 5,
+      "agentic": 5,
+      "price_out": 3,
+      "context": 3,
+      "has_vision": 2,
+      "intelligence": 2,
+      "price_in": 0,
+      "tools": 0,
+      "open_weights": 0,
+      "fits_64gb": 0,
+      "cache_read": 0
+    }
+  },
+  "junior-coder": {
+    "id": "junior-coder",
+    "name": "Junior Coder",
+    "weights": {
+      "price_out": 5,
+      "open_weights": 4,
+      "price_in": 3,
+      "fits_64gb": 3,
+      "tools": 2,
+      "coding": 2,
+      "intelligence": 0,
+      "agentic": 0,
+      "context": 0,
+      "has_vision": 0,
+      "cache_read": 0
+    }
+  },
+  "manager": {
+    "id": "manager",
+    "name": "Manager",
+    "weights": {
+      "price_in": 5,
+      "intelligence": 4,
+      "price_out": 3,
+      "tools": 3,
+      "context": 3,
+      "coding": 0,
+      "agentic": 0,
+      "has_vision": 0,
+      "open_weights": 0,
+      "fits_64gb": 0,
+      "cache_read": 0
+    }
+  },
+  "qa": {
+    "id": "qa",
+    "name": "QA",
+    "weights": {
+      "tools_vision": 5,
+      "coding": 4,
+      "price_out": 4,
+      "intelligence": 3,
+      "context": 2,
+      "agentic": 1,
+      "price_in": 0,
+      "open_weights": 0,
+      "fits_64gb": 0,
+      "cache_read": 0
+    }
+  },
+  "devops": {
+    "id": "devops",
+    "name": "DevOps Engineer",
+    "weights": {
+      "intelligence": 3,
+      "coding": 3,
+      "agentic": 3,
+      "price_in": 2,
+      "price_out": 2,
+      "context": 2,
+      "tools": 2,
+      "has_vision": 1,
+      "open_weights": 0,
+      "fits_64gb": 0,
+      "cache_read": 0,
+      "tools_vision": 0
+    }
+  }
+}

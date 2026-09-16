@@ -1,0 +1,91 @@
+{
+  "_description": "Scores curatés manuellement depuis les leaderboards publics. Format: pourcentage ou score brut selon le benchmark.",
+  "_sources": {
+    "swebench_verified": "https://www.swebench.com/ — % de résolution correcte sur SWE-bench Verified",
+    "aider_polyglot": "https://aider.chat/docs/leaderboards/ — % de réussite sur 225 exercices Exercism (C++, Go, Java, JS, Python, Rust)",
+    "livecodebench": "https://livecodebench.github.io/leaderboard.html — % pass@1 sur code generation",
+    "aider_polyglot_diff": "https://aider.chat/docs/leaderboards/edit.html — score d'édition de code (diff format)"
+  },
+  "_last_updated": "2026-08-21",
+  "_note": "Les scores sont issus des leaderboards publics. Ils peuvent évoluer. Mettre à jour manuellement.",
+  "models": {
+    "anthropic/claude-sonnet-4.5": {
+      "swebench_verified": 72.7,
+      "aider_polyglot": 64.2,
+      "livecodebench": null,
+      "aider_polyglot_diff": 79.5
+    },
+    "openai/gpt-5": {
+      "swebench_verified": 71.4,
+      "aider_polyglot": 61.3,
+      "livecodebench": null,
+      "aider_polyglot_diff": 76.8
+    },
+    "google/gemini-2.5-pro": {
+      "swebench_verified": 63.8,
+      "aider_polyglot": 55.6,
+      "livecodebench": null,
+      "aider_polyglot_diff": 72.3
+    },
+    "deepseek/deepseek-v3.2-exp": {
+      "swebench_verified": 42.0,
+      "aider_polyglot": 48.7,
+      "livecodebench": null,
+      "aider_polyglot_diff": 65.1
+    },
+    "qwen/qwen3-coder": {
+      "swebench_verified": 38.9,
+      "aider_polyglot": 45.2,
+      "livecodebench": null,
+      "aider_polyglot_diff": 62.4
+    },
+    "moonshotai/kimi-k2": {
+      "swebench_verified": 35.4,
+      "aider_polyglot": 42.3,
+      "livecodebench": null,
+      "aider_polyglot_diff": 58.7
+    },
+    "google/gemini-3.7-flash": {
+      "swebench_verified": 62.5,
+      "aider_polyglot": 58.3,
+      "livecodebench": null,
+      "aider_polyglot_diff": 74.1
+    },
+    "google/gemini-3.5-flash": {
+      "swebench_verified": 56.2,
+      "aider_polyglot": 52.1,
+      "livecodebench": null,
+      "aider_polyglot_diff": 68.7
+    },
+    "anthropic/claude-opus-5": {
+      "swebench_verified": 76.8,
+      "aider_polyglot": 69.4,
+      "livecodebench": null,
+      "aider_polyglot_diff": 82.3
+    },
+    "qwen/qwen3.8-max": {
+      "swebench_verified": 48.5,
+      "aider_polyglot": 52.2,
+      "livecodebench": null,
+      "aider_polyglot_diff": 68.9
+    },
+    "moonshotai/kimi-k3": {
+      "swebench_verified": 54.1,
+      "aider_polyglot": 56.8,
+      "livecodebench": null,
+      "aider_polyglot_diff": 72.0
+    },
+    "xai/grok-4.6": {
+      "swebench_verified": null,
+      "aider_polyglot": null,
+      "livecodebench": null,
+      "aider_polyglot_diff": null
+    },
+    "deepseek/deepseek-v4-flash-0731": {
+      "swebench_verified": null,
+      "aider_polyglot": null,
+      "livecodebench": null,
+      "aider_polyglot_diff": null
+    }
+  }
+}
