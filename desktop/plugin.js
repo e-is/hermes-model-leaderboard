@@ -25729,6 +25729,8 @@ var LOCALES = {
     loading: "Loading…",
     searchPlaceholder: "Search a model…",
     search: "Search",
+    searchUntracked: "Search untracked models",
+    tableTitle: "Tracked models",
     results: (n) => `Results (${n})`,
     alreadyTracked: "Tracked",
     add: "Add",
@@ -25820,6 +25822,8 @@ var LOCALES = {
     loading: "Chargement…",
     searchPlaceholder: "Rechercher un modèle…",
     search: "Chercher",
+    searchUntracked: "Rechercher dans les modèles non suivis",
+    tableTitle: "Modèles suivis",
     results: (n) => `Résultats (${n})`,
     alreadyTracked: "Déjà suivi",
     add: "Ajouter",
@@ -26132,7 +26136,7 @@ function App() {
   const i18n = useLeaderboardI18n();
   const [hermesProfiles, setHermesProfiles] = useState6([]);
   const [serverProfiles, setServerProfiles] = useState6(DEFAULT_PROFILES);
-  const [selectedProfileId, setSelectedProfileId] = useState6("architecte");
+  const [selectedProfileId, setSelectedProfileId] = useState6("default");
   const [editingProfile, setEditingProfile] = useState6(null);
   const [isNewProfile, setIsNewProfile] = useState6(false);
   const [modalOpen, setModalOpen] = useState6(false);
@@ -26144,6 +26148,7 @@ function App() {
   const [q, setQ] = useState6("");
   const [searchRes, setSearchRes] = useState6([]);
   const [adding, setAdding] = useState6(false);
+  const [searchUntracked, setSearchUntracked] = useState6(true);
   const [confirmDelete, setConfirmDelete] = useState6(null);
   const [sortCol, setSortCol] = useState6(null);
   const [sortAsc, setSortAsc] = useState6(true);
@@ -26175,11 +26180,26 @@ function App() {
     fetchProfiles();
   }, []);
   const effectiveProfiles = serverProfiles;
+  const defaultWeights = {
+    intelligence: 5,
+    coding: 0,
+    agentic: 0,
+    price_in: 3,
+    price_out: 3,
+    cache_read: 0,
+    context: 0,
+    tools: 0,
+    has_vision: 0,
+    open_weights: 0,
+    fits_64gb: 0,
+    tools_vision: 0,
+    languages: 0
+  };
   const currentProfile = useMemo4(() => {
-    return effectiveProfiles[selectedProfileId] || effectiveProfiles["architecte"] || Object.values(effectiveProfiles)[0] || {
+    return effectiveProfiles[selectedProfileId] || {
       id: selectedProfileId,
       name: selectedProfileId,
-      weights: { intelligence: 5, coding: 4, context: 3, price_in: 2, price_out: 2 }
+      weights: { ...defaultWeights }
     };
   }, [effectiveProfiles, selectedProfileId]);
   const toggleNews = () => {
@@ -26261,6 +26281,10 @@ function App() {
     });
   };
   const search = () => {
+    if (!searchUntracked || !q.trim()) {
+      setSearchRes([]);
+      return;
+    }
     api(`/openrouter/search?q=${encodeURIComponent(q)}`).then((d) => setSearchRes(d.results || []));
   };
   const openEditModal = () => {
@@ -26292,8 +26316,8 @@ function App() {
   };
   const resetToDefaultProfiles = () => {
     if (!confirm(i18n.modal.reset)) return;
-    setSelectedProfileId("architecte");
-    localStorage.setItem("llm-dash-profile", "architecte");
+    setSelectedProfileId("default");
+    localStorage.setItem("llm-dash-profile", "default");
     setModalOpen(false);
   };
   const [autoFilling, setAutoFilling] = useState6(false);
@@ -26347,7 +26371,7 @@ function App() {
         return next;
       });
       const remaining = Object.keys(effectiveProfiles).filter((k2) => k2 !== pid);
-      const nextId = remaining[0] || "architecte";
+      const nextId = remaining[0] || "default";
       setSelectedProfileId(nextId);
       localStorage.setItem("llm-dash-profile", nextId);
       setModalOpen(false);
@@ -26548,25 +26572,6 @@ function App() {
             children: "📰 Actualités ▶"
           }
         ) }),
-        searchRes.length > 0 && /* @__PURE__ */ jsxs2("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 16, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
-          /* @__PURE__ */ jsx2("h3", { style: { marginTop: 0, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.length) }),
-          searchRes.map((s2, i) => /* @__PURE__ */ jsxs2("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
-            /* @__PURE__ */ jsxs2("div", { children: [
-              /* @__PURE__ */ jsx2("b", { children: s2.name || s2.id }),
-              /* @__PURE__ */ jsxs2("span", { style: { color: "var(--ui-text-tertiary)", marginLeft: 8 }, children: [
-                fmtPrice(s2.prompt_price),
-                " in / ",
-                fmtPrice(s2.completion_price),
-                " out · ctx: ",
-                (s2.context_length || 0).toLocaleString()
-              ] }),
-              s2.has_vision && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 6, background: "color-mix(in srgb, var(--ui-blue) 8%, transparent)", color: "var(--ui-blue)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "👁" }),
-              s2.open_weights && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-green) 12%, transparent)", color: "var(--ui-green)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "open" }),
-              s2.model_size && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 4, color: "var(--ui-text-tertiary)", fontSize: 11 }, children: s2.model_size })
-            ] }),
-            /* @__PURE__ */ jsx2("button", { onClick: () => addModel(s2.id), disabled: adding || models.some((m) => m.id === s2.id), style: { minWidth: 100, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", cursor: "pointer" }, children: models.some((m) => m.id === s2.id) ? i18n.alreadyTracked : i18n.add })
-          ] }, s2.id))
-        ] }),
         loading ? /* @__PURE__ */ jsx2("p", { children: i18n.loading }) : /* @__PURE__ */ jsxs2(Fragment2, { children: [
           /* @__PURE__ */ jsxs2("div", { style: { marginBottom: 24, padding: 16, background: "var(--ui-row-hover-background)", borderRadius: 8, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
             /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, children: [
@@ -26648,9 +26653,51 @@ function App() {
                 children: i18n.search
               }
             ),
-            /* @__PURE__ */ jsx2("button", { onClick: refresh, style: { padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer", fontWeight: 600 }, children: i18n.refresh }),
-            /* @__PURE__ */ jsx2("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") })
+            /* @__PURE__ */ jsxs2("label", { style: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--ui-text-secondary)", cursor: "pointer" }, children: [
+              /* @__PURE__ */ jsx2(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: searchUntracked,
+                  onChange: (e) => {
+                    setSearchUntracked(e.target.checked);
+                    if (!e.target.checked) setSearchRes([]);
+                  }
+                }
+              ),
+              i18n.searchUntracked
+            ] }),
+            /* @__PURE__ */ jsx2("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") }),
+            /* @__PURE__ */ jsx2(
+              "button",
+              {
+                onClick: refresh,
+                title: i18n.refresh,
+                style: { marginLeft: "auto", padding: "4px 8px", border: "none", background: "transparent", color: "var(--ui-text-secondary)", cursor: "pointer", fontSize: 16, lineHeight: 1 },
+                children: "↻"
+              }
+            )
           ] }) }),
+          searchUntracked && searchRes.length > 0 && /* @__PURE__ */ jsxs2("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
+            /* @__PURE__ */ jsx2("div", { style: { marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).length) }),
+            searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).map((s2, i) => /* @__PURE__ */ jsxs2("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+              /* @__PURE__ */ jsxs2("div", { children: [
+                /* @__PURE__ */ jsx2("b", { children: s2.name || s2.id }),
+                /* @__PURE__ */ jsxs2("span", { style: { color: "var(--ui-text-tertiary)", marginLeft: 8 }, children: [
+                  fmtPrice(s2.prompt_price),
+                  " in / ",
+                  fmtPrice(s2.completion_price),
+                  " out · ctx: ",
+                  (s2.context_length || 0).toLocaleString()
+                ] }),
+                s2.has_vision && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 6, background: "color-mix(in srgb, var(--ui-blue) 8%, transparent)", color: "var(--ui-blue)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "👁" }),
+                s2.open_weights && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-green) 12%, transparent)", color: "var(--ui-green)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "open" }),
+                s2.model_size && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 4, color: "var(--ui-text-tertiary)", fontSize: 11 }, children: s2.model_size })
+              ] }),
+              /* @__PURE__ */ jsx2("button", { onClick: () => addModel(s2.id), disabled: adding, style: { minWidth: 100, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", cursor: "pointer" }, children: i18n.add })
+            ] }, s2.id))
+          ] }),
+          /* @__PURE__ */ jsx2("h3", { style: { margin: "0 0 8px 0", color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650 }, children: i18n.tableTitle }),
           /* @__PURE__ */ jsx2("div", { style: { overflowX: "auto", marginBottom: 24, border: "1px solid var(--ui-stroke-tertiary)", borderRadius: 8 }, children: /* @__PURE__ */ jsxs2("table", { style: S.table, children: [
             /* @__PURE__ */ jsx2("thead", { children: /* @__PURE__ */ jsxs2("tr", { children: [
               /* @__PURE__ */ jsx2("th", { style: S.th }),
@@ -26706,7 +26753,10 @@ function App() {
               /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, title: `Score ${currentProfile.name}`, children: "⭐" }),
               /* @__PURE__ */ jsx2("th", { style: S.th })
             ] }) }),
-            /* @__PURE__ */ jsx2("tbody", { children: sortedModels.map((m, i) => {
+            /* @__PURE__ */ jsx2("tbody", { children: sortedModels.filter((m) => {
+              const qL = q.trim().toLowerCase();
+              return !qL || (m.label + " " + m.id).toLowerCase().includes(qL);
+            }).map((m, i) => {
               const sc = scoreMap[m.id];
               const rank = scoredModels.findIndex((sm) => sm.id === m.id);
               const rankStr = rank >= 0 ? `#${rank + 1}` : "-";

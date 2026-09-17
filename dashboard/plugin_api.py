@@ -686,7 +686,7 @@ def auto_fill(payload: dict = Body(default={})):
     hermes_exe = _shutil.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
     try:
         proc = _subprocess.run(
-            [hermes_exe, prompt],
+            [hermes_exe, "-z", prompt],
             capture_output=True, text=True, timeout=180,
             env={**os.environ, "NO_COLOR": "1", "TERM": "dumb"},
         )
@@ -698,13 +698,26 @@ def auto_fill(payload: dict = Body(default={})):
 
     # extract the last JSON object from the answer
     weights = None
-    for m in _re.finditer(r"\{[^{}]*\}", out, flags=_re.S):
+
+    def _try_parse(txt):
+        txt = txt.strip()
         try:
-            cand = _json.loads(m.group(0))
-            if isinstance(cand, dict) and any(k in cand for k in _CRITERIA_DOC):
-                weights = cand
+            return _json.loads(txt)
         except Exception:
-            continue
+            pass
+        # Models often answer JSON5-ish (unquoted keys, single quotes, trailing commas)
+        fixed = _re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*):", r'\1"\2"\3:', txt)
+        fixed = fixed.replace("'", '"')
+        fixed = _re.sub(r",\s*([}\]])", r"\1", fixed)
+        try:
+            return _json.loads(fixed)
+        except Exception:
+            return None
+
+    for m in _re.finditer(r"\{[^{}]*\}", out, flags=_re.S):
+        cand = _try_parse(m.group(0))
+        if isinstance(cand, dict) and any(k in cand for k in _CRITERIA_DOC):
+            weights = cand
     if not weights:
         raise HTTPException(status_code=503, detail="model answer did not contain criteria JSON")
 

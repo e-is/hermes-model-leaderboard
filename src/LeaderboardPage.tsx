@@ -281,7 +281,7 @@ export default function App() {
   // Profiles state
   const [hermesProfiles, setHermesProfiles] = useState<string[]>([])
   const [serverProfiles, setServerProfiles] = useState<Record<string, ProfileConfig>>(DEFAULT_PROFILES)
-  const [selectedProfileId, setSelectedProfileId] = useState<string>('architecte')
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('default')
   const [editingProfile, setEditingProfile] = useState<ProfileConfig | null>(null)
   const [isNewProfile, setIsNewProfile] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -295,6 +295,7 @@ export default function App() {
   const [q, setQ] = useState('')
   const [searchRes, setSearchRes] = useState<SearchHit[]>([])
   const [adding, setAdding] = useState(false)
+  const [searchUntracked, setSearchUntracked] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
@@ -337,11 +338,20 @@ export default function App() {
   // authenticated Hermes context).
   const effectiveProfiles: Record<string, ProfileConfig> = serverProfiles
 
+  // Default weights for a Hermes profile with no saved criteria yet:
+  // everything at 0 except intelligence (5) and price (3).
+  const defaultWeights = {
+    intelligence: 5, coding: 0, agentic: 0,
+    price_in: 3, price_out: 3, cache_read: 0,
+    context: 0, tools: 0, has_vision: 0,
+    open_weights: 0, fits_64gb: 0, tools_vision: 0, languages: 0,
+  }
+
   const currentProfile = useMemo(() => {
-    return effectiveProfiles[selectedProfileId] || effectiveProfiles['architecte'] || Object.values(effectiveProfiles)[0] || {
+    return effectiveProfiles[selectedProfileId] || {
       id: selectedProfileId,
       name: selectedProfileId,
-      weights: { intelligence: 5, coding: 4, context: 3, price_in: 2, price_out: 2 }
+      weights: { ...defaultWeights },
     }
   }, [effectiveProfiles, selectedProfileId])
 
@@ -435,6 +445,7 @@ export default function App() {
   }
 
   const search = () => {
+    if (!searchUntracked || !q.trim()) { setSearchRes([]); return }
     api(`/openrouter/search?q=${encodeURIComponent(q)}`)
       .then(d => setSearchRes(d.results || []))
   }
@@ -471,8 +482,8 @@ export default function App() {
 
   const resetToDefaultProfiles = () => {
     if (!confirm(i18n.modal.reset)) return
-    setSelectedProfileId('architecte')
-    localStorage.setItem('llm-dash-profile', 'architecte')
+    setSelectedProfileId('default')
+    localStorage.setItem('llm-dash-profile', 'default')
     setModalOpen(false)
   }
 
@@ -543,7 +554,7 @@ export default function App() {
           return next
         })
         const remaining = Object.keys(effectiveProfiles).filter(k => k !== pid)
-        const nextId = remaining[0] || 'architecte'
+        const nextId = remaining[0] || 'default'
         setSelectedProfileId(nextId)
         localStorage.setItem('llm-dash-profile', nextId)
         setModalOpen(false)
@@ -787,27 +798,6 @@ export default function App() {
               )}
             </div>
 
-            {/* ---- RÉSULTATS RECHERCHE ---- */}
-            {searchRes.length > 0 && (
-              <div style={{ background: 'var(--ui-row-hover-background)', borderRadius: 8, padding: 12, marginBottom: 16, border: '1px solid var(--ui-stroke-tertiary)' }}>
-                <h3 style={{ marginTop: 0, color: 'var(--ui-text-secondary)' }}>{i18n.results(searchRes.length)}</h3>
-                {searchRes.map((s, i) => (
-                  <div key={s.id} style={{ ...S.searchRow, background: i % 2 === 0 ? 'var(--ui-bg-editor)' : 'var(--ui-row-hover-background)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <b>{s.name || s.id}</b>
-                      <span style={{ color: 'var(--ui-text-tertiary)', marginLeft: 8 }}>{fmtPrice(s.prompt_price)} in / {fmtPrice(s.completion_price)} out · ctx: {(s.context_length || 0).toLocaleString()}</span>
-                      {s.has_vision && <span style={{ marginLeft: 6, background: 'color-mix(in srgb, var(--ui-blue) 8%, transparent)', color: 'var(--ui-blue)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>👁</span>}
-                      {s.open_weights && <span style={{ marginLeft: 4, background: 'color-mix(in srgb, var(--ui-green) 12%, transparent)', color: 'var(--ui-green)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>open</span>}
-                      {s.model_size && <span style={{ marginLeft: 4, color: 'var(--ui-text-tertiary)', fontSize: 11 }}>{s.model_size}</span>}
-                    </div>
-                    <button onClick={() => addModel(s.id)} disabled={adding || models.some(m => m.id === s.id)} style={{ minWidth: 100, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)', cursor: 'pointer' }}>
-                      {models.some(m => m.id === s.id) ? i18n.alreadyTracked : i18n.add}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {loading ? (<p>{i18n.loading}</p>) : (
               <>
                 {/* ---- CLASSEMENT ---- */}
@@ -871,12 +861,50 @@ export default function App() {
                 >
                   {i18n.search}
                 </button>
-                  <button onClick={refresh} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer', fontWeight: 600 }}>{i18n.refresh}</button>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--ui-text-secondary)', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={searchUntracked}
+                      onChange={e => { setSearchUntracked(e.target.checked); if (!e.target.checked) setSearchRes([]) }}
+                    />
+                    {i18n.searchUntracked}
+                  </label>
                   <span style={{ color: 'var(--ui-text-tertiary)', fontSize: 13 }}>
-                  {i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : '')}
-                </span>
+                    {i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : '')}
+                  </span>
+                  <button
+                    onClick={refresh}
+                    title={i18n.refresh}
+                    style={{ marginLeft: 'auto', padding: '4px 8px', border: 'none', background: 'transparent', color: 'var(--ui-text-secondary)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}
+                  >
+                    ↻
+                  </button>
                 </div>
                 </div>
+
+                {/* ---- RÉSULTATS (modèles non suivis) ---- */}
+                {searchUntracked && searchRes.length > 0 && (
+                  <div style={{ background: 'var(--ui-row-hover-background)', borderRadius: 8, padding: 12, marginBottom: 12, border: '1px solid var(--ui-stroke-tertiary)' }}>
+                    <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 700, color: 'var(--ui-text-secondary)' }}>{i18n.results(searchRes.filter((sr: any) => !models.some(m => m.id === sr.id)).length)}</div>
+                    {searchRes.filter((sr: any) => !models.some(m => m.id === sr.id)).map((s, i) => (
+                      <div key={s.id} style={{ ...S.searchRow, background: i % 2 === 0 ? 'var(--ui-bg-editor)' : 'var(--ui-row-hover-background)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <b>{s.name || s.id}</b>
+                          <span style={{ color: 'var(--ui-text-tertiary)', marginLeft: 8 }}>{fmtPrice(s.prompt_price)} in / {fmtPrice(s.completion_price)} out · ctx: {(s.context_length || 0).toLocaleString()}</span>
+                          {s.has_vision && <span style={{ marginLeft: 6, background: 'color-mix(in srgb, var(--ui-blue) 8%, transparent)', color: 'var(--ui-blue)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>👁</span>}
+                          {s.open_weights && <span style={{ marginLeft: 4, background: 'color-mix(in srgb, var(--ui-green) 12%, transparent)', color: 'var(--ui-green)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>open</span>}
+                          {s.model_size && <span style={{ marginLeft: 4, color: 'var(--ui-text-tertiary)', fontSize: 11 }}>{s.model_size}</span>}
+                        </div>
+                        <button onClick={() => addModel(s.id)} disabled={adding} style={{ minWidth: 100, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)', cursor: 'pointer' }}>
+                          {i18n.add}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ---- TITRE TABLEAU SUIVIS ---- */}
+                <h3 style={{ margin: '0 0 8px 0', color: 'var(--ui-text-primary)', fontSize: 15, fontWeight: 650 }}>{i18n.tableTitle}</h3>
 
                 <div style={{ overflowX: 'auto', marginBottom: 24, border: '1px solid var(--ui-stroke-tertiary)', borderRadius: 8 }}>
                   <table style={S.table}>
@@ -904,7 +932,10 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedModels.map((m, i) => {
+                      {sortedModels.filter(m => {
+                        const qL = q.trim().toLowerCase()
+                        return !qL || (m.label + ' ' + m.id).toLowerCase().includes(qL)
+                      }).map((m, i) => {
                         const sc = scoreMap[m.id]
                         const rank = scoredModels.findIndex(sm => sm.id === m.id)
                         const rankStr = rank >= 0 ? `#${rank + 1}` : '-'
