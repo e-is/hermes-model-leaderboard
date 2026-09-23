@@ -45,6 +45,7 @@ declare module '@hermes/plugin-sdk' {
   export const Badge: any
   export const Button: any
   export const Codicon: any
+  export const ConfirmDialog: any
   export const EmptyState: any
   export const ErrorState: any
   export const Loader: any

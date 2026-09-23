@@ -24913,6 +24913,9 @@ function NewsPanel(props) {
   ] });
 }
 
+// src/LeaderboardPage.tsx
+import { ConfirmDialog } from "@hermes/plugin-sdk";
+
 // src/doors.ts
 var restFn = null;
 function setRest(fn) {
@@ -24959,6 +24962,10 @@ var LOCALES = {
     criteriaWeights: "Criteria weights:",
     resetAllTitle: "Reset every profile and criterion to its default value",
     resetDefaults: "🔄 Reset defaults",
+    cancel: "Cancel",
+    confirmDeleteTitle: "Remove this model?",
+    confirmDeleteBody: (name) => `“${name}” will be removed from the tracked models. The data stays untouched on OpenRouter.`,
+    confirmDeleteOk: "Remove",
     ranking: (name) => `🏆 Ranking — ${name}`,
     customCriteria: "Custom criteria",
     table: {
@@ -25076,6 +25083,10 @@ var LOCALES = {
     criteriaWeights: "Pondération des critères :",
     resetAllTitle: "Réinitialise tous les profils et critères aux valeurs d'origine par défaut",
     resetDefaults: "🔄 Réinitialiser défauts",
+    cancel: "Annuler",
+    confirmDeleteTitle: "Supprimer ce modèle ?",
+    confirmDeleteBody: (name) => `« ${name} » sera retiré des modèles suivis. Les données OpenRouter ne sont pas modifiées.`,
+    confirmDeleteOk: "Supprimer",
     ranking: (name) => `🏆 Classement ${name}`,
     customCriteria: "Critères personnalisés",
     table: {
@@ -25413,7 +25424,7 @@ function App() {
   const [searchRes, setSearchRes] = useState6([]);
   const [adding, setAdding] = useState6(false);
   const [searchUntracked, setSearchUntracked] = useState6(true);
-  const [confirmDelete, setConfirmDelete] = useState6(null);
+  const [pendingDelete, setPendingDelete] = useState6(null);
   const [sortCol, setSortCol] = useState6(null);
   const [sortAsc, setSortAsc] = useState6(true);
   const [showNews, setShowNews] = useState6(true);
@@ -25529,16 +25540,13 @@ function App() {
       setSearchRes([]);
     }).finally(() => setAdding(false));
   };
-  const removeModel = (id) => {
-    setConfirmDelete(id);
-    if (confirmDelete !== id) setTimeout(() => setConfirmDelete((prev) => prev === id ? null : prev), 3e3);
-  };
-  const confirmRemove = (id) => {
-    setConfirmDelete(null);
-    api(`/models/${encodeURIComponent(id)}`, { method: "DELETE" }).then(() => {
-      fetchModels();
-      fetchNews();
-    });
+  const removeModel = (id) => setPendingDelete(id);
+  const confirmRemove = async () => {
+    const id = pendingDelete;
+    if (!id) return;
+    await api(`/models/${encodeURIComponent(id)}`, { method: "DELETE" });
+    fetchModels();
+    fetchNews();
   };
   const search = () => {
     if (!searchUntracked || !q.trim()) {
@@ -26062,14 +26070,7 @@ function App() {
                       children: hiddenIds.has(m.id) ? "👁" : "🙈"
                     }
                   ),
-                  confirmDelete === m.id ? /* @__PURE__ */ jsx2(
-                    "button",
-                    {
-                      onClick: () => confirmRemove(m.id),
-                      style: { background: "var(--ui-red)", color: "var(--ui-bg-editor)", border: "none", borderRadius: 3, padding: "2px 6px", fontSize: 11, cursor: "pointer" },
-                      children: i18n.suppressShort
-                    }
-                  ) : /* @__PURE__ */ jsx2(
+                  /* @__PURE__ */ jsx2(
                     "button",
                     {
                       onClick: () => removeModel(m.id),
@@ -26469,7 +26470,20 @@ function App() {
           )
         ] })
       ] })
-    ] }) })
+    ] }) }),
+    /* @__PURE__ */ jsx2(
+      ConfirmDialog,
+      {
+        open: pendingDelete !== null,
+        onClose: () => setPendingDelete(null),
+        onConfirm: confirmRemove,
+        title: i18n.confirmDeleteTitle,
+        description: i18n.confirmDeleteBody(pendingDelete || ""),
+        confirmLabel: i18n.confirmDeleteOk,
+        cancelLabel: i18n.cancel,
+        destructive: true
+      }
+    )
   ] });
 }
 

@@ -4,6 +4,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts'
 import { NewsPanel } from './components/NewsPanel'
+import { ConfirmDialog } from '@hermes/plugin-sdk'
 import { api } from './doors'
 import { useLeaderboardI18n } from './i18n'
 import { computeGenericScore, parseTargetLangs } from './core/scoring'
@@ -296,7 +297,7 @@ export default function App() {
   const [searchRes, setSearchRes] = useState<SearchHit[]>([])
   const [adding, setAdding] = useState(false)
   const [searchUntracked, setSearchUntracked] = useState(true)
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
 
@@ -431,16 +432,18 @@ export default function App() {
     }).finally(() => setAdding(false))
   }
 
-  const removeModel = (id: string) => {
-    setConfirmDelete(id)
-    if (confirmDelete !== id) setTimeout(() => setConfirmDelete(prev => prev === id ? null : prev), 3000)
-  }
-  const confirmRemove = (id: string) => {
-    setConfirmDelete(null)
-    api(`/models/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(() => {
-      fetchModels()
-      fetchNews()
-    })
+  // Deletion goes through the desktop's shared ConfirmDialog (exported by the
+  // plugin SDK) — no inline "are you sure" button in the table.
+  const removeModel = (id: string) => setPendingDelete(id)
+  // Throwing keeps the dialog open and shows the message inline.
+  const confirmRemove = async () => {
+    const id = pendingDelete
+    if (!id) return
+    await api(`/models/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    // ConfirmDialog owns its close beat (saving -> done -> onClose); closing it
+    // from here would cut that beat short.
+    fetchModels()
+    fetchNews()
   }
 
   const search = () => {
@@ -983,22 +986,13 @@ export default function App() {
                               >
                                 {hiddenIds.has(m.id) ? '👁' : '🙈'}
                               </button>
-                              {confirmDelete === m.id ? (
-                                <button
-                                  onClick={() => confirmRemove(m.id)}
-                                  style={{ background: 'var(--ui-red)', color: 'var(--ui-bg-editor)', border: 'none', borderRadius: 3, padding: '2px 6px', fontSize: 11, cursor: 'pointer' }}
-                                >
-                                  {i18n.suppressShort}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => removeModel(m.id)}
-                                  title={i18n.removeModel}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4, fontSize: 12 }}
-                                >
-                                  ✕
-                                </button>
-                              )}
+                              <button
+                                onClick={() => removeModel(m.id)}
+                                title={i18n.removeModel}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4, fontSize: 12 }}
+                              >
+                                ✕
+                              </button>
                             </td>
                           </tr>
                         )
@@ -1398,6 +1392,18 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ---- CONFIRMATION DE SUPPRESSION (composant partagé du desktop) ---- */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmRemove}
+        title={i18n.confirmDeleteTitle}
+        description={i18n.confirmDeleteBody(pendingDelete || '')}
+        confirmLabel={i18n.confirmDeleteOk}
+        cancelLabel={i18n.cancel}
+        destructive
+      />
     </div>
   )
 }

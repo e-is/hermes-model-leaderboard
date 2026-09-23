@@ -34,6 +34,10 @@ const LOCALES = {
     criteriaWeights: 'Criteria weights:',
     resetAllTitle: 'Reset every profile and criterion to its default value',
     resetDefaults: '🔄 Reset defaults',
+    cancel: 'Cancel',
+    confirmDeleteTitle: 'Remove this model?',
+    confirmDeleteBody: (name: string) => `“${name}” will be removed from the tracked models. The data stays untouched on OpenRouter.`,
+    confirmDeleteOk: 'Remove',
     ranking: (name: string) => `🏆 Ranking — ${name}`,
     customCriteria: 'Custom criteria',
     table: {
@@ -151,6 +155,10 @@ const LOCALES = {
     criteriaWeights: 'Pondération des critères :',
     resetAllTitle: "Réinitialise tous les profils et critères aux valeurs d'origine par défaut",
     resetDefaults: '🔄 Réinitialiser défauts',
+    cancel: 'Annuler',
+    confirmDeleteTitle: 'Supprimer ce modèle ?',
+    confirmDeleteBody: (name: string) => `« ${name} » sera retiré des modèles suivis. Les données OpenRouter ne sont pas modifiées.`,
+    confirmDeleteOk: 'Supprimer',
     ranking: (name: string) => `🏆 Classement ${name}`,
     customCriteria: 'Critères personnalisés',
     table: {
