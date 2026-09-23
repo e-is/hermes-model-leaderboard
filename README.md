@@ -42,8 +42,8 @@ assets/              screenshots
 ```bash
 npm install
 npm run build                                      # src/ → desktop/plugin.js
-node --experimental-strip-types --test tests/unit/ # scoring unit tests
-pytest tests/test_backend.py -q                    # backend (11 tests)
+node --experimental-strip-types --test "tests/unit/*.test.ts"   # scoring + path guards
+pytest tests/test_backend.py -q                    # backend (23 tests)
 ```
 
 Deployment: copy the package to `~/.hermes/plugins/hermes-model-leaderboard/` and enable it in `plugins.enabled` (config.yaml) — the desktop lifts `desktop/` at next boot. The desktop half is opt-in: toggle it in **Capabilities → Plugins** (or seed `hermes.desktop.pluginDecisions.v2`).

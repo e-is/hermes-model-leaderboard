@@ -25636,7 +25636,7 @@ function App() {
     }
     setSavingProfile(true);
     const method = isNewProfile ? "POST" : "PUT";
-    const url = isNewProfile ? "/api/profiles" : `/api/profiles/${encodeURIComponent(id)}`;
+    const url = isNewProfile ? "/profiles" : `/profiles/${encodeURIComponent(id)}`;
     api(url, {
       method,
       body: editingProfile
