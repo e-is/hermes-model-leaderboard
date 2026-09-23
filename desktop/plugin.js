@@ -24984,7 +24984,6 @@ var LOCALES = {
       size: "Size",
       gpuOk: "GPU OK",
       tools: "Tools",
-      langs: "Langs",
       score: "Score"
     },
     news: {
@@ -25041,7 +25040,6 @@ var LOCALES = {
       open_weights: "Open weights",
       fits_64gb: "Local VRAM ≤ 64GB",
       tools_vision: "Tools + vision",
-      languages: "Languages",
       d_intelligence: "Global reasoning and knowledge depth",
       d_coding: "Code generation quality",
       d_agentic: "Agentic capabilities (multi-step autonomy)",
@@ -25053,8 +25051,7 @@ var LOCALES = {
       d_has_vision: "Ability to process images, screenshots",
       d_open_weights: "Open weights, self-hostable",
       d_fits_64gb: "Feasibility of local execution on a standard GPU (≤ 64GB)",
-      d_tools_vision: "Combined tools and vision (QA Playwright)",
-      d_languages: "Multilingual coverage"
+      d_tools_vision: "Combined tools and vision (QA Playwright)"
     }
   },
   fr: {
@@ -25105,7 +25102,6 @@ var LOCALES = {
       size: "Taille",
       gpuOk: "GPU OK",
       tools: "Tools",
-      langs: "Langues",
       score: "Score"
     },
     news: {
@@ -25163,7 +25159,6 @@ var LOCALES = {
       open_weights: "Open-weights (Poids ouverts)",
       fits_64gb: "Local VRAM ≤ 64GB",
       tools_vision: "Tools + Vision (QA Playwright)",
-      languages: "Langues cibles",
       d_intelligence: "Intelligence globale",
       d_coding: "Génération de code",
       d_agentic: "Capacités agentiques",
@@ -25175,8 +25170,7 @@ var LOCALES = {
       d_has_vision: "Capacité à traiter les images, captures d’écran et diagrammes",
       d_open_weights: "Poids ouverts, auto-hébergeable",
       d_fits_64gb: "Faisabilité d’exécution locale sur GPU standard (≤ 64GB)",
-      d_tools_vision: "Outils et vision combinés (QA Playwright)",
-      d_languages: "Couverture multilingue"
+      d_tools_vision: "Outils et vision combinés (QA Playwright)"
     }
   }
 };
@@ -25194,11 +25188,7 @@ function useLeaderboardI18n() {
 }
 
 // src/core/scoring.ts
-function parseTargetLangs(raw) {
-  if (!raw) return [];
-  return raw.split(/[,;]/).map((s2) => s2.trim().toLowerCase()).filter(Boolean);
-}
-function computeGenericScore(m, weights, maxes, targetLangs) {
+function computeGenericScore(m, weights, maxes) {
   const totalWeight = Object.values(weights).reduce((sum, w) => sum + (w || 0), 0);
   if (totalWeight <= 0) return 0;
   const intel = (m.intelligence_index ?? 0) / (maxes.maxIntel || 1);
@@ -25213,9 +25203,6 @@ function computeGenericScore(m, weights, maxes, targetLangs) {
   const isOpen = m.open_weights ? 1 : 0;
   const fits64 = m.gpu?.fits_64gb ? 1 : 0;
   const toolsVision = hasT * hasV;
-  const targets = parseTargetLangs(targetLangs);
-  const modelLangs = (m.iso_langs || []).map((l) => l.toLowerCase());
-  const langScore = targets.length > 0 ? targets.filter((t) => modelLangs.includes(t)).length / targets.length : 0;
   const values = {
     intelligence: intel,
     coding,
@@ -25226,7 +25213,6 @@ function computeGenericScore(m, weights, maxes, targetLangs) {
     context: ctx,
     tools: hasT,
     has_vision: hasV,
-    languages: langScore,
     open_weights: isOpen,
     fits_64gb: fits64,
     tools_vision: toolsVision
@@ -25253,7 +25239,6 @@ var AVAILABLE_CRITERIA = [
   { key: "context", label: "Context window", icon: "📚", desc: "Fenêtre de contexte maximale (jusqu'à 1M+ tokens)" },
   { key: "tools", label: "Support Tool Calls", icon: "🛠️", desc: "Appel natif de fonctions et outils externes (API, Bash, etc.)" },
   { key: "has_vision", label: "Support Vision (Multimodal)", icon: "👁️", desc: "Capacité à traiter les images, captures d'écran et diagrammes" },
-  { key: "languages", label: "Langues cibles", icon: "🌐", desc: "Couverture des langues définies (champ texte ci-dessous) par le modèle" },
   { key: "open_weights", label: "Open-weights (Poids ouverts)", icon: "🔓", desc: "Modèles open-weights téléchargeables (Hugging Face)" },
   { key: "fits_64gb", label: "Local VRAM ≤ 64GB", icon: "🖥️", desc: "Faisabilité d'exécution locale sur GPU standard (≤ 64GB)" },
   { key: "tools_vision", label: "Tools + Vision (QA Playwright)", icon: "🎯", desc: "Bonus combiné si le modèle gère à la fois les Tools et la Vision" }
@@ -25467,8 +25452,7 @@ function App() {
     has_vision: 0,
     open_weights: 0,
     fits_64gb: 0,
-    tools_vision: 0,
-    languages: 0
+    tools_vision: 0
   };
   const currentProfile = useMemo4(() => {
     return effectiveProfiles[selectedProfileId] || {
@@ -25704,7 +25688,7 @@ function App() {
   const scoredModels = useMemo4(() => {
     const withScores = active.map((m) => ({
       ...m,
-      _score: Math.round(computeGenericScore(m, currentProfile.weights, maxes, currentProfile.targetLangs) * 100) / 100
+      _score: Math.round(computeGenericScore(m, currentProfile.weights, maxes) * 100) / 100
     }));
     withScores.sort((a2, b) => b._score - a2._score);
     withScores.forEach((m, i) => {
@@ -25735,7 +25719,7 @@ function App() {
     const windowDays = newsTimeWindow === "1m" ? 30 : newsTimeWindow === "2m" ? 60 : newsTimeWindow === "3m" ? 90 : newsTimeWindow === "6m" ? 180 : newsTimeWindow === "1y" ? 365 : 99999;
     const minCreated = nowTs - windowDays * 86400;
     const list = news.new_models.filter((nm) => (nm.created || 0) >= minCreated).map((nm) => {
-      const rawScore = computeGenericScore(nm, currentProfile.weights, maxes, currentProfile.targetLangs);
+      const rawScore = computeGenericScore(nm, currentProfile.weights, maxes);
       const roundedScore = Math.round(rawScore);
       const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold;
       return {
@@ -25755,7 +25739,7 @@ function App() {
   const processedPromotions = useMemo4(() => {
     if (!news?.promotions) return [];
     return news.promotions.map((p) => {
-      const rawScore = computeGenericScore(p, currentProfile.weights, maxes, currentProfile.targetLangs);
+      const rawScore = computeGenericScore(p, currentProfile.weights, maxes);
       const roundedScore = Math.round(rawScore);
       const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold;
       return {
@@ -25782,12 +25766,6 @@ function App() {
       { key: "context", label: i18n.table.context, getValue: (m) => (m.context_length || 0) / maxCtx * 100 },
       { key: "tools", label: "Tool Calls", getValue: (m) => (m.supported_parameters || []).includes("tools") ? 100 : 0 },
       { key: "has_vision", label: "Vision", getValue: (m) => m.has_vision ? 100 : 0 },
-      { key: "languages", label: i18n.table.langs, getValue: (m) => {
-        const targets = parseTargetLangs(currentProfile.targetLangs || "en, fr");
-        if (targets.length === 0) return 0;
-        const ml = (m.iso_langs || []).map((l) => l.toLowerCase());
-        return targets.filter((t) => ml.includes(t)).length / targets.length * 100;
-      } },
       { key: "open_weights", label: "Open weight", getValue: (m) => m.open_weights ? 100 : 0 },
       { key: "fits_64gb", label: "VRAM ≤ 64G", getValue: (m) => m.gpu?.fits_64gb ? 100 : 0 },
       { key: "tools_vision", label: "Tools+Vision", getValue: (m) => (m.supported_parameters || []).includes("tools") && m.has_vision ? 100 : 0 }
@@ -26039,7 +26017,6 @@ function App() {
                 "Tools",
                 sortArrow("tools")
               ] }),
-              /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, title: "Langues (ISO 639-1)", children: "Langues" }),
               /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, title: `Score ${currentProfile.name}`, children: "⭐" }),
               /* @__PURE__ */ jsx2("th", { style: S.th })
             ] }) }),
@@ -26074,7 +26051,6 @@ function App() {
                   m.gpu.fits_64gb ? " ✓" : ""
                 ] }) : "-" }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: (m.supported_parameters || []).includes("tools") ? "✅" : "❌" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center", fontSize: 11 }, title: (m.iso_langs || []).length ? `Langues: ${(m.iso_langs || []).join(", ")}` : "Langues non spécifiées", children: (m.iso_langs || []).length > 0 ? `${(m.iso_langs || []).length} 🌐` : "–" }),
                 /* @__PURE__ */ jsxs2("td", { style: { ...S.td, textAlign: "center", fontWeight: 700, background: top3 ? "var(--ui-bg-editor)3e0" : void 0 }, children: [
                   /* @__PURE__ */ jsxs2("span", { title: `Score ${currentProfile.name}: ${sc}`, style: { color: top3 ? "var(--ui-orange)" : sc > 50 ? "var(--ui-green)" : "var(--ui-text-tertiary)" }, children: [
                     rankStr,
@@ -26376,28 +26352,6 @@ function App() {
                         }
                       }
                     )
-                  ] }),
-                  crit.key === "languages" && /* @__PURE__ */ jsxs2("div", { style: { marginTop: 8, display: "flex", alignItems: "center", gap: 8 }, children: [
-                    /* @__PURE__ */ jsx2("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", flexShrink: 0 }, children: "Langues :" }),
-                    /* @__PURE__ */ jsx2(
-                      "input",
-                      {
-                        type: "text",
-                        placeholder: "en, fr, de…",
-                        value: editingProfile.targetLangs ?? "en, fr",
-                        onChange: (e) => setEditingProfile({ ...editingProfile, targetLangs: e.target.value }),
-                        style: {
-                          flex: 1,
-                          padding: "4px 8px",
-                          fontSize: 12,
-                          borderRadius: 6,
-                          border: "1px solid var(--ui-stroke-secondary)",
-                          background: "var(--ui-bg-editor)",
-                          color: "var(--ui-text-primary)"
-                        }
-                      }
-                    ),
-                    /* @__PURE__ */ jsx2("span", { style: { fontSize: 10, color: "var(--ui-text-quaternary)" }, children: "ISO, séparées par virgule" })
                   ] })
                 ]
               },

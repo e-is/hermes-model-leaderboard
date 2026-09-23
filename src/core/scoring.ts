@@ -1,11 +1,6 @@
 /** Pure scoring helpers (no React/SDK) — unit-tested in tests/unit/. */
 
-export function parseTargetLangs(raw?: string): string[] {
-  if (!raw) return []
-  return raw.split(/[,;]/).map(s => s.trim().toLowerCase()).filter(Boolean)
-}
-
-export function computeGenericScore(m: any, weights: Record<string, number>, maxes: Record<string, number>, targetLangs?: string): number {
+export function computeGenericScore(m: any, weights: Record<string, number>, maxes: Record<string, number>): number {
   const totalWeight = Object.values(weights).reduce((sum, w) => sum + (w || 0), 0)
   if (totalWeight <= 0) return 0
 
@@ -24,12 +19,6 @@ export function computeGenericScore(m: any, weights: Record<string, number>, max
   const fits64 = m.gpu?.fits_64gb ? 1 : 0
   const toolsVision = hasT * hasV
 
-  // Languages: fraction of target languages covered by the model's iso_langs
-  const targets = parseTargetLangs(targetLangs)
-  const modelLangs = (m.iso_langs || []).map((l: string) => l.toLowerCase())
-  const langScore = targets.length > 0
-    ? targets.filter(t => modelLangs.includes(t)).length / targets.length
-    : 0
 
   const values: Record<string, number> = {
     intelligence: intel,
@@ -41,7 +30,6 @@ export function computeGenericScore(m: any, weights: Record<string, number>, max
     context: ctx,
     tools: hasT,
     has_vision: hasV,
-    languages: langScore,
     open_weights: isOpen,
     fits_64gb: fits64,
     tools_vision: toolsVision,

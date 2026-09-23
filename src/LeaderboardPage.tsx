@@ -7,7 +7,7 @@ import { NewsPanel } from './components/NewsPanel'
 import { ConfirmDialog } from '@hermes/plugin-sdk'
 import { api } from './doors'
 import { useLeaderboardI18n } from './i18n'
-import { computeGenericScore, parseTargetLangs } from './core/scoring'
+import { computeGenericScore } from './core/scoring'
 
 // ---- Types --------------------------------------------------
 type GpuInfo = { param_count_b: number; vram_q4_gb: number; vram_q8_gb: number; vram_fp16_gb: number; fits_64gb: boolean } | null
@@ -26,7 +26,6 @@ type ModelRecord = {
   hugging_face_id?: string | null; open_weights?: boolean
   model_size?: string | null; reasoning?: boolean; hidden?: boolean
   benchmarks?: Record<string, number | null>
-  iso_langs?: string[]
   gpu?: GpuInfo
 }
 
@@ -40,8 +39,6 @@ export type ProfileConfig = {
   id: string
   name: string
   weights: Record<string, number>
-  /** Langues cibles pour le critère "languages" (ex. "en, fr, de") */
-  targetLangs?: string
 }
 
 type NewsTimeWindow = '1m' | '2m' | '3m' | '6m' | '1y' | 'all'
@@ -113,7 +110,6 @@ export const AVAILABLE_CRITERIA = [
   { key: 'context', label: 'Context window', icon: '📚', desc: 'Fenêtre de contexte maximale (jusqu\'à 1M+ tokens)' },
   { key: 'tools', label: 'Support Tool Calls', icon: '🛠️', desc: 'Appel natif de fonctions et outils externes (API, Bash, etc.)' },
   { key: 'has_vision', label: 'Support Vision (Multimodal)', icon: '👁️', desc: 'Capacité à traiter les images, captures d\'écran et diagrammes' },
-  { key: 'languages', label: 'Langues cibles', icon: '🌐', desc: 'Couverture des langues définies (champ texte ci-dessous) par le modèle' },
   { key: 'open_weights', label: 'Open-weights (Poids ouverts)', icon: '🔓', desc: 'Modèles open-weights téléchargeables (Hugging Face)' },
   { key: 'fits_64gb', label: 'Local VRAM ≤ 64GB', icon: '🖥️', desc: 'Faisabilité d\'exécution locale sur GPU standard (≤ 64GB)' },
   { key: 'tools_vision', label: 'Tools + Vision (QA Playwright)', icon: '🎯', desc: 'Bonus combiné si le modèle gère à la fois les Tools et la Vision' },
@@ -345,7 +341,7 @@ export default function App() {
     intelligence: 5, coding: 0, agentic: 0,
     price_in: 3, price_out: 3, cache_read: 0,
     context: 0, tools: 0, has_vision: 0,
-    open_weights: 0, fits_64gb: 0, tools_vision: 0, languages: 0,
+    open_weights: 0, fits_64gb: 0, tools_vision: 0,
   }
 
   const currentProfile = useMemo(() => {
@@ -624,7 +620,7 @@ export default function App() {
   const scoredModels = useMemo(() => {
     const withScores = active.map(m => ({
       ...m,
-      _score: Math.round(computeGenericScore(m, currentProfile.weights, maxes, currentProfile.targetLangs) * 100) / 100,
+      _score: Math.round(computeGenericScore(m, currentProfile.weights, maxes) * 100) / 100,
     }))
     withScores.sort((a, b) => b._score - a._score)
     withScores.forEach((m, i) => { (m as any)._rank = i + 1 })
@@ -663,7 +659,7 @@ export default function App() {
     const list = news.new_models
       .filter(nm => (nm.created || 0) >= minCreated)
       .map(nm => {
-        const rawScore = computeGenericScore(nm, currentProfile.weights, maxes, currentProfile.targetLangs)
+        const rawScore = computeGenericScore(nm, currentProfile.weights, maxes)
         const roundedScore = Math.round(rawScore)
         const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold
         return {
@@ -688,7 +684,7 @@ export default function App() {
   const processedPromotions = useMemo(() => {
     if (!news?.promotions) return []
     return news.promotions.map(p => {
-      const rawScore = computeGenericScore(p, currentProfile.weights, maxes, currentProfile.targetLangs)
+      const rawScore = computeGenericScore(p, currentProfile.weights, maxes)
       const roundedScore = Math.round(rawScore)
       const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold
       return {
@@ -718,12 +714,6 @@ export default function App() {
       { key: 'context', label: i18n.table.context, getValue: m => ((m.context_length || 0) / maxCtx) * 100 },
       { key: 'tools', label: 'Tool Calls', getValue: m => (m.supported_parameters || []).includes('tools') ? 100 : 0 },
       { key: 'has_vision', label: 'Vision', getValue: m => m.has_vision ? 100 : 0 },
-      { key: 'languages', label: i18n.table.langs, getValue: m => {
-        const targets = parseTargetLangs(currentProfile.targetLangs || 'en, fr')
-        if (targets.length === 0) return 0
-        const ml = (m.iso_langs || []).map(l => l.toLowerCase())
-        return (targets.filter(t => ml.includes(t)).length / targets.length) * 100
-      } },
       { key: 'open_weights', label: 'Open weight', getValue: m => m.open_weights ? 100 : 0 },
       { key: 'fits_64gb', label: 'VRAM ≤ 64G', getValue: m => m.gpu?.fits_64gb ? 100 : 0 },
       { key: 'tools_vision', label: 'Tools+Vision', getValue: m => ((m.supported_parameters || []).includes('tools') && m.has_vision) ? 100 : 0 },
@@ -949,7 +939,6 @@ export default function App() {
                         <th style={{ ...S.th, textAlign: 'center' }}>Taille</th>
                         <th style={{ ...S.th, textAlign: 'center' }}>GPU Q4</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('tools')}>Tools{sortArrow('tools')}</th>
-                        <th style={{ ...S.th, textAlign: 'center' }} title="Langues (ISO 639-1)">Langues</th>
                         <th style={{ ...S.th, textAlign: 'center' }} title={`Score ${currentProfile.name}`}>⭐</th>
                         <th style={S.th}></th>
                       </tr>
@@ -989,10 +978,7 @@ export default function App() {
                               {m.gpu ? <span title={`Q8: ${m.gpu.vram_q8_gb}GB, FP16: ${m.gpu.vram_fp16_gb}GB`}>{m.gpu.vram_q4_gb}GB{m.gpu.fits_64gb ? ' ✓' : ''}</span> : '-'}
                             </td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{(m.supported_parameters || []).includes('tools') ? '✅' : '❌'}</td>
-                            <td style={{ ...S.td, textAlign: 'center', fontSize: 11 }} title={(m.iso_langs || []).length ? `Langues: ${(m.iso_langs || []).join(', ')}` : 'Langues non spécifiées'}>
-                              {(m.iso_langs || []).length > 0 ? `${(m.iso_langs || []).length} 🌐` : '–'}
-                            </td>
-                            <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, background: top3 ? 'var(--ui-bg-editor)3e0' : undefined }}>
+                                                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, background: top3 ? 'var(--ui-bg-editor)3e0' : undefined }}>
                               <span title={`Score ${currentProfile.name}: ${sc}`} style={{ color: top3 ? 'var(--ui-orange)' : sc > 50 ? 'var(--ui-green)' : 'var(--ui-text-tertiary)' }}>
                                 {rankStr}
                                 {top3 && <span style={{ fontSize: 10, marginLeft: 2 }}>🥇</span>}
@@ -1301,27 +1287,6 @@ export default function App() {
                             }}
                           />
                         </div>
-                      {crit.key === 'languages' && (
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', flexShrink: 0 }}>Langues :</span>
-                          <input
-                            type="text"
-                            placeholder="en, fr, de…"
-                            value={editingProfile.targetLangs ?? 'en, fr'}
-                            onChange={e => setEditingProfile({ ...editingProfile, targetLangs: e.target.value })}
-                            style={{
-                              flex: 1,
-                              padding: '4px 8px',
-                              fontSize: 12,
-                              borderRadius: 6,
-                              border: '1px solid var(--ui-stroke-secondary)',
-                              background: 'var(--ui-bg-editor)',
-                              color: 'var(--ui-text-primary)',
-                            }}
-                          />
-                          <span style={{ fontSize: 10, color: 'var(--ui-text-quaternary)' }}>ISO, séparées par virgule</span>
-                        </div>
-                      )}
                       </div>
                     )
                   })}

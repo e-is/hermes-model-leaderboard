@@ -25,19 +25,11 @@ MODELS_FILE = DATA_DIR / "models.json"
 BENCHMARKS_FILE = DATA_DIR / "benchmarks.json"
 PRICE_HISTORY_FILE = DATA_DIR / "price_history.json"
 
-LANGUAGES_FILE = DATA_DIR / "languages.json"
 CACHE_FILE = DATA_DIR / "_openrouter_cache.json"
 PROFILES_FILE = DATA_DIR / "profiles.json"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/models"
 CACHE_TTL = int(os.environ.get("LLM_DASH_CACHE_TTL", 300))
 
-# HuggingFace language resolution (cardData.language). Public API is rate-limited
-# per IP (~100 req/min unauthenticated), so we throttle to one request per
-# HF_LANGS_MIN_INTERVAL and cache results with a long TTL.
-HF_LANGS_CACHE_FILE = DATA_DIR / "_hf_langs_cache.json"
-HF_LANGS_TTL = int(os.environ.get("LLM_DASH_HF_LANGS_TTL", 86400))   # 24h
-HF_LANGS_MIN_INTERVAL = float(os.environ.get("LLM_DASH_HF_INTERVAL", 0.5))
-_last_hf_fetch = {"ts": 0.0}
 
 router = APIRouter()
 logger = logging.getLogger("hermes-model-leaderboard")
@@ -188,76 +180,6 @@ def _load_benchmarks():
     if not BENCHMARKS_FILE.exists(): return {}
     return json.loads(BENCHMARKS_FILE.read_text()).get("models", {})
 
-def _load_languages():
-    if not LANGUAGES_FILE.exists(): return {}
-    return json.loads(LANGUAGES_FILE.read_text()).get("models", {})
-
-def _load_hf_lang_cache():
-    if not HF_LANGS_CACHE_FILE.exists(): return {}
-    try: return json.loads(HF_LANGS_CACHE_FILE.read_text())
-    except Exception: return {}
-
-def _save_hf_lang_cache(cache):
-    cache["_last_updated"] = time.time()
-    HF_LANGS_CACHE_FILE.write_text(json.dumps(cache, indent=2, ensure_ascii=False))
-
-def _fetch_hf_languages(hf_id: str):
-    """Return ISO language codes for a HF model id (cardData.language), or None."""
-    global _last_hf_fetch
-    # throttle per-IP so we don't trip the public HF rate limit
-    wait = HF_LANGS_MIN_INTERVAL - (time.time() - _last_hf_fetch["ts"])
-    if wait > 0: time.sleep(wait)
-    _last_hf_fetch["ts"] = time.time()
-    try:
-        r = httpx.get(f"https://huggingface.co/api/models/{hf_id}", timeout=20,
-                      headers={"User-Agent": "llm-dashboard/1.0"})
-        r.raise_for_status()
-        langs = (r.json().get("cardData") or {}).get("language")
-    except Exception:
-        return None
-    if isinstance(langs, str):
-        langs = [langs]
-    if not isinstance(langs, list):
-        return None
-    out = []
-    for l in langs:
-        if isinstance(l, str):
-            l = l.strip()
-            if l: out.append(l)
-    return out or None
-
-def _resolve_full_languages():
-    """Merge curated languages.json with HF-resolved languages so every tracked
-    model gets its ISO codes. HF results are cached (24h TTL) and only fetched
-    once per model that still lacks languages and has a hugging_face_id."""
-    curated = _load_languages()
-    cache = _load_hf_lang_cache()
-    models = _load_models()
-    now = time.time()
-
-    changed = False
-    for m in models:
-        mid = m["id"]
-        if curated.get(mid):
-            continue  # already curated / resolved
-        hf_id = m.get("hugging_face_id")
-        if not hf_id:
-            continue
-        cached = cache.get(hf_id)
-        if cached and isinstance(cached, dict) and (now - cached.get("ts", 0) < HF_LANGS_TTL):
-            langs = cached.get("langs")
-        else:
-            langs = _fetch_hf_languages(hf_id)
-            cache[hf_id] = {"ts": now, "langs": langs}
-            changed = True
-        if langs:
-            curated[mid] = langs
-
-    if changed:
-        _save_hf_lang_cache(cache)
-        LANGUAGES_FILE.write_text(json.dumps({"_description": "Langues supportées par modèle (codes ISO 639-1). Curaté manuellement ou résolu via HF cardData.language.", "models": curated}, indent=2, ensure_ascii=False))
-    return curated
-
 def _estimate_gpu(model_size_str):
     if not model_size_str: return None
     nums = re.findall(r'(\d+\.?\d*)\s*B', model_size_str)
@@ -281,10 +203,8 @@ class ModelIn(BaseModel):
 def get_models():
     models = _load_models()
     benchmarks = _load_benchmarks()
-    languages = _load_languages()
     for m in models:
         m["benchmarks"] = benchmarks.get(m["id"], {})
-        m["iso_langs"] = languages.get(m["id"], [])
         if "gpu" not in m and m.get("model_size"):
             m["gpu"] = _estimate_gpu(m["model_size"])
     return {"models": models, "last_refresh": _meta().get("last_refresh"), "cache_age_s": _cache_age()}
@@ -426,13 +346,7 @@ def refresh(force: bool = False, payload: dict = Body(default={})):
         else: m["available"] = False
     _save_models(models)
     (DATA_DIR / "_meta.json").write_text(json.dumps({"last_refresh": now}))
-    # Resolve languages from HuggingFace for any tracked model still missing them
-    resolved = 0
-    try:
-        resolved = sum(1 for v in _resolve_full_languages().values() if v)
-    except Exception as e:
-        logger.warning(f"HuggingFace language resolution failed: {e}", exc_info=True)
-    return {"refreshed": len(or_data), "missing": [i for i in ids if i not in or_data], "langs_resolved": resolved}
+    return {"refreshed": len(or_data), "missing": [i for i in ids if i not in or_data]}
 
 
 @router.get("/openrouter/search")
@@ -747,7 +661,6 @@ _CRITERIA_DOC = {
     "open_weights": "preference for open-weights, self-hostable models",
     "fits_64gb": "runnable locally on a 64GB GPU",
     "tools_vision": "combined tools + vision (browser QA)",
-    "languages": "multilingual coverage",
 }
 
 

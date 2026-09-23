@@ -56,7 +56,6 @@ const LOCALES = {
       size: 'Size',
       gpuOk: 'GPU OK',
       tools: 'Tools',
-      langs: 'Langs',
       score: 'Score'
     },
     news: {
@@ -113,8 +112,7 @@ const LOCALES = {
       open_weights: 'Open weights',
       fits_64gb: 'Local VRAM ≤ 64GB',
       tools_vision: 'Tools + vision',
-      languages: 'Languages',
-      d_intelligence: 'Global reasoning and knowledge depth',
+        d_intelligence: 'Global reasoning and knowledge depth',
       d_coding: 'Code generation quality',
       d_agentic: 'Agentic capabilities (multi-step autonomy)',
       d_price_in: 'Importance of cheap input tokens',
@@ -126,8 +124,7 @@ const LOCALES = {
       d_open_weights: 'Open weights, self-hostable',
       d_fits_64gb: 'Feasibility of local execution on a standard GPU (≤ 64GB)',
       d_tools_vision: 'Combined tools and vision (QA Playwright)',
-      d_languages: 'Multilingual coverage'
-    }
+      }
   },
   fr: {
     title: 'LLM Model Leaderboard',
@@ -177,7 +174,6 @@ const LOCALES = {
       size: 'Taille',
       gpuOk: 'GPU OK',
       tools: 'Tools',
-      langs: 'Langues',
       score: 'Score'
     },
     news: {
@@ -235,8 +231,7 @@ const LOCALES = {
       open_weights: 'Open-weights (Poids ouverts)',
       fits_64gb: 'Local VRAM ≤ 64GB',
       tools_vision: 'Tools + Vision (QA Playwright)',
-      languages: 'Langues cibles',
-      d_intelligence: 'Intelligence globale',
+        d_intelligence: 'Intelligence globale',
       d_coding: 'Génération de code',
       d_agentic: 'Capacités agentiques',
       d_price_in: 'Importance d\u2019un prix bas des tokens d\u2019entrée',
@@ -248,8 +243,7 @@ const LOCALES = {
       d_open_weights: 'Poids ouverts, auto-hébergeable',
       d_fits_64gb: 'Faisabilité d\u2019exécution locale sur GPU standard (≤ 64GB)',
       d_tools_vision: 'Outils et vision combinés (QA Playwright)',
-      d_languages: 'Couverture multilingue'
-    }
+      }
   }
 } as const
 

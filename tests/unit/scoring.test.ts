@@ -6,7 +6,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { computeGenericScore, parseTargetLangs } from '../../src/core/scoring.ts'
+import { computeGenericScore } from '../../src/core/scoring.ts'
 
 const MAXES = {
   maxIntel: 40,
@@ -31,11 +31,6 @@ const baseModel = {
   gpu: { fits_64gb: true }
 }
 
-test('parseTargetLangs splits, trims and lowercases', () => {
-  assert.deepEqual(parseTargetLangs('en, FR;de'), ['en', 'fr', 'de'])
-  assert.deepEqual(parseTargetLangs('  en ,, '), ['en'])
-  assert.deepEqual(parseTargetLangs(undefined), [])
-})
 
 test('perfect model on all-weights profile scores 100', () => {
   const weights = {
@@ -58,13 +53,6 @@ test('price penalty lowers the score', () => {
   assert.equal(computeGenericScore(cheap as any, weights, MAXES), 50)
 })
 
-test('languages criterion: coverage of target langs', () => {
-  const weights = { languages: 5 }
-  const m = { ...baseModel, iso_langs: ['en'] }
-  assert.equal(computeGenericScore(m as any, weights, MAXES, 'en, fr'), 50)
-  assert.equal(computeGenericScore({ ...m, iso_langs: ['en', 'fr'] } as any, weights, MAXES, 'en, fr'), 100)
-  assert.equal(computeGenericScore(baseModel as any, weights, MAXES, 'en, fr'), 0)
-})
 
 test('score is clamped to 0..100', () => {
   const s = computeGenericScore(baseModel as any, { intelligence: 5 }, { ...MAXES, maxIntel: 1 })

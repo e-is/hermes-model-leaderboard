@@ -35,7 +35,7 @@ that file to re-seed.
 ## Features
 
 - 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
-- ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 13 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
+- ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 12 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
 - 🤖 **Auto-fill** — a button in the criteria dialog asks the Hermes default model (`hermes -z`, one-shot) to propose weights for that profile. Never automatic, always user-triggered.
 - 🔎 **Search** — filters the tracked table live *and* queries OpenRouter for untracked models (checkbox to opt out), with a one-click add.
 - 📰 **OpenRouter news** — side panel: promotions (with end dates), price changes (rolling 1 d / 7 d, configurable threshold), new models (sort by date or score, +1-week pagination).
@@ -58,8 +58,8 @@ plugin.yaml          unified plugin manifest  (name: model-leaderboard)
 __init__.py          no-op register() (capability probe only)
 dashboard/           backend — FastAPI router → /api/plugins/model-leaderboard/
   manifest.json      name/label/version/api pointer
-  data/              seed: models, benchmarks, languages
-                     runtime (gitignored): openrouter + HF langs caches, price history
+  data/              seed: models, benchmarks
+                     runtime (gitignored): openrouter cache, price history
 desktop/             BUILD ARTIFACT — renderer loaded uncompiled
 src/                 TSX authoring sources (esbuild → desktop/plugin.js)
   core/scoring.ts    pure scoring helpers (unit-tested)
@@ -91,6 +91,9 @@ bug, not a plugin one).
 | Prices, context, modalities, AA indices | OpenRouter `GET /api/v1/models` | auto (5 min cache) |
 | News: promos, price changes, new models | derived from the same cache + local price history | auto |
 | SWE-bench Verified | **curated** in `dashboard/data/benchmarks.json` | manual |
+
+(The multilingual-coverage criterion was removed: OpenRouter exposes no language field and HF
+`cardData.language` is empty for current models — see the roadmap below.)
 
 Why the benchmark columns are curated rather than synced — measured, not assumed:
 
@@ -126,13 +129,12 @@ Why the benchmark columns are curated rather than synced — measured, not assum
   SWE / aider columns so staleness is visible instead of guessed. Aider stays strict-match
   only (exact slug, explicit alias table); no fuzzy matching.
 - [ ] **Recharts v3** (2.x is EOL) or native canvas — see the plugin plan note on bundle weight.
-- [ ] **Multilingual criterion from a measured source** — Global-MMLU (42 languages) or
-  MMLU-ProX. OpenRouter exposes no language field (checked: none in the model payload) and
-  HF `cardData.language` is empty for current models (0/5 of the tracked open-weights ones),
-  so `languages.json` stays the only working source until then. LMArena is not an option:
-  lmarena.ai redirects to arena.ai and every `/api/*` route answers
-  403 `{"error":"Route not allowed"}` — the per-language data exists only inside the
-  leaderboard page's RSC payload.
+- [ ] **Human-preference rating (LMArena)** — the multilingual criterion was dropped instead
+  (OpenRouter exposes no language field; HF `cardData.language` is empty for 0/5 of the tracked
+  open-weights models), but LMArena's overall Elo is worth a column: it covers closed models too.
+  No API exists (`arena.ai/api/*` → 403 "Route not allowed"; the leaderboard is server-rendered,
+  and interaction triggers zero XHR), so it needs a DOM extraction guarded by a structure test.
+  Per-language boards are gone from their public UI, so it cannot serve multilingual data.
 
 **Later**
 

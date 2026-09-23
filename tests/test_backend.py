@@ -34,8 +34,8 @@ def _isolate_data_dir(tmp_path, monkeypatch):
     """
     monkeypatch.setattr(main_mod, "DATA_DIR", tmp_path, raising=False)
     for attr in (
-        "MODELS_FILE", "BENCHMARKS_FILE", "PRICE_HISTORY_FILE", "LANGUAGES_FILE",
-        "CACHE_FILE", "PROFILES_FILE", "HF_LANGS_CACHE_FILE",
+        "MODELS_FILE", "BENCHMARKS_FILE", "PRICE_HISTORY_FILE",
+        "CACHE_FILE", "PROFILES_FILE",
     ):
         if hasattr(main_mod, attr):
             monkeypatch.setattr(main_mod, attr, tmp_path / attr.lower(), raising=False)
@@ -105,30 +105,29 @@ def test_record_price_history_creates_then_dedupes(tmp_path, monkeypatch):
 # Models API
 # ---------------------------------------------------------------------------
 
-def test_get_models_enriches_with_benchmarks_and_langs(tmp_path, monkeypatch):
+def test_get_models_enriches_with_benchmarks(tmp_path, monkeypatch):
     models_file = tmp_path / "models.json"
     models_file.write_text(json.dumps([
         {"id": "openai/gpt-x", "label": "GPT X", "model_size": "120B"},
         {"id": "qwen/qwen3", "label": "Qwen3"},
     ]))
     bench_file = tmp_path / "benchmarks.json"
-    bench_file.write_text(json.dumps({"models": {"openai/gpt-x": {"swe_bench": 70.0}}}))
-    lang_file = tmp_path / "languages.json"
-    lang_file.write_text(json.dumps({"models": {"qwen/qwen3": ["fr", "en"]}}))
+    bench_file.write_text(json.dumps({"models": {"openai/gpt-x": {"swebench_verified": 70.0}}}))
 
     monkeypatch.setattr(main_mod, "MODELS_FILE", models_file)
     monkeypatch.setattr(main_mod, "BENCHMARKS_FILE", bench_file)
-    monkeypatch.setattr(main_mod, "LANGUAGES_FILE", lang_file)
     monkeypatch.setattr(main_mod, "_meta", lambda: {"last_refresh": 123})
 
     res = client.get(f"{PREFIX}/models")
     assert res.status_code == 200
-    data = res.json()
-    by_id = {m["id"]: m for m in data["models"]}
-    assert by_id["openai/gpt-x"]["benchmarks"] == {"swe_bench": 70.0}
-    assert by_id["openai/gpt-x"]["gpu"]["fits_64gb"] is False
-    assert by_id["qwen/qwen3"]["iso_langs"] == ["fr", "en"]
-    assert data["last_refresh"] == 123
+    data = {m["id"]: m for m in res.json()["models"]}
+    assert data["openai/gpt-x"]["benchmarks"] == {"swebench_verified": 70.0}
+    assert data["qwen/qwen3"]["benchmarks"] == {}
+    # VRAM estimate is derived from model_size when absent
+    assert data["openai/gpt-x"]["gpu"]["vram_q4_gb"] > 0
+    assert res.json()["last_refresh"] == 123
+    # the languages field is gone for good
+    assert "iso_langs" not in data["qwen/qwen3"]
 
 
 def test_add_and_delete_model(tmp_path, monkeypatch):
@@ -288,7 +287,7 @@ def test_auto_fill_parses_model_json(client_nomonkey, monkeypatch):
         "intelligence": 5, "coding": 4, "agentic": 3, "price_in": 2,
         "price_out": 2, "cache_read": 0, "context": 1, "tools": 5,
         "has_vision": 0, "open_weights": 1, "fits_64gb": 0,
-        "tools_vision": 2, "languages": 1,
+        "tools_vision": 2,
     }) + " (weights suggested)"
 
     def fake_run(*a, **k):
@@ -434,7 +433,6 @@ def test_refresh_force_from_body_bypasses_the_cache(monkeypatch):
     main_mod.CACHE_FILE.write_text('{"ts": 1, "data": []}')
     monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x-ai/grok-4.7"}])
     monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
-    monkeypatch.setattr(main_mod, "_resolve_full_languages", lambda: {})
     monkeypatch.setattr(main_mod, "_save_models", lambda models: None)
 
     res = client.post(f"{PREFIX}/refresh", json={"force": True})
@@ -446,7 +444,6 @@ def test_refresh_without_force_keeps_the_cache(monkeypatch):
     main_mod.CACHE_FILE.write_text('{"ts": 1, "data": []}')
     monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x-ai/grok-4.7"}])
     monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
-    monkeypatch.setattr(main_mod, "_resolve_full_languages", lambda: {})
     monkeypatch.setattr(main_mod, "_save_models", lambda models: None)
 
     res = client.post(f"{PREFIX}/refresh", json={})
