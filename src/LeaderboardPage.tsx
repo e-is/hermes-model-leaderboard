@@ -944,7 +944,6 @@ export default function App() {
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('coding_index')}>Coding{sortArrow('coding_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('agentic_index')}>Agentic{sortArrow('agentic_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center' }}>SWE</th>
-                        <th style={{ ...S.th, textAlign: 'center' }}>Aider</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('has_vision')}>Vision{sortArrow('has_vision')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('open_weights')}>Open{sortArrow('open_weights')}</th>
                         <th style={{ ...S.th, textAlign: 'center' }}>Taille</th>
@@ -983,8 +982,7 @@ export default function App() {
                             <td style={{ ...S.td, textAlign: 'center' }}>{fmtIdx(m.coding_index)}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{fmtIdx(m.agentic_index)}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + '%' : '…'}</td>
-                            <td style={{ ...S.td, textAlign: 'center' }}>{m.benchmarks?.aider_polyglot != null ? m.benchmarks.aider_polyglot + '%' : '…'}</td>
-                            <td style={{ ...S.td, textAlign: 'center' }}>{m.has_vision ? '👁' : ''}</td>
+                                                        <td style={{ ...S.td, textAlign: 'center' }}>{m.has_vision ? '👁' : ''}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.open_weights ? '✅' : '❌'}</td>
                             <td style={{ ...S.td, textAlign: 'center', fontSize: 11 }}>{m.model_size || '?'}</td>
                             <td style={{ ...S.td, textAlign: 'center', fontSize: 11 }}>

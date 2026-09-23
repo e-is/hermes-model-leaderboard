@@ -34,7 +34,7 @@ that file to re-seed.
 
 ## Features
 
-- 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), SWE-bench / aider columns, vision/tools support, open-weights, local VRAM estimate.
+- 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
 - ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 13 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
 - 🤖 **Auto-fill** — a button in the criteria dialog asks the Hermes default model (`hermes -z`, one-shot) to propose weights for that profile. Never automatic, always user-triggered.
 - 🔎 **Search** — filters the tracked table live *and* queries OpenRouter for untracked models (checkbox to opt out), with a one-click add.
@@ -90,15 +90,15 @@ bug, not a plugin one).
 |:---|:---|:---|
 | Prices, context, modalities, AA indices | OpenRouter `GET /api/v1/models` | auto (5 min cache) |
 | News: promos, price changes, new models | derived from the same cache + local price history | auto |
-| SWE-bench Verified, aider polyglot | **curated** in `dashboard/data/benchmarks.json` | manual |
+| SWE-bench Verified | **curated** in `dashboard/data/benchmarks.json` | manual |
 
 Why the benchmark columns are curated rather than synced — measured, not assumed:
 
-- **Aider polyglot** publishes a machine-readable board
-  (`raw.githubusercontent.com/Aider-AI/aider/main/aider/website/_data/polyglot_leaderboard.yml`),
-  but it stops at the gpt-5 / gemini-2.5 / claude-4 generation: **1 correct match out of
-  19 tracked models**, and fuzzy matching pairs `deepseek-v3.2-exp` with "DeepSeek V3 (0324)"
-  and `grok-4.6` with "grok-4" — wrong numbers, which is worse than no number.
+- **Aider polyglot** used to be a column here and was **removed**: the machine-readable
+  board (`raw.githubusercontent.com/Aider-AI/aider/main/aider/website/_data/polyglot_leaderboard.yml`)
+  stops at the gpt-5 / gemini-2.5 / claude-4 generation — 1 correct match out of 19 tracked
+  models, and fuzzy matching paired `deepseek-v3.2-exp` with "DeepSeek V3 (0324)" and
+  `grok-4.6` with "grok-4". Wrong numbers are worse than no column.
 - **SWE-bench Verified** has no API. The raw data lives in `SWE-bench/experiments`
   (`evaluation/verified/<run>/{metadata.yaml,results/}`, 4355 files) where the headline
   figure depends on the scaffold/agent you pick — an editorial choice, not a derivation.
@@ -126,6 +126,13 @@ Why the benchmark columns are curated rather than synced — measured, not assum
   SWE / aider columns so staleness is visible instead of guessed. Aider stays strict-match
   only (exact slug, explicit alias table); no fuzzy matching.
 - [ ] **Recharts v3** (2.x is EOL) or native canvas — see the plugin plan note on bundle weight.
+- [ ] **Multilingual criterion from a measured source** — Global-MMLU (42 languages) or
+  MMLU-ProX. OpenRouter exposes no language field (checked: none in the model payload) and
+  HF `cardData.language` is empty for current models (0/5 of the tracked open-weights ones),
+  so `languages.json` stays the only working source until then. LMArena is not an option:
+  lmarena.ai redirects to arena.ai and every `/api/*` route answers
+  403 `{"error":"Route not allowed"}` — the per-language data exists only inside the
+  leaderboard page's RSC payload.
 
 **Later**
 

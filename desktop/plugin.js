@@ -24979,7 +24979,6 @@ var LOCALES = {
       coding: "Coding",
       agentic: "Agentic",
       swe: "SWE",
-      aider: "Aider",
       vision: "Vision",
       open: "Open",
       size: "Size",
@@ -25101,7 +25100,6 @@ var LOCALES = {
       coding: "Coding",
       agentic: "Agentic",
       swe: "SWE",
-      aider: "Aider",
       vision: "Vision",
       open: "Open",
       size: "Taille",
@@ -26027,7 +26025,6 @@ function App() {
                 sortArrow("agentic_index")
               ] }),
               /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, children: "SWE" }),
-              /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, children: "Aider" }),
               /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("has_vision"), children: [
                 "Vision",
                 sortArrow("has_vision")
@@ -26068,7 +26065,6 @@ function App() {
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.coding_index) }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.agentic_index) }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + "%" : "…" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.benchmarks?.aider_polyglot != null ? m.benchmarks.aider_polyglot + "%" : "…" }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.has_vision ? "👁" : "" }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.open_weights ? "✅" : "❌" }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center", fontSize: 11 }, children: m.model_size || "?" }),
