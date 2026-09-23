@@ -38,6 +38,7 @@ const LOCALES = {
     confirmDeleteTitle: 'Remove this model?',
     confirmDeleteBody: (name: string) => `“${name}” will be removed from the tracked models. The data stays untouched on OpenRouter.`,
     confirmDeleteOk: 'Remove',
+    updatedAgo: (m: number) => (m < 1 ? 'updated just now' : `updated ${m} min ago`),
     ranking: (name: string) => `🏆 Ranking — ${name}`,
     customCriteria: 'Custom criteria',
     table: {
@@ -159,6 +160,7 @@ const LOCALES = {
     confirmDeleteTitle: 'Supprimer ce modèle ?',
     confirmDeleteBody: (name: string) => `« ${name} » sera retiré des modèles suivis. Les données OpenRouter ne sont pas modifiées.`,
     confirmDeleteOk: 'Supprimer',
+    updatedAgo: (m: number) => (m < 1 ? 'mis à jour à l\'instant' : `mis à jour il y a ${m} min`),
     ranking: (name: string) => `🏆 Classement ${name}`,
     customCriteria: 'Critères personnalisés',
     table: {

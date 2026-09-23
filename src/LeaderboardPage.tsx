@@ -381,21 +381,37 @@ export default function App() {
     })
   }
 
+  const [lastRefresh, setLastRefresh] = useState<number | null>(null)
   const fetchModels = () => {
     setLoading(true)
-    api('/models').then(d => setModels(d.models)).finally(() => setLoading(false))
+    api('/models')
+      .then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) })
+      .finally(() => setLoading(false))
   }
   useEffect(() => { fetchModels() }, [])
   // Auto-reload: the backend caches OpenRouter data for 5 min, so a 60s poll
   // is cheap; it only fires when the page is actually visible
   // (document.visibilityState), and never shows the loading spinner.
   useEffect(() => {
-    const id = setInterval(() => {
+    // Cheap poll: re-reads local state only (no OpenRouter call).
+    const uiPoll = setInterval(() => {
       if (document.visibilityState !== 'visible') return
-      api('/models').then(d => setModels(d.models)).catch(() => undefined)
+      api('/models').then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) }).catch(() => undefined)
       api('/news').then(d => setNews(d)).catch(() => undefined)
     }, 60_000)
-    return () => clearInterval(id)
+    // Real pull: the backend cache is 5 min, so a 10-min tick always refetches
+    // prices/benchmarks from OpenRouter (no force — the cache still protects
+    // against a burst of tabs).
+    const dataPull = setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      api('/refresh', { method: 'POST', body: {} })
+        .then(() => Promise.all([
+          api('/models').then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) }),
+          api('/news').then(d => setNews(d)),
+        ]))
+        .catch(() => undefined)
+    }, 10 * 60_000)
+    return () => { clearInterval(uiPoll); clearInterval(dataPull) }
   }, [])
 
   useEffect(() => { api('/hermes-profiles').then(d => setHermesProfiles(d.profiles || ['default'])).catch(() => setHermesProfiles(['default'])) }, [])
@@ -411,9 +427,11 @@ export default function App() {
     // refetch /models afterwards (a broken .then(d => setModels(d.models))
     // used to set models to undefined and blank the whole page).
     setLoading(true)
-    api('/refresh', { method: 'POST' })
+    // force=true bypasses the backend's 5-min OpenRouter cache — without it the
+    // button re-merged the cached payload and nothing moved.
+    api('/refresh', { method: 'POST', body: { force: true } })
       .then(() => api('/models'))
-      .then(d => setModels(d.models))
+      .then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) })
       .then(() => fetchNews())
       .catch(err => console.error('[leaderboard] refresh failed:', err))
       .finally(() => setLoading(false))
@@ -880,6 +898,11 @@ export default function App() {
                   >
                     ↻
                   </button>
+                  {lastRefresh ? (
+                    <span style={{ fontSize: 11, color: 'var(--ui-text-quaternary)' }}>
+                      {i18n.updatedAgo(Math.max(0, Math.round((Date.now() / 1000 - lastRefresh) / 60)))}
+                    </span>
+                  ) : null}
                 </div>
                 </div>
 

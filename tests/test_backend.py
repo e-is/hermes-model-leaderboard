@@ -404,3 +404,51 @@ def test_post_models_rejects_double_encoded_body(monkeypatch):
     )
     assert res.status_code == 422
     assert res.json()["detail"][0]["type"] == "model_attributes_type"
+
+
+# ---------------------------------------------------------------------------
+# Initial list + refresh semantics
+# ---------------------------------------------------------------------------
+def test_first_run_seeds_tracked_models_from_profiles(monkeypatch):
+    """No models.json yet -> the tracked list starts from the profile models."""
+    monkeypatch.setattr(main_mod, "_profile_model_ids", lambda: ["x-ai/grok-4.7", "default/cheap"])
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    assert not main_mod.MODELS_FILE.exists()
+
+    models = main_mod._load_models()
+    assert [m["id"] for m in models] == ["x-ai/grok-4.7", "default/cheap"]
+    assert all(m.get("added_via") == "profile-seed" for m in models)
+    # persisted, so the next boot reads them instead of reseeding
+    assert main_mod.MODELS_FILE.exists()
+    assert [m["id"] for m in main_mod._load_models()] == ["x-ai/grok-4.7", "default/cheap"]
+
+
+def test_first_run_without_profile_models_stays_empty(monkeypatch):
+    monkeypatch.setattr(main_mod, "_profile_model_ids", lambda: [])
+    assert main_mod._load_models() == []
+
+
+def test_refresh_force_from_body_bypasses_the_cache(monkeypatch):
+    """POST /refresh {"force": true} must drop the cache (the button sent no
+    force and re-merged the cached payload, which looked like a no-op)."""
+    main_mod.CACHE_FILE.write_text('{"ts": 1, "data": []}')
+    monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x-ai/grok-4.7"}])
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    monkeypatch.setattr(main_mod, "_resolve_full_languages", lambda: {})
+    monkeypatch.setattr(main_mod, "_save_models", lambda models: None)
+
+    res = client.post(f"{PREFIX}/refresh", json={"force": True})
+    assert res.status_code == 200, res.text
+    assert not main_mod.CACHE_FILE.exists(), "force=true must invalidate the cache"
+
+
+def test_refresh_without_force_keeps_the_cache(monkeypatch):
+    main_mod.CACHE_FILE.write_text('{"ts": 1, "data": []}')
+    monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x-ai/grok-4.7"}])
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    monkeypatch.setattr(main_mod, "_resolve_full_languages", lambda: {})
+    monkeypatch.setattr(main_mod, "_save_models", lambda models: None)
+
+    res = client.post(f"{PREFIX}/refresh", json={})
+    assert res.status_code == 200
+    assert main_mod.CACHE_FILE.exists()

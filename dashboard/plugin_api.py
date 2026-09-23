@@ -43,8 +43,100 @@ router = APIRouter()
 logger = logging.getLogger("hermes-model-leaderboard")
 
 
+def _profile_config_files():
+    """(profile_name, config.yaml path) for every installed Hermes profile.
+
+    Returns [] when ``hermes_cli`` is not importable (unit tests) — seeding is a
+    production-only nicety, never a reason to touch the network in a test."""
+    try:
+        from hermes_cli import profiles as profiles_mod
+        infos = list(profiles_mod.list_profiles())
+    except Exception:
+        return []
+    out = []
+    for info in infos:
+        name = getattr(info, "name", None)
+        path = getattr(info, "path", None)
+        if name and path:
+            out.append((name, Path(path) / "config.yaml"))
+    out.sort(key=lambda kv: (kv[0] != "default", kv[0]))
+    return out
+
+
+def _model_from_config(cfg_path):
+    """The main model slug declared by a profile, or None."""
+    try:
+        import yaml
+    except Exception:
+        return None
+    try:
+        data = yaml.safe_load(cfg_path.read_text()) or {}
+    except Exception:
+        return None
+    model = data.get("model")
+    if isinstance(model, str) and model.strip():
+        return model.strip()
+    if isinstance(model, dict):
+        for key in ("default", "name", "model", "id"):
+            value = model.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return None
+
+
+def _profile_model_ids():
+    """Model slugs declared across the installed profiles ('default' first)."""
+    ids = []
+    for _name, cfg in _profile_config_files():
+        mid = _model_from_config(cfg)
+        if mid and mid not in ids:
+            ids.append(mid)
+    return ids
+
+
+def _seed_models_from_profiles():
+    """First run: start the tracked list from the models the profiles declare.
+
+    Returns None when no profile declares a model (caller falls back to an empty
+    list). Network failures degrade to entries marked ``available: False`` so the
+    plugin still shows the model instead of an empty page."""
+    ids = _profile_model_ids()
+    if not ids:
+        return None
+    now = time.time()
+    entries = []
+    try:
+        or_data = _fetch_openrouter(ids)
+    except Exception as e:
+        logger.warning(f"Profile seeding could not read OpenRouter: {e}")
+        or_data = {}
+    for mid in ids:
+        entry = {"id": mid, "label": mid.split("/")[-1], "added_at": now,
+                 "added_via": "profile-seed"}
+        if mid in or_data:
+            entry.update(or_data[mid])
+            entry["available"] = True
+        else:
+            entry["available"] = False
+        entries.append(entry)
+    logger.info(f"Seeded {len(entries)} tracked model(s) from the Hermes profiles")
+    return entries
+
+
 def _load_models():
-    return json.loads(MODELS_FILE.read_text()) if MODELS_FILE.exists() else []
+    if MODELS_FILE.exists():
+        try:
+            models = json.loads(MODELS_FILE.read_text())
+            if models:
+                return models
+        except Exception:
+            pass
+    # First run (no file / empty file): seed from the profile-declared models.
+    seeded = _seed_models_from_profiles()
+    if seeded:
+        _save_models(seeded)
+        return seeded
+    return []
 
 def _save_models(models):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -316,10 +408,15 @@ def _meta():
 
 
 @router.post("/refresh")
-def refresh(force: bool = False):
+def refresh(force: bool = False, payload: dict = Body(default={})):
+    # `force` bypasses the 5-min OpenRouter cache. Accept it as a query param
+    # (?force=true) or in the JSON body — the desktop bridge sets the body, and
+    # without it the button just re-merged the cached payload (looked like a
+    # no-op).
     models = _load_models()
     ids = [m["id"] for m in models]
     if not ids: return {"refreshed": 0}
+    force = force or bool((payload or {}).get("force"))
     if force: CACHE_FILE.unlink(missing_ok=True)
     or_data = _fetch_openrouter(ids)
     now = time.time()

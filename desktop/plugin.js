@@ -24966,6 +24966,7 @@ var LOCALES = {
     confirmDeleteTitle: "Remove this model?",
     confirmDeleteBody: (name) => `“${name}” will be removed from the tracked models. The data stays untouched on OpenRouter.`,
     confirmDeleteOk: "Remove",
+    updatedAgo: (m) => m < 1 ? "updated just now" : `updated ${m} min ago`,
     ranking: (name) => `🏆 Ranking — ${name}`,
     customCriteria: "Custom criteria",
     table: {
@@ -25087,6 +25088,7 @@ var LOCALES = {
     confirmDeleteTitle: "Supprimer ce modèle ?",
     confirmDeleteBody: (name) => `« ${name} » sera retiré des modèles suivis. Les données OpenRouter ne sont pas modifiées.`,
     confirmDeleteOk: "Supprimer",
+    updatedAgo: (m) => m < 1 ? "mis à jour à l'instant" : `mis à jour il y a ${m} min`,
     ranking: (name) => `🏆 Classement ${name}`,
     customCriteria: "Critères personnalisés",
     table: {
@@ -25502,20 +25504,40 @@ function App() {
       return next;
     });
   };
+  const [lastRefresh, setLastRefresh] = useState6(null);
   const fetchModels = () => {
     setLoading(true);
-    api("/models").then((d) => setModels(d.models)).finally(() => setLoading(false));
+    api("/models").then((d) => {
+      setModels(d.models);
+      setLastRefresh(d.last_refresh ?? null);
+    }).finally(() => setLoading(false));
   };
   useEffect5(() => {
     fetchModels();
   }, []);
   useEffect5(() => {
-    const id = setInterval(() => {
+    const uiPoll = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      api("/models").then((d) => setModels(d.models)).catch(() => void 0);
+      api("/models").then((d) => {
+        setModels(d.models);
+        setLastRefresh(d.last_refresh ?? null);
+      }).catch(() => void 0);
       api("/news").then((d) => setNews(d)).catch(() => void 0);
     }, 6e4);
-    return () => clearInterval(id);
+    const dataPull = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      api("/refresh", { method: "POST", body: {} }).then(() => Promise.all([
+        api("/models").then((d) => {
+          setModels(d.models);
+          setLastRefresh(d.last_refresh ?? null);
+        }),
+        api("/news").then((d) => setNews(d))
+      ])).catch(() => void 0);
+    }, 10 * 6e4);
+    return () => {
+      clearInterval(uiPoll);
+      clearInterval(dataPull);
+    };
   }, []);
   useEffect5(() => {
     api("/hermes-profiles").then((d) => setHermesProfiles(d.profiles || ["default"])).catch(() => setHermesProfiles(["default"]));
@@ -25529,7 +25551,10 @@ function App() {
   }, []);
   const refresh = () => {
     setLoading(true);
-    api("/refresh", { method: "POST" }).then(() => api("/models")).then((d) => setModels(d.models)).then(() => fetchNews()).catch((err) => console.error("[leaderboard] refresh failed:", err)).finally(() => setLoading(false));
+    api("/refresh", { method: "POST", body: { force: true } }).then(() => api("/models")).then((d) => {
+      setModels(d.models);
+      setLastRefresh(d.last_refresh ?? null);
+    }).then(() => fetchNews()).catch((err) => console.error("[leaderboard] refresh failed:", err)).finally(() => setLoading(false));
   };
   const addModel = (id) => {
     setAdding(true);
@@ -25943,7 +25968,8 @@ function App() {
                 style: { marginLeft: "auto", padding: "4px 8px", border: "none", background: "transparent", color: "var(--ui-text-secondary)", cursor: "pointer", fontSize: 16, lineHeight: 1 },
                 children: "↻"
               }
-            )
+            ),
+            lastRefresh ? /* @__PURE__ */ jsx2("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)" }, children: i18n.updatedAgo(Math.max(0, Math.round((Date.now() / 1e3 - lastRefresh) / 60))) }) : null
           ] }) }),
           searchUntracked && searchRes.length > 0 && /* @__PURE__ */ jsxs2("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
             /* @__PURE__ */ jsx2("div", { style: { marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).length) }),
