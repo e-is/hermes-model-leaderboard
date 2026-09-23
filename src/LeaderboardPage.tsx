@@ -420,11 +420,10 @@ export default function App() {
 
   const addModel = (id: string) => {
     setAdding(true)
-    api('/models', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    }).then(() => {
+    // NOTE: the desktop bridge JSON.stringify()es the body itself — passing a
+    // pre-stringified body double-encodes it and the gateway rejects it with a
+    // 422 ("Input should be a valid dictionary"). Always pass a plain object.
+    api('/models', { method: 'POST', body: { id } }).then(() => {
       fetchModels()
       fetchNews()
       setQ('')
@@ -493,7 +492,7 @@ export default function App() {
     if (!editingProfile || autoFilling) return
     setAutoFilling(true)
     setAutoFillMsg(i18n.modal.autoFillRunning)
-    api('/auto-fill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile_id: editingProfile.id, profile_name: editingProfile.name }) })
+    api('/auto-fill', { method: 'POST', body: { profile_id: editingProfile.id, profile_name: editingProfile.name } })
       .then((d: any) => {
         const w = d && d.weights ? d.weights : {}
         setEditingProfile((prev: any) => prev ? { ...prev, ...w } : prev)
@@ -521,8 +520,7 @@ export default function App() {
 
     api(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editingProfile),
+      body: editingProfile,
     })
       .then(d => d)
       .then(data => {
@@ -980,22 +978,22 @@ export default function App() {
                             <td style={{ ...S.td, whiteSpace: 'nowrap', textAlign: 'right' }}>
                               <button
                                 onClick={() => toggleHidden(m.id)}
-                                title={hiddenIds.has(m.id) ? 'Afficher' : 'Masquer'}
+                                title={hiddenIds.has(m.id) ? i18n.show : i18n.hide}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: 13, marginRight: 4 }}
                               >
-                                {hiddenIds.has(m.id) ? '👁' : '👁‍🗨'}
+                                {hiddenIds.has(m.id) ? '👁' : '🙈'}
                               </button>
                               {confirmDelete === m.id ? (
                                 <button
                                   onClick={() => confirmRemove(m.id)}
                                   style={{ background: 'var(--ui-red)', color: 'var(--ui-bg-editor)', border: 'none', borderRadius: 3, padding: '2px 6px', fontSize: 11, cursor: 'pointer' }}
                                 >
-                                  Suppr?
+                                  {i18n.suppressShort}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => removeModel(m.id)}
-                                  title="Supprimer le modèle"
+                                  title={i18n.removeModel}
                                   style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4, fontSize: 12 }}
                                 >
                                   ✕
@@ -1073,7 +1071,7 @@ export default function App() {
                         const hiddenR = radarHidden.has(label)
                         return (
                           <span key={label} onClick={() => toggleRadar(label)}
-                            title={hiddenR ? 'Cliquer pour afficher' : 'Cliquer pour masquer'}
+                            title={hiddenR ? i18n.clickToShow : i18n.clickToHide}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 11, userSelect: 'none', opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? 'line-through' : 'none', padding: '2px 5px', borderRadius: 4, background: hiddenR ? 'transparent' : colors[ci2 % colors.length] + '18' }}>
                             <span style={{ display: 'inline-block', width: 9, height: 9, background: colors[ci2 % colors.length], borderRadius: 2 }} />
                             {label}
@@ -1104,6 +1102,7 @@ export default function App() {
               addModel={addModel}
               trackedIds={new Set(models.filter(m => m.available).map(m => m.id))}
               profileName={currentProfile.name}
+              t={i18n}
               fmtDate={fmtDate}
               fmtCtx={fmtCtx}
               fmtPrice={fmtPrice}
@@ -1218,7 +1217,7 @@ export default function App() {
               {/* Criteria Sliders */}
               <div style={{ borderTop: '1px solid var(--ui-stroke-tertiary)', paddingTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ui-text-primary)' }}>Pondération des critères :</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ui-text-primary)' }}>{i18n.criteriaWeights}</span>
                   <span style={{ fontSize: 11, color: 'var(--ui-text-tertiary)' }}>
                     Total poids : <b>{Object.values(editingProfile.weights).reduce((a, b) => a + (b || 0), 0)}</b>
                   </span>
@@ -1345,7 +1344,7 @@ export default function App() {
                 )}
                 <button
                   onClick={resetToDefaultProfiles}
-                  title="Réinitialise tous les profils et critères aux valeurs d'origine par défaut"
+                  title={i18n.resetAllTitle}
                   style={{
                     background: 'none',
                     border: '1px solid var(--ui-stroke-secondary)',
@@ -1357,7 +1356,7 @@ export default function App() {
                     cursor: 'pointer',
                   }}
                 >
-                  🔄 Réinitialiser défauts
+                  {i18n.resetDefaults}
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>

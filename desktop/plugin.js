@@ -24547,6 +24547,7 @@ function NewsPanel(props) {
     addModel,
     trackedIds,
     profileName,
+    t,
     fmtDate: fmtDate2,
     fmtCtx: fmtCtx2,
     fmtPrice: fmtPrice2
@@ -24623,12 +24624,12 @@ function NewsPanel(props) {
             paddingTop: 4,
             zIndex: 1
           }, children: [
-            /* @__PURE__ */ jsx("h3", { style: { margin: 0, fontSize: 15, display: "flex", alignItems: "center", gap: 6, color: "var(--ui-text-primary)" }, children: "📰 Actualités & Nouveautés" }),
-            /* @__PURE__ */ jsx("button", { onClick: onClose, style: { background: "none", border: "none", cursor: "pointer", color: "var(--ui-text-tertiary)", fontSize: 14 }, title: "Masquer le volet", children: "✕" })
+            /* @__PURE__ */ jsx("h3", { style: { margin: 0, fontSize: 15, display: "flex", alignItems: "center", gap: 6, color: "var(--ui-text-primary)" }, children: t.news.title }),
+            /* @__PURE__ */ jsx("button", { onClick: onClose, style: { background: "none", border: "none", cursor: "pointer", color: "var(--ui-text-tertiary)", fontSize: 14 }, title: t.news.hidePanel, children: "✕" })
           ] }),
-          loading ? /* @__PURE__ */ jsx("p", { style: { fontSize: 13, color: "var(--ui-text-tertiary)" }, children: "Chargement des actualités…" }) : !news ? /* @__PURE__ */ jsx("p", { style: { fontSize: 13, color: "var(--ui-text-tertiary)" }, children: "Aucune actualité disponible." }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 20 }, children: [
+          loading ? /* @__PURE__ */ jsx("p", { style: { fontSize: 13, color: "var(--ui-text-tertiary)" }, children: t.news.loading }) : !news ? /* @__PURE__ */ jsx("p", { style: { fontSize: 13, color: "var(--ui-text-tertiary)" }, children: t.news.none }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 20 }, children: [
             processedPromotions.length > 0 && /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-red)", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }, children: "🏷️ Promos en cours" }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-red)", textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }, children: t.news.promos }),
               /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: processedPromotions.map((p) => /* @__PURE__ */ jsxs("div", { style: {
                 background: p._isChallenger ? "color-mix(in srgb, var(--ui-yellow) 8%, var(--ui-bg-editor))" : "color-mix(in srgb, var(--ui-red) 4%, var(--ui-bg-editor))",
                 border: p._isChallenger ? "1px solid var(--ui-yellow)" : "1px solid color-mix(in srgb, var(--ui-red) 8%, transparent)",
@@ -24646,23 +24647,23 @@ function NewsPanel(props) {
                   ] }),
                   /* @__PURE__ */ jsxs("div", { style: { textAlign: "right" }, children: [
                     /* @__PURE__ */ jsx("span", { style: { fontWeight: 800, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-secondary)", fontSize: 12 }, children: p._roundedScore > 0 ? `${p._roundedScore}/100` : "–" }),
-                    p._isChallenger && /* @__PURE__ */ jsx("div", { style: { fontSize: 9, background: "var(--ui-orange)", color: "var(--ui-bg-editor)", padding: "1px 4px", borderRadius: 3, fontWeight: 700, marginTop: 1 }, children: "🔥 Top 3 !" })
+                    p._isChallenger && /* @__PURE__ */ jsx("div", { style: { fontSize: 9, background: "var(--ui-orange)", color: "var(--ui-bg-editor)", padding: "1px 4px", borderRadius: 3, fontWeight: 700, marginTop: 1 }, children: t.news.top3 })
                   ] })
                 ] }),
                 /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4 }, children: p.details }),
-                p.ends_at ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: [
-                  "⏳ Jusqu'au ",
-                  p.ends_at
-                ] }) : null,
+                p.ends_at ? /* @__PURE__ */ jsx("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: t.news.until(p.ends_at) }) : null,
                 /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }, children: [
-                  /* @__PURE__ */ jsx(
+                  /* @__PURE__ */ jsxs(
                     "a",
                     {
                       href: `https://openrouter.ai/${p.id}`,
                       target: "_blank",
                       rel: "noreferrer",
                       style: { fontSize: 11, color: "var(--ui-accent-secondary)", textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 2 },
-                      children: "Détails ↗"
+                      children: [
+                        t.news.details,
+                        " ↗"
+                      ]
                     }
                   ),
                   /* @__PURE__ */ jsx(
@@ -24681,7 +24682,7 @@ function NewsPanel(props) {
                         color: isTracked(p.id) ? "var(--ui-text-quaternary)" : p._isChallenger ? "var(--ui-bg-editor)" : "var(--ui-red)",
                         boxShadow: !isTracked(p.id) && p._isChallenger ? "0 1px 4px color-mix(in srgb, var(--ui-orange) 40%, transparent)" : "none"
                       },
-                      children: isTracked(p.id) ? "Déjà suivi" : "➕ Suivre"
+                      children: isTracked(p.id) ? t.news.tracked : t.news.follow
                     }
                   )
                 ] })
@@ -24689,9 +24690,9 @@ function NewsPanel(props) {
             ] }),
             news.price_changes && news.price_changes.length > 0 && /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-blue)", textTransform: "uppercase" }, children: "📉 Changements de tarifs" }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-blue)", textTransform: "uppercase" }, children: t.news.priceChanges }),
                 /* @__PURE__ */ jsxs("label", { style: { fontSize: 10, color: "var(--ui-text-tertiary)", display: "flex", alignItems: "center", gap: 4 }, children: [
-                  "Seuil ≥",
+                  t.news.threshold,
                   /* @__PURE__ */ jsxs(
                     "select",
                     {
@@ -24706,7 +24707,7 @@ function NewsPanel(props) {
                       ]
                     }
                   ),
-                  "/ 1j ou 7j"
+                  t.news.thresholdUnit
                 ] })
               ] }),
               /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
@@ -24729,14 +24730,17 @@ function NewsPanel(props) {
                         "Date : ",
                         fmtDate2(pc.changed_at)
                       ] }),
-                      /* @__PURE__ */ jsx(
+                      /* @__PURE__ */ jsxs(
                         "a",
                         {
                           href: `https://openrouter.ai/${pc.id}`,
                           target: "_blank",
                           rel: "noreferrer",
                           style: { fontSize: 11, color: "var(--ui-blue)", textDecoration: "underline" },
-                          children: "Détails ↗"
+                          children: [
+                            t.news.details,
+                            " ↗"
+                          ]
                         }
                       )
                     ] })
@@ -24768,20 +24772,12 @@ function NewsPanel(props) {
             ] }),
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, children: [
-                /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-green)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }, children: [
-                  "🚀 Nouveautés (",
-                  profileName,
-                  ")"
-                ] }),
-                /* @__PURE__ */ jsxs("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
-                  processedNewModels.length,
-                  " modèle",
-                  processedNewModels.length > 1 ? "s" : ""
-                ] })
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-green)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }, children: t.news.newModelsHeading(profileName) }),
+                /* @__PURE__ */ jsx("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: t.news.nModels(processedNewModels.length) })
               ] }),
               /* @__PURE__ */ jsxs("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: "var(--radius-sm)", padding: 6, marginBottom: 8, display: "flex", flexDirection: "column", gap: 6, fontSize: 11, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
                 /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { color: "var(--ui-text-secondary)", fontWeight: 600 }, children: "Fenêtre :" }),
+                  /* @__PURE__ */ jsx("span", { style: { color: "var(--ui-text-secondary)", fontWeight: 600 }, children: t.news.windowLabel }),
                   /* @__PURE__ */ jsxs(
                     "select",
                     {
@@ -24792,18 +24788,18 @@ function NewsPanel(props) {
                       },
                       style: { fontSize: 11, padding: "2px 4px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)" },
                       children: [
-                        /* @__PURE__ */ jsx("option", { value: "1m", children: "1 mois (défaut)" }),
-                        /* @__PURE__ */ jsx("option", { value: "2m", children: "2 mois" }),
-                        /* @__PURE__ */ jsx("option", { value: "3m", children: "3 mois" }),
-                        /* @__PURE__ */ jsx("option", { value: "6m", children: "6 mois" }),
-                        /* @__PURE__ */ jsx("option", { value: "1y", children: "1 an" }),
-                        /* @__PURE__ */ jsx("option", { value: "all", children: "Tout" })
+                        /* @__PURE__ */ jsx("option", { value: "1m", children: t.news.windowOpts["1m"] }),
+                        /* @__PURE__ */ jsx("option", { value: "2m", children: t.news.windowOpts["2m"] }),
+                        /* @__PURE__ */ jsx("option", { value: "3m", children: t.news.windowOpts["3m"] }),
+                        /* @__PURE__ */ jsx("option", { value: "6m", children: t.news.windowOpts["6m"] }),
+                        /* @__PURE__ */ jsx("option", { value: "1y", children: t.news.windowOpts["1y"] }),
+                        /* @__PURE__ */ jsx("option", { value: "all", children: t.news.windowOpts["all"] })
                       ]
                     }
                   )
                 ] }),
                 /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { color: "var(--ui-text-secondary)", fontWeight: 600 }, children: "Trier par :" }),
+                  /* @__PURE__ */ jsx("span", { style: { color: "var(--ui-text-secondary)", fontWeight: 600 }, children: t.news.sortBy }),
                   /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 4 }, children: [
                     /* @__PURE__ */ jsx("button", { onClick: () => setNewsSortBy("date"), style: {
                       padding: "2px 6px",
@@ -24814,7 +24810,7 @@ function NewsPanel(props) {
                       fontWeight: newsSortBy === "date" ? 700 : 500,
                       cursor: "pointer",
                       fontSize: 10
-                    }, children: "📅 Date" }),
+                    }, children: t.news.sortDate }),
                     /* @__PURE__ */ jsx("button", { onClick: () => setNewsSortBy("score"), style: {
                       padding: "2px 6px",
                       borderRadius: 4,
@@ -24824,11 +24820,11 @@ function NewsPanel(props) {
                       fontWeight: newsSortBy === "score" ? 700 : 500,
                       cursor: "pointer",
                       fontSize: 10
-                    }, children: "⭐ Score" })
+                    }, children: t.news.sortScore })
                   ] })
                 ] })
               ] }),
-              processedNewModels.length === 0 ? /* @__PURE__ */ jsx("p", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", fontStyle: "italic" }, children: "Aucune nouveauté sur cette période." }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+              processedNewModels.length === 0 ? /* @__PURE__ */ jsx("p", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", fontStyle: "italic" }, children: t.news.noNewModels }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
                 processedNewModels.slice(0, newsVisibleLimit).map((nm) => /* @__PURE__ */ jsxs("div", { style: {
                   background: nm._isChallenger ? "color-mix(in srgb, var(--ui-yellow) 8%, var(--ui-bg-editor))" : "var(--ui-row-hover-background)",
                   border: nm._isChallenger ? "1px solid var(--ui-yellow)" : "1px solid var(--ui-stroke-tertiary)",
@@ -24858,14 +24854,17 @@ function NewsPanel(props) {
                       fmtPrice2(nm.completion_price)
                     ] }),
                     /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
-                      /* @__PURE__ */ jsx(
+                      /* @__PURE__ */ jsxs(
                         "a",
                         {
                           href: `https://openrouter.ai/${nm.id}`,
                           target: "_blank",
                           rel: "noreferrer",
                           style: { fontSize: 11, color: "var(--ui-accent-secondary)", textDecoration: "underline" },
-                          children: "Détails ↗"
+                          children: [
+                            t.news.details,
+                            " ↗"
+                          ]
                         }
                       ),
                       /* @__PURE__ */ jsx(
@@ -24884,7 +24883,7 @@ function NewsPanel(props) {
                             color: isTracked(nm.id) ? "var(--ui-text-quaternary)" : nm._isChallenger ? "var(--ui-bg-editor)" : "var(--ui-accent-secondary)",
                             boxShadow: !isTracked(nm.id) && nm._isChallenger ? "0 1px 4px color-mix(in srgb, var(--ui-orange) 40%, transparent)" : "none"
                           },
-                          children: isTracked(nm.id) ? "Suivi" : "➕ Suivre"
+                          children: isTracked(nm.id) ? t.news.tracked : t.news.follow
                         }
                       )
                     ] })
@@ -24951,6 +24950,15 @@ var LOCALES = {
     results: (n) => `Results (${n})`,
     alreadyTracked: "Tracked",
     add: "Add",
+    show: "Show",
+    hide: "Hide",
+    removeModel: "Remove model",
+    suppressShort: "Del?",
+    clickToShow: "Click to show",
+    clickToHide: "Click to hide",
+    criteriaWeights: "Criteria weights:",
+    resetAllTitle: "Reset every profile and criterion to its default value",
+    resetDefaults: "🔄 Reset defaults",
     ranking: (name) => `🏆 Ranking — ${name}`,
     customCriteria: "Custom criteria",
     table: {
@@ -24973,13 +24981,28 @@ var LOCALES = {
       score: "Score"
     },
     news: {
-      title: "News & Updates",
+      title: "📰 News & Updates",
+      hidePanel: "Hide panel",
+      loading: "Loading news…",
       none: "No news available.",
       promos: "ONGOING PROMOS",
       priceChanges: "PRICE CHANGES",
       newModels: "NEW MODELS",
+      newModelsHeading: (p) => `🚀 New models (${p})`,
+      nModels: (n) => `${n} model${n > 1 ? "s" : ""}`,
       details: "Details",
-      follow: "Follow"
+      follow: "Follow",
+      tracked: "Tracked",
+      top3: "🔥 Top 3!",
+      until: (d) => `⏳ Until ${d}`,
+      threshold: "Threshold ≥",
+      thresholdUnit: "/ 1d or 7d",
+      windowLabel: "Window:",
+      windowOpts: { "1m": "1 month (default)", "2m": "2 months", "3m": "3 months", "6m": "6 months", "1y": "1 year", "all": "All" },
+      sortBy: "Sort by:",
+      sortDate: "📅 Date",
+      sortScore: "⭐ Score",
+      noNewModels: "No new model in this period."
     },
     modal: {
       configTitle: (name) => `⚙️ Tracking profile: ${name}`,
@@ -25044,6 +25067,15 @@ var LOCALES = {
     results: (n) => `Résultats (${n})`,
     alreadyTracked: "Déjà suivi",
     add: "Ajouter",
+    show: "Afficher",
+    hide: "Masquer",
+    removeModel: "Supprimer le modèle",
+    suppressShort: "Suppr?",
+    clickToShow: "Cliquer pour afficher",
+    clickToHide: "Cliquer pour masquer",
+    criteriaWeights: "Pondération des critères :",
+    resetAllTitle: "Réinitialise tous les profils et critères aux valeurs d'origine par défaut",
+    resetDefaults: "🔄 Réinitialiser défauts",
     ranking: (name) => `🏆 Classement ${name}`,
     customCriteria: "Critères personnalisés",
     table: {
@@ -25066,13 +25098,28 @@ var LOCALES = {
       score: "Score"
     },
     news: {
-      title: "Actualités & Nouveautés",
+      title: "📰 Actualités & Nouveautés",
+      hidePanel: "Masquer le volet",
+      loading: "Chargement des actualités…",
       none: "Aucune actualité disponible.",
-      promos: "PROMOS EN COURS",
-      priceChanges: "CHANGEMENTS DE TARIFS",
+      promos: "🏷️ Promos en cours",
+      priceChanges: "📉 Changements de tarifs",
       newModels: "NOUVEAUX MODÈLES",
+      newModelsHeading: (p) => `🚀 Nouveautés (${p})`,
+      nModels: (n) => `${n} modèle${n > 1 ? "s" : ""}`,
       details: "Détails",
-      follow: "Suivre"
+      follow: "➕ Suivre",
+      tracked: "Déjà suivi",
+      top3: "🔥 Top 3 !",
+      until: (d) => `⏳ Jusqu'au ${d}`,
+      threshold: "Seuil ≥",
+      thresholdUnit: "/ 1j ou 7j",
+      windowLabel: "Fenêtre :",
+      windowOpts: { "1m": "1 mois (défaut)", "2m": "2 mois", "3m": "3 mois", "6m": "6 mois", "1y": "1 an", "all": "Tout" },
+      sortBy: "Trier par :",
+      sortDate: "📅 Date",
+      sortScore: "⭐ Score",
+      noNewModels: "Aucune nouveauté sur cette période."
     },
     modal: {
       configTitle: (name) => `⚙️ Profil de suivi : ${name}`,
@@ -25475,11 +25522,7 @@ function App() {
   };
   const addModel = (id) => {
     setAdding(true);
-    api("/models", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id })
-    }).then(() => {
+    api("/models", { method: "POST", body: { id } }).then(() => {
       fetchModels();
       fetchNews();
       setQ("");
@@ -25543,7 +25586,7 @@ function App() {
     if (!editingProfile || autoFilling) return;
     setAutoFilling(true);
     setAutoFillMsg(i18n.modal.autoFillRunning);
-    api("/auto-fill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile_id: editingProfile.id, profile_name: editingProfile.name }) }).then((d) => {
+    api("/auto-fill", { method: "POST", body: { profile_id: editingProfile.id, profile_name: editingProfile.name } }).then((d) => {
       const w = d && d.weights ? d.weights : {};
       setEditingProfile((prev) => prev ? { ...prev, ...w } : prev);
       setAutoFillMsg(i18n.modal.autoFillDone);
@@ -25563,8 +25606,7 @@ function App() {
     const url = isNewProfile ? "/api/profiles" : `/api/profiles/${encodeURIComponent(id)}`;
     api(url, {
       method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editingProfile)
+      body: editingProfile
     }).then((d) => d).then((data) => {
       if (data.profile) {
         setServerProfiles((prev) => ({ ...prev, [data.profile.id]: data.profile }));
@@ -26015,9 +26057,9 @@ function App() {
                     "button",
                     {
                       onClick: () => toggleHidden(m.id),
-                      title: hiddenIds.has(m.id) ? "Afficher" : "Masquer",
+                      title: hiddenIds.has(m.id) ? i18n.show : i18n.hide,
                       style: { background: "none", border: "none", cursor: "pointer", opacity: 0.6, fontSize: 13, marginRight: 4 },
-                      children: hiddenIds.has(m.id) ? "👁" : "👁‍🗨"
+                      children: hiddenIds.has(m.id) ? "👁" : "🙈"
                     }
                   ),
                   confirmDelete === m.id ? /* @__PURE__ */ jsx2(
@@ -26025,13 +26067,13 @@ function App() {
                     {
                       onClick: () => confirmRemove(m.id),
                       style: { background: "var(--ui-red)", color: "var(--ui-bg-editor)", border: "none", borderRadius: 3, padding: "2px 6px", fontSize: 11, cursor: "pointer" },
-                      children: "Suppr?"
+                      children: i18n.suppressShort
                     }
                   ) : /* @__PURE__ */ jsx2(
                     "button",
                     {
                       onClick: () => removeModel(m.id),
-                      title: "Supprimer le modèle",
+                      title: i18n.removeModel,
                       style: { background: "none", border: "none", cursor: "pointer", opacity: 0.4, fontSize: 12 },
                       children: "✕"
                     }
@@ -26104,7 +26146,7 @@ function App() {
                 "span",
                 {
                   onClick: () => toggleRadar(label),
-                  title: hiddenR ? "Cliquer pour afficher" : "Cliquer pour masquer",
+                  title: hiddenR ? i18n.clickToShow : i18n.clickToHide,
                   style: { display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 11, userSelect: "none", opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? "line-through" : "none", padding: "2px 5px", borderRadius: 4, background: hiddenR ? "transparent" : colors[ci2 % colors.length] + "18" },
                   children: [
                     /* @__PURE__ */ jsx2("span", { style: { display: "inline-block", width: 9, height: 9, background: colors[ci2 % colors.length], borderRadius: 2 } }),
@@ -26134,6 +26176,7 @@ function App() {
           addModel,
           trackedIds: new Set(models.filter((m) => m.available).map((m) => m.id)),
           profileName: currentProfile.name,
+          t: i18n,
           fmtDate,
           fmtCtx,
           fmtPrice
@@ -26245,7 +26288,7 @@ function App() {
         ] }),
         /* @__PURE__ */ jsxs2("div", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)", paddingTop: 12 }, children: [
           /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
-            /* @__PURE__ */ jsx2("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: "Pondération des critères :" }),
+            /* @__PURE__ */ jsx2("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.criteriaWeights }),
             /* @__PURE__ */ jsxs2("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
               "Total poids : ",
               /* @__PURE__ */ jsx2("b", { children: Object.values(editingProfile.weights).reduce((a2, b) => a2 + (b || 0), 0) })
@@ -26371,7 +26414,7 @@ function App() {
             "button",
             {
               onClick: resetToDefaultProfiles,
-              title: "Réinitialise tous les profils et critères aux valeurs d'origine par défaut",
+              title: i18n.resetAllTitle,
               style: {
                 background: "none",
                 border: "1px solid var(--ui-stroke-secondary)",
@@ -26382,7 +26425,7 @@ function App() {
                 fontWeight: 500,
                 cursor: "pointer"
               },
-              children: "🔄 Réinitialiser défauts"
+              children: i18n.resetDefaults
             }
           )
         ] }),

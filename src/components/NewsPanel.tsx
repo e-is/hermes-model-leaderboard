@@ -31,6 +31,8 @@ interface NewsPanelProps {
   trackedIds: Set<string>
   // Profile
   profileName: string
+  // i18n bundle
+  t: any
   // Formatters
   fmtDate: (ts?: number) => string
   fmtCtx: (ctx?: number) => string
@@ -46,6 +48,7 @@ export function NewsPanel(props: NewsPanelProps) {
     newsTimeWindow, setNewsTimeWindow,
     addModel, trackedIds,
     profileName,
+    t,
     fmtDate, fmtCtx, fmtPrice,
   } = props
 
@@ -122,15 +125,15 @@ export function NewsPanel(props: NewsPanelProps) {
           position: 'sticky', top: -16, background: 'var(--ui-bg-editor)', paddingTop: 4, zIndex: 1,
         }}>
           <h3 style={{ margin: 0, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ui-text-primary)' }}>
-            📰 Actualités & Nouveautés
+            {t.news.title}
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ui-text-tertiary)', fontSize: 14 }} title="Masquer le volet">✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ui-text-tertiary)', fontSize: 14 }} title={t.news.hidePanel}>✕</button>
         </div>
 
         {loading ? (
-          <p style={{ fontSize: 13, color: 'var(--ui-text-tertiary)' }}>Chargement des actualités…</p>
+          <p style={{ fontSize: 13, color: 'var(--ui-text-tertiary)' }}>{t.news.loading}</p>
         ) : !news ? (
-          <p style={{ fontSize: 13, color: 'var(--ui-text-tertiary)' }}>Aucune actualité disponible.</p>
+          <p style={{ fontSize: 13, color: 'var(--ui-text-tertiary)' }}>{t.news.none}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -138,7 +141,7 @@ export function NewsPanel(props: NewsPanelProps) {
             {processedPromotions.length > 0 && (
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ui-red)', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  🏷️ Promos en cours
+                   {t.news.promos}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {processedPromotions.map((p: any) => (
@@ -164,7 +167,7 @@ export function NewsPanel(props: NewsPanelProps) {
                           </span>
                           {p._isChallenger && (
                             <div style={{ fontSize: 9, background: 'var(--ui-orange)', color: 'var(--ui-bg-editor)', padding: '1px 4px', borderRadius: 3, fontWeight: 700, marginTop: 1 }}>
-                              🔥 Top 3 !
+                              {t.news.top3}
                             </div>
                           )}
                         </div>
@@ -172,13 +175,13 @@ export function NewsPanel(props: NewsPanelProps) {
                       <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4 }}>{p.details}</div>
                       {p.ends_at ? (
                         <div style={{ fontSize: 10, color: p._isChallenger ? 'var(--ui-orange)' : 'var(--ui-text-tertiary)', marginTop: 2 }}>
-                          ⏳ Jusqu'au {p.ends_at}
+                           {t.news.until(p.ends_at)}
                         </div>
                       ) : null}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
                         <a href={`https://openrouter.ai/${p.id}`} target="_blank" rel="noreferrer"
                           style={{ fontSize: 11, color: 'var(--ui-accent-secondary)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                          Détails ↗
+                          {t.news.details} ↗
                         </a>
                         <button
                           onClick={() => addModel(p.id)}
@@ -192,7 +195,7 @@ export function NewsPanel(props: NewsPanelProps) {
                             boxShadow: (!isTracked(p.id) && p._isChallenger) ? '0 1px 4px color-mix(in srgb, var(--ui-orange) 40%, transparent)' : 'none',
                           }}
                         >
-                          {isTracked(p.id) ? 'Déjà suivi' : '➕ Suivre'}
+                          {isTracked(p.id) ? t.news.tracked : t.news.follow}
                         </button>
                       </div>
                     </div>
@@ -206,10 +209,10 @@ export function NewsPanel(props: NewsPanelProps) {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ui-blue)', textTransform: 'uppercase' }}>
-                    📉 Changements de tarifs
+                     {t.news.priceChanges}
                   </div>
                   <label style={{ fontSize: 10, color: 'var(--ui-text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    Seuil ≥
+                    {t.news.threshold}
                     <select
                       value={priceThreshold}
                       onChange={e => setPriceThreshold(Number(e.target.value))}
@@ -220,7 +223,7 @@ export function NewsPanel(props: NewsPanelProps) {
                       <option value={10}>10%</option>
                       <option value={25}>25%</option>
                     </select>
-                    / 1j ou 7j
+                    {t.news.thresholdUnit}
                   </label>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -242,7 +245,7 @@ export function NewsPanel(props: NewsPanelProps) {
                         </span>
                         <a href={`https://openrouter.ai/${pc.id}`} target="_blank" rel="noreferrer"
                           style={{ fontSize: 11, color: 'var(--ui-blue)', textDecoration: 'underline' }}>
-                          Détails ↗
+                          {t.news.details} ↗
                         </a>
                       </div>
                     </div>
@@ -269,52 +272,52 @@ export function NewsPanel(props: NewsPanelProps) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ui-green)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  🚀 Nouveautés ({profileName})
+                   {t.news.newModelsHeading(profileName)}
                 </div>
                 <span style={{ fontSize: 11, color: 'var(--ui-text-tertiary)' }}>
-                  {processedNewModels.length} modèle{processedNewModels.length > 1 ? 's' : ''}
+                  {t.news.nModels(processedNewModels.length)}
                 </span>
               </div>
 
               {/* Filtres */}
               <div style={{ background: 'var(--ui-row-hover-background)', borderRadius: 'var(--radius-sm)', padding: 6, marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, border: '1px solid var(--ui-stroke-tertiary)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--ui-text-secondary)', fontWeight: 600 }}>Fenêtre :</span>
+                  <span style={{ color: 'var(--ui-text-secondary)', fontWeight: 600 }}>{t.news.windowLabel}</span>
                   <select
                     value={newsTimeWindow}
                     onChange={e => { setNewsTimeWindow(e.target.value as NewsTimeWindow); setNewsVisibleLimit(() => 8) }}
                     style={{ fontSize: 11, padding: '2px 4px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)' }}
                   >
-                    <option value="1m">1 mois (défaut)</option>
-                    <option value="2m">2 mois</option>
-                    <option value="3m">3 mois</option>
-                    <option value="6m">6 mois</option>
-                    <option value="1y">1 an</option>
-                    <option value="all">Tout</option>
+                    <option value="1m">{t.news.windowOpts["1m"]}</option>
+                    <option value="2m">{t.news.windowOpts["2m"]}</option>
+                    <option value="3m">{t.news.windowOpts["3m"]}</option>
+                    <option value="6m">{t.news.windowOpts["6m"]}</option>
+                    <option value="1y">{t.news.windowOpts["1y"]}</option>
+                    <option value="all">{t.news.windowOpts["all"]}</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--ui-text-secondary)', fontWeight: 600 }}>Trier par :</span>
+                  <span style={{ color: 'var(--ui-text-secondary)', fontWeight: 600 }}>{t.news.sortBy}</span>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button onClick={() => setNewsSortBy('date')} style={{
                       padding: '2px 6px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)',
                       background: newsSortBy === 'date' ? 'var(--ui-green)' : 'var(--ui-bg-editor)',
                       color: newsSortBy === 'date' ? 'var(--ui-bg-editor)' : 'var(--ui-text-secondary)',
                       fontWeight: newsSortBy === 'date' ? 700 : 500, cursor: 'pointer', fontSize: 10,
-                    }}>📅 Date</button>
+                    }}>{t.news.sortDate}</button>
                     <button onClick={() => setNewsSortBy('score')} style={{
                       padding: '2px 6px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)',
                       background: newsSortBy === 'score' ? 'var(--ui-orange)' : 'var(--ui-bg-editor)',
                       color: newsSortBy === 'score' ? 'var(--ui-bg-editor)' : 'var(--ui-text-secondary)',
                       fontWeight: newsSortBy === 'score' ? 700 : 500, cursor: 'pointer', fontSize: 10,
-                    }}>⭐ Score</button>
+                    }}>{t.news.sortScore}</button>
                   </div>
                 </div>
               </div>
 
               {/* Liste */}
               {processedNewModels.length === 0 ? (
-                <p style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', fontStyle: 'italic' }}>Aucune nouveauté sur cette période.</p>
+                <p style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', fontStyle: 'italic' }}>{t.news.noNewModels}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {processedNewModels.slice(0, newsVisibleLimit).map((nm: any) => (
@@ -346,7 +349,7 @@ export function NewsPanel(props: NewsPanelProps) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <a href={`https://openrouter.ai/${nm.id}`} target="_blank" rel="noreferrer"
                             style={{ fontSize: 11, color: 'var(--ui-accent-secondary)', textDecoration: 'underline' }}>
-                            Détails ↗
+                            {t.news.details} ↗
                           </a>
                           <button
                             onClick={() => addModel(nm.id)}
@@ -360,7 +363,7 @@ export function NewsPanel(props: NewsPanelProps) {
                               boxShadow: (!isTracked(nm.id) && nm._isChallenger) ? '0 1px 4px color-mix(in srgb, var(--ui-orange) 40%, transparent)' : 'none',
                             }}
                           >
-                            {isTracked(nm.id) ? 'Suivi' : '➕ Suivre'}
+                            {isTracked(nm.id) ? t.news.tracked : t.news.follow}
                           </button>
                         </div>
                       </div>
