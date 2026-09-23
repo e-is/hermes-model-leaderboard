@@ -287,7 +287,7 @@ def test_auto_fill_parses_model_json(client_nomonkey, monkeypatch):
         "intelligence": 5, "coding": 4, "agentic": 3, "price_in": 2,
         "price_out": 2, "cache_read": 0, "context": 1, "tools": 5,
         "has_vision": 0, "open_weights": 1, "fits_64gb": 0,
-        "tools_vision": 2,
+        
     }) + " (weights suggested)"
 
     def fake_run(*a, **k):

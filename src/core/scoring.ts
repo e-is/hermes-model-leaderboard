@@ -17,7 +17,6 @@ export function computeGenericScore(m: any, weights: Record<string, number>, max
   const hasT = (m.supported_parameters || []).includes('tools') ? 1 : 0
   const isOpen = m.open_weights ? 1 : 0
   const fits64 = m.gpu?.fits_64gb ? 1 : 0
-  const toolsVision = hasT * hasV
 
 
   const values: Record<string, number> = {
@@ -32,7 +31,6 @@ export function computeGenericScore(m: any, weights: Record<string, number>, max
     has_vision: hasV,
     open_weights: isOpen,
     fits_64gb: fits64,
-    tools_vision: toolsVision,
   }
 
   let weightedSum = 0

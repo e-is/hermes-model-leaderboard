@@ -71,7 +71,6 @@
     "id": "qa",
     "name": "QA",
     "weights": {
-      "tools_vision": 5,
       "coding": 4,
       "price_out": 4,
       "intelligence": 3,
@@ -97,8 +96,7 @@
       "has_vision": 1,
       "open_weights": 0,
       "fits_64gb": 0,
-      "cache_read": 0,
-      "tools_vision": 0
+      "cache_read": 0
     }
   }
 }

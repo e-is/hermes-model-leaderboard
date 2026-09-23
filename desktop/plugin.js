@@ -25039,7 +25039,6 @@ var LOCALES = {
       has_vision: "Vision",
       open_weights: "Open weights",
       fits_64gb: "Local VRAM ≤ 64GB",
-      tools_vision: "Tools + vision",
       d_intelligence: "Global reasoning and knowledge depth",
       d_coding: "Code generation quality",
       d_agentic: "Agentic capabilities (multi-step autonomy)",
@@ -25050,8 +25049,7 @@ var LOCALES = {
       d_tools: "Native function/tool calling (API, Bash, etc.)",
       d_has_vision: "Ability to process images, screenshots",
       d_open_weights: "Open weights, self-hostable",
-      d_fits_64gb: "Feasibility of local execution on a standard GPU (≤ 64GB)",
-      d_tools_vision: "Combined tools and vision (QA Playwright)"
+      d_fits_64gb: "Feasibility of local execution on a standard GPU (≤ 64GB)"
     }
   },
   fr: {
@@ -25158,7 +25156,6 @@ var LOCALES = {
       has_vision: "Support Vision (Multimodal)",
       open_weights: "Open-weights (Poids ouverts)",
       fits_64gb: "Local VRAM ≤ 64GB",
-      tools_vision: "Tools + Vision (QA Playwright)",
       d_intelligence: "Intelligence globale",
       d_coding: "Génération de code",
       d_agentic: "Capacités agentiques",
@@ -25169,8 +25166,7 @@ var LOCALES = {
       d_tools: "Appel natif de fonctions et outils externes (API, Bash, etc.)",
       d_has_vision: "Capacité à traiter les images, captures d’écran et diagrammes",
       d_open_weights: "Poids ouverts, auto-hébergeable",
-      d_fits_64gb: "Faisabilité d’exécution locale sur GPU standard (≤ 64GB)",
-      d_tools_vision: "Outils et vision combinés (QA Playwright)"
+      d_fits_64gb: "Faisabilité d’exécution locale sur GPU standard (≤ 64GB)"
     }
   }
 };
@@ -25202,7 +25198,6 @@ function computeGenericScore(m, weights, maxes) {
   const hasT = (m.supported_parameters || []).includes("tools") ? 1 : 0;
   const isOpen = m.open_weights ? 1 : 0;
   const fits64 = m.gpu?.fits_64gb ? 1 : 0;
-  const toolsVision = hasT * hasV;
   const values = {
     intelligence: intel,
     coding,
@@ -25214,8 +25209,7 @@ function computeGenericScore(m, weights, maxes) {
     tools: hasT,
     has_vision: hasV,
     open_weights: isOpen,
-    fits_64gb: fits64,
-    tools_vision: toolsVision
+    fits_64gb: fits64
   };
   let weightedSum = 0;
   for (const [k2, w] of Object.entries(weights)) {
@@ -25240,8 +25234,7 @@ var AVAILABLE_CRITERIA = [
   { key: "tools", label: "Support Tool Calls", icon: "🛠️", desc: "Appel natif de fonctions et outils externes (API, Bash, etc.)" },
   { key: "has_vision", label: "Support Vision (Multimodal)", icon: "👁️", desc: "Capacité à traiter les images, captures d'écran et diagrammes" },
   { key: "open_weights", label: "Open-weights (Poids ouverts)", icon: "🔓", desc: "Modèles open-weights téléchargeables (Hugging Face)" },
-  { key: "fits_64gb", label: "Local VRAM ≤ 64GB", icon: "🖥️", desc: "Faisabilité d'exécution locale sur GPU standard (≤ 64GB)" },
-  { key: "tools_vision", label: "Tools + Vision (QA Playwright)", icon: "🎯", desc: "Bonus combiné si le modèle gère à la fois les Tools et la Vision" }
+  { key: "fits_64gb", label: "Local VRAM ≤ 64GB", icon: "🖥️", desc: "Faisabilité d'exécution locale sur GPU standard (≤ 64GB)" }
 ];
 var DEFAULT_PROFILES = {
   architecte: {
@@ -25267,7 +25260,7 @@ var DEFAULT_PROFILES = {
   qa: {
     id: "qa",
     name: "QA",
-    weights: { tools_vision: 5, coding: 4, price_out: 4, intelligence: 3, context: 2, agentic: 1 }
+    weights: { coding: 4, price_out: 4, intelligence: 3, context: 2, agentic: 1 }
   }
 };
 function fmtPrice(v) {
@@ -25451,8 +25444,7 @@ function App() {
     tools: 0,
     has_vision: 0,
     open_weights: 0,
-    fits_64gb: 0,
-    tools_vision: 0
+    fits_64gb: 0
   };
   const currentProfile = useMemo4(() => {
     return effectiveProfiles[selectedProfileId] || {
@@ -25582,8 +25574,7 @@ function App() {
         has_vision: 1,
         open_weights: 0,
         fits_64gb: 0,
-        cache_read: 0,
-        tools_vision: 0
+        cache_read: 0
       }
     });
     setIsNewProfile(true);
@@ -25767,8 +25758,7 @@ function App() {
       { key: "tools", label: "Tool Calls", getValue: (m) => (m.supported_parameters || []).includes("tools") ? 100 : 0 },
       { key: "has_vision", label: "Vision", getValue: (m) => m.has_vision ? 100 : 0 },
       { key: "open_weights", label: "Open weight", getValue: (m) => m.open_weights ? 100 : 0 },
-      { key: "fits_64gb", label: "VRAM ≤ 64G", getValue: (m) => m.gpu?.fits_64gb ? 100 : 0 },
-      { key: "tools_vision", label: "Tools+Vision", getValue: (m) => (m.supported_parameters || []).includes("tools") && m.has_vision ? 100 : 0 }
+      { key: "fits_64gb", label: "VRAM ≤ 64G", getValue: (m) => m.gpu?.fits_64gb ? 100 : 0 }
     ];
     const activeCriteria = criteriaDefinitions.filter((c2) => (currentProfile.weights[c2.key] ?? 0) > 0);
     const finalCriteria = activeCriteria.length > 0 ? activeCriteria : criteriaDefinitions.slice(0, 5);

@@ -36,7 +36,7 @@ test('perfect model on all-weights profile scores 100', () => {
   const weights = {
     intelligence: 5, coding: 5, agentic: 5, price_in: 3, price_out: 3,
     cache_read: 2, context: 3, tools: 2, has_vision: 1,
-    open_weights: 1, fits_64gb: 1, tools_vision: 1
+    open_weights: 1, fits_64gb: 1
   }
   assert.equal(computeGenericScore(baseModel as any, weights, MAXES), 100)
 })

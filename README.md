@@ -35,7 +35,7 @@ that file to re-seed.
 ## Features
 
 - 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
-- ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 12 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
+- ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 11 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
 - 🤖 **Auto-fill** — a button in the criteria dialog asks the Hermes default model (`hermes -z`, one-shot) to propose weights for that profile. Never automatic, always user-triggered.
 - 🔎 **Search** — filters the tracked table live *and* queries OpenRouter for untracked models (checkbox to opt out), with a one-click add.
 - 📰 **OpenRouter news** — side panel: promotions (with end dates), price changes (rolling 1 d / 7 d, configurable threshold), new models (sort by date or score, +1-week pagination).

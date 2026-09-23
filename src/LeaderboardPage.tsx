@@ -112,7 +112,6 @@ export const AVAILABLE_CRITERIA = [
   { key: 'has_vision', label: 'Support Vision (Multimodal)', icon: '👁️', desc: 'Capacité à traiter les images, captures d\'écran et diagrammes' },
   { key: 'open_weights', label: 'Open-weights (Poids ouverts)', icon: '🔓', desc: 'Modèles open-weights téléchargeables (Hugging Face)' },
   { key: 'fits_64gb', label: 'Local VRAM ≤ 64GB', icon: '🖥️', desc: 'Faisabilité d\'exécution locale sur GPU standard (≤ 64GB)' },
-  { key: 'tools_vision', label: 'Tools + Vision (QA Playwright)', icon: '🎯', desc: 'Bonus combiné si le modèle gère à la fois les Tools et la Vision' },
 ] as const
 
 const DEFAULT_PROFILES: Record<string, ProfileConfig> = {
@@ -139,7 +138,7 @@ const DEFAULT_PROFILES: Record<string, ProfileConfig> = {
   qa: {
     id: 'qa',
     name: 'QA',
-    weights: { tools_vision: 5, coding: 4, price_out: 4, intelligence: 3, context: 2, agentic: 1 }
+    weights: { coding: 4, price_out: 4, intelligence: 3, context: 2, agentic: 1 }
   }
 }
 
@@ -341,7 +340,7 @@ export default function App() {
     intelligence: 5, coding: 0, agentic: 0,
     price_in: 3, price_out: 3, cache_read: 0,
     context: 0, tools: 0, has_vision: 0,
-    open_weights: 0, fits_64gb: 0, tools_vision: 0,
+    open_weights: 0, fits_64gb: 0, 
   }
 
   const currentProfile = useMemo(() => {
@@ -488,8 +487,7 @@ export default function App() {
         has_vision: 1,
         open_weights: 0,
         fits_64gb: 0,
-        cache_read: 0,
-        tools_vision: 0
+        cache_read: 0
       }
     })
     setIsNewProfile(true)
@@ -716,7 +714,6 @@ export default function App() {
       { key: 'has_vision', label: 'Vision', getValue: m => m.has_vision ? 100 : 0 },
       { key: 'open_weights', label: 'Open weight', getValue: m => m.open_weights ? 100 : 0 },
       { key: 'fits_64gb', label: 'VRAM ≤ 64G', getValue: m => m.gpu?.fits_64gb ? 100 : 0 },
-      { key: 'tools_vision', label: 'Tools+Vision', getValue: m => ((m.supported_parameters || []).includes('tools') && m.has_vision) ? 100 : 0 },
     ]
 
     const activeCriteria = criteriaDefinitions.filter(c => (currentProfile.weights[c.key] ?? 0) > 0)

@@ -562,7 +562,7 @@ DEFAULT_PROFILES = {
         "price_in": 5, "intelligence": 4, "price_out": 3, "tools": 3, "context": 3,
         "coding": 0, "agentic": 0, "has_vision": 0, "open_weights": 0, "fits_64gb": 0, "cache_read": 0}},
     "qa": {"id": "qa", "name": "QA", "weights": {
-        "tools_vision": 5, "coding": 4, "price_out": 4, "intelligence": 3, "context": 2,
+        "coding": 4, "price_out": 4, "intelligence": 3, "context": 2,
         "agentic": 1, "price_in": 0, "open_weights": 0, "fits_64gb": 0, "cache_read": 0}},
 }
 
@@ -617,13 +617,12 @@ def compute_generic_score(model: dict, weights: dict, maxes: dict) -> float:
     has_t = 1.0 if "tools" in (model.get("supported_parameters") or []) else 0.0
     is_open = 1.0 if model.get("open_weights") else 0.0
     fits_64 = 1.0 if (model.get("gpu") and model["gpu"].get("fits_64gb")) else 0.0
-    tools_vision = has_t * has_v
 
     values = {
         "intelligence": intel, "coding": coding, "agentic": agentic,
         "price_in": p_in, "price_out": p_out, "cache_read": p_cache, "context": ctx,
         "tools": has_t, "has_vision": has_v, "open_weights": is_open,
-        "fits_64gb": fits_64, "tools_vision": tools_vision,
+        "fits_64gb": fits_64,
     }
 
     weighted_sum = sum(values.get(k, 0.0) * w for k, w in weights.items() if w > 0)
@@ -660,7 +659,6 @@ _CRITERIA_DOC = {
     "has_vision": "image / screenshot understanding",
     "open_weights": "preference for open-weights, self-hostable models",
     "fits_64gb": "runnable locally on a 64GB GPU",
-    "tools_vision": "combined tools + vision (browser QA)",
 }
 
 

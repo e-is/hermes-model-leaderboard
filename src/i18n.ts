@@ -111,8 +111,7 @@ const LOCALES = {
       has_vision: 'Vision',
       open_weights: 'Open weights',
       fits_64gb: 'Local VRAM ≤ 64GB',
-      tools_vision: 'Tools + vision',
-        d_intelligence: 'Global reasoning and knowledge depth',
+          d_intelligence: 'Global reasoning and knowledge depth',
       d_coding: 'Code generation quality',
       d_agentic: 'Agentic capabilities (multi-step autonomy)',
       d_price_in: 'Importance of cheap input tokens',
@@ -123,8 +122,7 @@ const LOCALES = {
       d_has_vision: 'Ability to process images, screenshots',
       d_open_weights: 'Open weights, self-hostable',
       d_fits_64gb: 'Feasibility of local execution on a standard GPU (≤ 64GB)',
-      d_tools_vision: 'Combined tools and vision (QA Playwright)',
-      }
+        }
   },
   fr: {
     title: 'LLM Model Leaderboard',
@@ -230,8 +228,7 @@ const LOCALES = {
       has_vision: 'Support Vision (Multimodal)',
       open_weights: 'Open-weights (Poids ouverts)',
       fits_64gb: 'Local VRAM ≤ 64GB',
-      tools_vision: 'Tools + Vision (QA Playwright)',
-        d_intelligence: 'Intelligence globale',
+          d_intelligence: 'Intelligence globale',
       d_coding: 'Génération de code',
       d_agentic: 'Capacités agentiques',
       d_price_in: 'Importance d\u2019un prix bas des tokens d\u2019entrée',
@@ -242,8 +239,7 @@ const LOCALES = {
       d_has_vision: 'Capacité à traiter les images, captures d\u2019écran et diagrammes',
       d_open_weights: 'Poids ouverts, auto-hébergeable',
       d_fits_64gb: 'Faisabilité d\u2019exécution locale sur GPU standard (≤ 64GB)',
-      d_tools_vision: 'Outils et vision combinés (QA Playwright)',
-      }
+        }
   }
 } as const
 

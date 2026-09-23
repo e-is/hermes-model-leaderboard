@@ -1,7 +1,7 @@
 {
-  "name": "hermes-model-leaderboard",
-  "label": "LLM Dashboard",
-  "description": "Comparatif LLM (contexte, prix, benchmarks), scoring par profil avec radar, veille OpenRouter et suivi de consommation.",
+  "name": "model-leaderboard",
+  "label": "Model Leaderboard",
+  "description": "Comparatif LLM (contexte, prix, benchmarks), scoring par profil avec radar, veille OpenRouter. Le renderer du desktop est le plugin ; ce fichier décrit l'API backend.",
   "icon": "Graph",
   "version": "0.1.0",
   "api": "plugin_api.py"
