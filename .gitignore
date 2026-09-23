@@ -8,3 +8,7 @@ dist/
 backend/.venv/
 .DS_Store
 .idea/
+
+# Runtime state / caches — never versioned
+dashboard/data/_openrouter_cache.json
+dashboard/data/_hf_langs_cache.json
