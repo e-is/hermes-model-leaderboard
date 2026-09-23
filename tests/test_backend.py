@@ -22,6 +22,25 @@ client = TestClient(_app)
 
 PREFIX = "/api/plugins/hermes-model-leaderboard"
 
+
+@pytest.fixture(autouse=True)
+def _isolate_data_dir(tmp_path, monkeypatch):
+    """Point every data path at a throwaway dir.
+
+    Without this, a test that reaches a writer (``_save_models``,
+    ``_record_price_history``, profile persistence) mutates the REAL
+    ``dashboard/data/*.json`` — which silently rewrote the tracked-model list
+    in the repo once. Tests must never touch shipped data.
+    """
+    monkeypatch.setattr(main_mod, "DATA_DIR", tmp_path, raising=False)
+    for attr in (
+        "MODELS_FILE", "BENCHMARKS_FILE", "PRICE_HISTORY_FILE", "LANGUAGES_FILE",
+        "CACHE_FILE", "PROFILES_FILE", "HF_LANGS_CACHE_FILE",
+    ):
+        if hasattr(main_mod, attr):
+            monkeypatch.setattr(main_mod, attr, tmp_path / attr.lower(), raising=False)
+    return tmp_path
+
 @pytest.fixture()
 def client_nomonkey(monkeypatch):
     """TestClient whose /hermes-profiles cannot import hermes_cli."""
@@ -352,3 +371,36 @@ def test_news_rolling_price_variations(client_nomonkey, monkeypatch):
     # 24h rolling window: the most recent point at least 24h old is the
     # 2-days-ago sample (2.0) -> 1.25/2.0 = -37.5%
     assert row["percent_1d"] == -37.5
+
+
+# ---------------------------------------------------------------------------
+# 422 regression: the desktop bridge JSON.stringify()es the request body itself
+# (electron/main.ts: `Buffer.from(JSON.stringify(options.body))`), so a plugin
+# that pre-stringifies its body double-encodes it — the JSON *string* reaches
+# the Pydantic model and FastAPI answers 422 "Input should be a valid
+# dictionary". The plugin must always pass a plain object.
+# ---------------------------------------------------------------------------
+def test_post_models_accepts_object_body(monkeypatch):
+    monkeypatch.setattr(main_mod, "_load_models", lambda: [])
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    saved = {}
+    monkeypatch.setattr(main_mod, "_save_models", lambda m: saved.update({"models": m}))
+
+    res = client.post(f"{PREFIX}/models", json={"id": "x-ai/grok-4.7"})
+    assert res.status_code == 200, res.text
+    assert res.json()["model"]["id"] == "x-ai/grok-4.7"
+
+
+def test_post_models_rejects_double_encoded_body(monkeypatch):
+    """Documents the desktop-side failure mode we must never trigger again."""
+    monkeypatch.setattr(main_mod, "_load_models", lambda: [])
+    # What the bridge produces when the plugin pre-stringifies: a JSON *string*
+    # wrapping the payload — `"{\"id\":\"x-ai/grok-4.7\"}"`.
+    double_encoded = json.dumps(json.dumps({"id": "x-ai/grok-4.7"}))
+    res = client.post(
+        f"{PREFIX}/models",
+        content=double_encoded,
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 422
+    assert res.json()["detail"][0]["type"] == "model_attributes_type"
