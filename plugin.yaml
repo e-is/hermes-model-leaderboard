@@ -3,5 +3,5 @@ version: "0.1.0"
 description: "LLM model leaderboard for Hermes Desktop — model comparison (context, prices, Artificial Analysis indices), per-profile scoring with radar, OpenRouter news feed and API consumption tracking. Ported from the sumaris-agent llm-dashboard web app."
 author: e-is
 kind: standalone
-requires_hermes: ">=0.19"
+requires_hermes: ">=0.21"
 platforms: []
