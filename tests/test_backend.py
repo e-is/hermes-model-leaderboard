@@ -272,56 +272,149 @@ def test_hermes_profiles_fallback(client_nomonkey):
 
 
 # ---------------------------------------------------------------------------
-# Auto-fill (subprocess mocked — no real model call in tests)
+# Auto-fill — the host LLM facade (ctx.llm) is faked: no model call in tests
 # ---------------------------------------------------------------------------
 
-class _FakeProc:
-    def __init__(self, stdout):
-        self.stdout = stdout
-        self.stderr = ""
+class _FakeStructuredResult:
+    def __init__(self, text="", parsed=None, content_type="json"):
+        self.text = text
+        self.parsed = parsed
+        self.content_type = content_type
 
 
-def test_auto_fill_parses_model_json(client_nomonkey, monkeypatch):
-    import subprocess as _sp
-    reply = "Here you go: " + json.dumps({
-        "intelligence": 5, "coding": 4, "agentic": 3, "price_in": 2,
-        "price_out": 2, "cache_read": 0, "context": 1, "tools": 5,
-        "has_vision": 0, "open_weights": 1, "fits_64gb": 0,
-        
-    }) + " (weights suggested)"
+@pytest.fixture()
+def fake_llm(monkeypatch):
+    """Install a fake ``ctx.llm`` behind the shared plugin-context module.
 
-    def fake_run(*a, **k):
-        return _FakeProc(reply)
+    ``dashboard/plugin_api.py`` reaches the host through
+    ``sys.modules['hermes_model_leaderboard_shared_ctx']`` (see ``plugin_ctx``), so
+    injecting a stand-in module is enough — no Hermes host, no subprocess.
+    ``install()`` returns the fake facade instance to inspect the call kwargs.
+    """
+    import sys
+    import types
 
-    monkeypatch.setattr(_sp, "run", fake_run)
-    monkeypatch.setattr(main_mod.shutil, "which", lambda name: "/usr/bin/true")
+    def install(result=None, error=None):
+        class _Llm:
+            calls = []
+
+            def complete_structured(self, **kwargs):
+                _Llm.calls.append(kwargs)
+                if error is not None:
+                    raise error
+                return result
+
+        module = types.ModuleType("hermes_model_leaderboard_shared_ctx")
+        module.get_llm = lambda: _Llm()  # type: ignore[attr-defined]  # dynamic module attr
+        monkeypatch.setitem(sys.modules, "hermes_model_leaderboard_shared_ctx", module)
+        return _Llm
+
+    return install
+
+
+def test_auto_fill_uses_host_llm(client_nomonkey, fake_llm):
+    weights = {k: 3 for k in main_mod._CRITERIA_DOC}
+    weights.update(intelligence=5, tools=5)
+    llm = fake_llm(result=_FakeStructuredResult(parsed=weights))
+
+    res = client_nomonkey.post(f"{PREFIX}/auto-fill", json={"profile_id": "qa"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["weights"]["intelligence"] == 5 and body["weights"]["tools"] == 5
+    assert all(0 <= v <= 5 for v in body["weights"].values())
+
+    # The call goes through the host facade with a real schema, never a subprocess.
+    (kwargs,) = llm.calls
+    assert kwargs["json_schema"]["required"] == list(main_mod._CRITERIA_DOC)
+    assert kwargs["input"] and kwargs["input"][0]["type"] == "text"
+    assert "qa" in kwargs["instructions"]
+
+
+def test_auto_fill_falls_back_to_text_extraction(client_nomonkey, fake_llm):
+    """A host that hands back unparsed text still works (fenced, JSON5-ish answer)."""
+    reply = "Sure:\n```json\n{intelligence: 5, coding: 4, tools: '3',}\n```\n"
+    llm = fake_llm(result=_FakeStructuredResult(text=reply, parsed=None, content_type="text"))
+
     res = client_nomonkey.post(f"{PREFIX}/auto-fill", json={"profile_id": "qa"})
     assert res.status_code == 200
     w = res.json()["weights"]
-    assert w["intelligence"] == 5 and w["tools"] == 5
-    assert all(0 <= v <= 5 for v in w.values())
+    assert w["intelligence"] == 5 and w["coding"] == 4 and w["tools"] == 3
+    assert llm.calls  # the LLM was asked first; extraction is only a fallback
 
 
-def test_auto_fill_rejects_answer_without_json(client_nomonkey, monkeypatch):
-    import subprocess as _sp
-
-    def fake_run(*a, **k):
-        return _FakeProc("Sorry, I don't know.")
-
-    monkeypatch.setattr(_sp, "run", fake_run)
-    monkeypatch.setattr(main_mod.shutil, "which", lambda name: "/usr/bin/true")
+def test_auto_fill_rejects_answer_without_json(client_nomonkey, fake_llm):
+    fake_llm(result=_FakeStructuredResult(text="Sorry, I don't know.", parsed=None, content_type="text"))
     res = client_nomonkey.post(f"{PREFIX}/auto-fill", json={"profile_id": "qa"})
     assert res.status_code == 503
 
 
-def test_auto_fill_clamps_out_of_range_weights(client_nomonkey, monkeypatch):
-    import subprocess as _sp
-    reply = json.dumps({k: 9 for k in main_mod._CRITERIA_DOC})
-    monkeypatch.setattr(_sp, "run", lambda *a, **k: _FakeProc(reply))
-    monkeypatch.setattr(main_mod.shutil, "which", lambda name: "/usr/bin/true")
+def test_auto_fill_clamps_out_of_range_weights(client_nomonkey, fake_llm):
+    fake_llm(result=_FakeStructuredResult(parsed={k: 9 for k in main_mod._CRITERIA_DOC}))
     res = client_nomonkey.post(f"{PREFIX}/auto-fill", json={"profile_id": "qa"})
     assert res.status_code == 200
     assert all(v == 5 for v in res.json()["weights"].values())
+
+
+def test_auto_fill_reports_llm_failure(client_nomonkey, fake_llm):
+    fake_llm(error=RuntimeError("no provider configured"))
+    res = client_nomonkey.post(f"{PREFIX}/auto-fill", json={"profile_id": "qa"})
+    assert res.status_code == 503
+    assert "no provider configured" in res.json()["detail"]
+
+
+def test_auto_fill_503_without_plugin_context(client_nomonkey, monkeypatch):
+    """No context (bare uvicorn run / host without the facade) → 503, never a shell-out."""
+    import subprocess as _sp
+    import sys
+
+    monkeypatch.delitem(sys.modules, "hermes_model_leaderboard_shared_ctx", raising=False)
+
+    def _no_shell(*a, **k):  # pragma: no cover — asserts the old path is gone
+        raise AssertionError("auto-fill must not spawn a subprocess")
+
+    monkeypatch.setattr(_sp, "run", _no_shell)
+    res = client_nomonkey.post(f"{PREFIX}/auto-fill", json={"profile_id": "qa"})
+    assert res.status_code == 503
+
+
+def test_plugin_register_shares_ctx_with_backend(monkeypatch):
+    """``register(ctx)`` publishes the host context to the router, plus the skill.
+
+    Covers the load-path split: the plugin package's ``register`` runs in the host,
+    the router is imported standalone by the gateway — ``plugin_ctx`` is what makes
+    ``ctx.llm`` reachable from ``dashboard/plugin_api.py``.
+    """
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    root = Path(main_mod.__file__).resolve().parent.parent
+    monkeypatch.delitem(sys.modules, "hermes_model_leaderboard_shared_ctx", raising=False)
+
+    spec = importlib.util.spec_from_file_location("_ml_root_under_test", root / "__init__.py")
+    assert spec is not None and spec.loader is not None
+    plugin_root = importlib.util.module_from_spec(spec)
+    sys.modules["_ml_root_under_test"] = plugin_root
+    spec.loader.exec_module(plugin_root)
+
+    class _Ctx:
+        llm = object()
+
+        def __init__(self):
+            self.skills = []
+
+        def register_skill(self, name, path, description="", frontmatter=None):
+            self.skills.append((name, Path(path), description))
+
+    ctx = _Ctx()
+    plugin_root.register(ctx)
+
+    # the router — a different module object, loaded by the gateway — sees ctx.llm
+    assert main_mod._plugin_llm() is ctx.llm
+    # ... and the shipped skill was announced, with its file actually present
+    (name, path, description) = ctx.skills[0]
+    assert name == "refresh-benchmarks" and path.exists() and description
+    monkeypatch.delitem(sys.modules, "_ml_root_under_test", raising=False)
 
 
 # ---------------------------------------------------------------------------

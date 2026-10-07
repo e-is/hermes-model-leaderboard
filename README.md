@@ -17,16 +17,22 @@ Then reload the desktop window (F5 / Cmd+R): **Model Leaderboard** appears in th
 Notes — the three things that trip people up:
 
 - **`--force` is expected.** The install scanner rates any community plugin `CAUTION`
-  (bundled React/recharts regexes read as "obfuscation", `localStorage` as "persistence",
-  the auto-fill `subprocess.run` as "execution"). The verdict is `CAUTION`, not
-  `DANGEROUS`, so `--force` applies — there is no CRITICAL finding to accept.
+  (bundled React/recharts regexes read as "obfuscation", `localStorage` as "persistence").
+  The verdict is `CAUTION`, not `DANGEROUS`, so `--force` applies — there is no CRITICAL
+  finding to accept. Two findings were real enough to fix in the build instead:
+  a `SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED` string inside bundled prop-types
+  (now split by `scripts/build.mjs`) and a zero-width joiner in an emoji.
 - **The plugin key is `model-leaderboard`** (from `plugin.yaml`), *not* the repository
   name `hermes-model-leaderboard`. `hermes plugins enable hermes-model-leaderboard`
-  will not match.
+  will not match. Likewise `dashboard/manifest.json` must carry the **same** `name`:
+  `plugin.yaml` decides the namespace the renderer's `ctx.rest` scopes to, while the
+  manifest decides the path the gateway mounts the router under. A mismatch 404s every
+  API call (`No such API endpoint: /api/plugins/model-leaderboard/...`).
 - **`enable` asks about built-in tool override** — "Allow this plugin to replace built-in
   tools (e.g. shell_exec, write_file)?". Answer **no**: this plugin registers no agent
-  tools at all (its `register()` is a no-op), it only ships a dashboard API router and a
-  desktop renderer. To skip the prompt: `hermes plugins enable model-leaderboard --no-allow-tool-override`.
+  tools at all (it ships a dashboard API router, a desktop renderer and a read-only
+  skill), so the prompt is not applicable. To skip it:
+  `hermes plugins enable model-leaderboard --no-allow-tool-override`.
 
 **First run** seeds the tracked-model list from the main model declared by each installed
 Hermes profile (`default` first), then persists it to `dashboard/data/models.json`. Delete
@@ -36,7 +42,8 @@ that file to re-seed.
 
 - 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
 - ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 11 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
-- 🤖 **Auto-fill** — a button in the criteria dialog asks the Hermes default model (`hermes -z`, one-shot) to propose weights for that profile. Never automatic, always user-triggered.
+- 🤖 **Auto-fill** — a button in the criteria dialog asks Hermes' own LLM (`ctx.llm.complete_structured`, the model the user is already running — no subprocess, no API key in the plugin) to propose weights for that profile; the answer is validated against a JSON schema. Never automatic, always user-triggered.
+- 🧠 **Shipped skill** — `skill_view('model-leaderboard:refresh-benchmarks')` walks an agent through refreshing the hand-curated benchmark indices (SWE-bench Verified, LiveCodeBench) from the public leaderboards and writing them back. Read-only, loaded on demand.
 - 🔎 **Search** — filters the tracked table live *and* queries OpenRouter for untracked models (checkbox to opt out), with a one-click add.
 - 📰 **OpenRouter news** — side panel: promotions (with end dates), price changes (rolling 1 d / 7 d, configurable threshold), new models (sort by date or score, +1-week pagination).
 - 🛡️ **Resilience** — 5 min OpenRouter cache, stale-on-error fallback on 429s, plus a visibility-gated auto-pull (cheap local poll every 60 s, real refetch every 10 min — only while the page is visible).
@@ -55,10 +62,12 @@ Same conventions as [hermes-kanban-gantt](https://github.com/e-is/hermes-kanban-
 
 ```
 plugin.yaml          unified plugin manifest  (name: model-leaderboard)
-__init__.py          no-op register() (capability probe only)
+plugin_ctx.py        host context (ctx.llm, …) shared with the standalone router
+__init__.py          register(): publishes ctx.llm + the shipped skills
 dashboard/           backend — FastAPI router → /api/plugins/model-leaderboard/
-  manifest.json      name/label/version/api pointer
+  manifest.json      name/label/version/api pointer  (name must equal plugin.yaml's)
   data/              seed: models, benchmarks
+skills/              read-only skills → skill_view('model-leaderboard:<name>')
                      runtime (gitignored): openrouter cache, price history
 desktop/             BUILD ARTIFACT — renderer loaded uncompiled
 src/                 TSX authoring sources (esbuild → desktop/plugin.js)
@@ -116,18 +125,20 @@ Why the benchmark columns are curated rather than synced — measured, not assum
 
 - [x] Dynamic profile list — read from the installed Hermes profiles, `default` included.
 - [x] Default weights for new profiles — all criteria 0 except `intelligence: 5` and price 3.
-- [x] "Remplissage auto" — one-shot `hermes -z`, plugin-built English prompt, model answers strict JSON.
+- [x] "Remplissage auto" — `ctx.llm.complete_structured` on the model the user is running, JSON-schema-validated (replaced the `hermes -z` subprocess).
 - [x] First-run seeding from the profile-declared models.
 - [x] Real refresh (cache-bypassing) + visibility-gated auto-pull.
 - [x] Native confirmation dialog (SDK `ConfirmDialog`) and full en/fr i18n.
+- [x] Shipped read-only skill `refresh-benchmarks` (`ctx.register_skill`).
 
 **Next**
 
 - [ ] **Benchmark sync** — wire `GET /api/v1/benchmarks?source=artificial-analysis` as a
-  gap-filler for the indices (24 h TTL, runtime cache, prefer the plain/"Default Fallback"
-  AA variant — "Max Effort" inflates the score), and surface `source + date` next to the
-  SWE / aider columns so staleness is visible instead of guessed. Aider stays strict-match
-  only (exact slug, explicit alias table); no fuzzy matching.
+  gap-filler for the **indices** (24 h TTL, runtime cache, prefer the plain/"Default
+  Fallback" AA variant — "Max Effort" inflates the score), and surface `source + date`
+  next to the benchmark columns so staleness is visible instead of guessed. The
+  hand-curated `swebench_verified` / `livecodebench` values are covered by the shipped
+  `refresh-benchmarks` skill (agent-driven, no API exists for them).
 - [ ] **Recharts v3** (2.x is EOL) or native canvas — see the plugin plan note on bundle weight.
 - [ ] **Human-preference rating (LMArena)** — the multilingual criterion was dropped instead
   (OpenRouter exposes no language field; HF `cardData.language` is empty for 0/5 of the tracked

@@ -10,7 +10,6 @@ import json
 import logging
 import os
 import re
-import shutil
 import time
 from pathlib import Path
 from typing import Any
@@ -662,20 +661,96 @@ _CRITERIA_DOC = {
 }
 
 
+#: ``sys.modules`` key under which the plugin's shared context module is loaded
+#: (duplicated in ``__init__.py`` / ``plugin_ctx.py`` — see :func:`_plugin_llm`).
+_SHARED_CTX_MODULE = "hermes_model_leaderboard_shared_ctx"
+
+
+def _plugin_llm():
+    """The host-owned ``ctx.llm`` facade, or ``None`` when there is no context.
+
+    The gateway mounts this module with ``spec_from_file_location``, so it is not
+    part of the plugin package and cannot reach ``__init__``'s context. Both sides
+    therefore load ``plugin_ctx.py`` under one fixed ``sys.modules`` key, where the
+    plugin's ``register(ctx)`` stashed it. ``None`` means "no LLM available" (a
+    bare uvicorn run of this module, tests) — never a reason to shell out.
+    """
+    try:
+        import importlib.util
+        import sys
+
+        shared = sys.modules.get(_SHARED_CTX_MODULE)
+        if shared is None:
+            path = Path(__file__).resolve().parent.parent / "plugin_ctx.py"
+            if not path.exists():
+                return None
+            spec = importlib.util.spec_from_file_location(_SHARED_CTX_MODULE, path)
+            if spec is None or spec.loader is None:
+                return None
+            shared = importlib.util.module_from_spec(spec)
+            sys.modules[_SHARED_CTX_MODULE] = shared
+            spec.loader.exec_module(shared)
+        return shared.get_llm()
+    except Exception:
+        logger.debug("auto-fill: plugin context unavailable", exc_info=True)
+        return None
+
+
+def _json5ish(txt: str) -> str:
+    """Quote bare keys / single-quoted strings and drop trailing commas."""
+    fixed = re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*):", r'\1"\2"\3:', txt)
+    fixed = fixed.replace("'", '"')
+    return re.sub(r",\s*([}\]])", r"\1", fixed)
+
+
+def _extract_weights_json(text: str):
+    """Tolerant ``{criterion: weight}`` extraction from a model answer, or ``None``.
+
+    Fallback for when the host did not hand back parsed JSON: models wrap the
+    object in prose or markdown fences and often emit JSON5-ish keys (unquoted,
+    single quotes, trailing commas).
+    """
+    def _parse(chunk: str):
+        chunk = (chunk or "").strip()
+        if not chunk:
+            return None
+        for candidate in (chunk, _json5ish(chunk)):
+            try:
+                parsed = json.loads(candidate)
+            except Exception:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+        return None
+
+    whole = _parse(text)
+    if isinstance(whole, dict) and any(k in whole for k in _CRITERIA_DOC):
+        return whole
+    for match in re.finditer(r"\{[^{}]*\}", text or "", flags=re.S):
+        cand = _parse(match.group(0))
+        if isinstance(cand, dict) and any(k in cand for k in _CRITERIA_DOC):
+            return cand
+    return None
+
+
 @router.post("/auto-fill")
 def auto_fill(payload: dict = Body(default={})):
-    """Ask the Hermes DEFAULT model to propose 0-5 weights for a tracking profile.
+    """Ask the Hermes LLM to propose 0-5 weights for a tracking profile.
 
-    The plugin builds an English prompt explaining every criterion; the model
-    must answer with a strict JSON object. Best-effort: errors are returned as
-    HTTP 503 with a `detail` message."""
-    import json as _json
-    import re as _re
-    import shutil as _shutil
-    import subprocess as _subprocess
-
+    Runs through the host-owned ``ctx.llm`` facade (``complete_structured``), so
+    routing, auth, timeouts and audit logging stay with Hermes and the plugin
+    never sees a key. Best-effort: a missing LLM or an unusable answer is an
+    HTTP 503 with a `detail` message.
+    """
     profile_id = (payload.get("profile_id") or "default").strip()
     profile_name = (payload.get("profile_name") or profile_id).strip()
+
+    llm = _plugin_llm()
+    if llm is None:
+        raise HTTPException(
+            status_code=503,
+            detail="LLM Hermes indisponible : le contexte du plugin n'est pas accessible",
+        )
 
     criteria_lines = "\n".join(f"- {k}: {v}" for k, v in _CRITERIA_DOC.items())
     prompt = (
@@ -687,50 +762,38 @@ def auto_fill(payload: dict = Body(default={})):
         "Think about what matters for this profile (its role, its tasks, whether "
         "it is price-sensitive, needs vision, long context, etc.) and choose "
         "sensible integer weights. A typical profile has 2-4 criteria above 3.\n"
-        "Answer with ONLY a JSON object mapping each criterion name to its "
-        "integer weight. No markdown, no explanation."
+        "Answer with one integer weight per criterion."
     )
+    schema = {
+        "type": "object",
+        "properties": {k: {"type": "integer", "minimum": 0, "maximum": 5} for k in _CRITERIA_DOC},
+        "required": list(_CRITERIA_DOC),
+    }
 
-    hermes_exe = _shutil.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
     try:
-        proc = _subprocess.run(
-            [hermes_exe, "-z", prompt],
-            capture_output=True, text=True, timeout=180,
-            env={**os.environ, "NO_COLOR": "1", "TERM": "dumb"},
+        result = llm.complete_structured(
+            instructions=prompt,
+            input=[{"type": "text", "text": "Propose the weights for this profile."}],
+            json_schema=schema,
+            schema_name="profile_weights",
+            max_tokens=800,
+            timeout=180,
+            purpose="leaderboard:auto-fill",
         )
-        out = (proc.stdout or "") + "\n" + (proc.stderr or "")
-    except FileNotFoundError:
-        raise HTTPException(status_code=503, detail="hermes CLI not found")
-    except _subprocess.TimeoutExpired:
-        raise HTTPException(status_code=503, detail="model timeout (>180s)")
+    except Exception as exc:
+        logger.warning("auto-fill: LLM call failed: %s", exc)
+        raise HTTPException(status_code=503, detail=f"LLM Hermes indisponible : {exc}")
 
-    # extract the last JSON object from the answer
-    weights = None
-
-    def _try_parse(txt):
-        txt = txt.strip()
-        try:
-            return _json.loads(txt)
-        except Exception:
-            pass
-        # Models often answer JSON5-ish (unquoted keys, single quotes, trailing commas)
-        fixed = _re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*):", r'\1"\2"\3:', txt)
-        fixed = fixed.replace("'", '"')
-        fixed = _re.sub(r",\s*([}\]])", r"\1", fixed)
-        try:
-            return _json.loads(fixed)
-        except Exception:
-            return None
-
-    for m in _re.finditer(r"\{[^{}]*\}", out, flags=_re.S):
-        cand = _try_parse(m.group(0))
-        if isinstance(cand, dict) and any(k in cand for k in _CRITERIA_DOC):
-            weights = cand
-    if not weights:
+    # The schema-validated object when the host parsed it, else a tolerant scan of
+    # the raw answer (models sometimes wrap JSON in prose or markdown fences).
+    weights = result.parsed if getattr(result, "content_type", "") == "json" else None
+    if not isinstance(weights, dict):
+        weights = _extract_weights_json(getattr(result, "text", "") or "")
+    if not isinstance(weights, dict) or not any(k in weights for k in _CRITERIA_DOC):
         raise HTTPException(status_code=503, detail="model answer did not contain criteria JSON")
 
     clean = {}
-    for k, doc in _CRITERIA_DOC.items():
+    for k in _CRITERIA_DOC:
         try:
             v = int(weights.get(k, 0))
         except (TypeError, ValueError):
