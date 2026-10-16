@@ -18,7 +18,7 @@ import { setRest } from './doors'
 import { LOCALES } from './i18n'
 
 const plugin: HermesPlugin = {
-  id: 'hermes-model-leaderboard',
+  id: 'model-leaderboard',
   name: 'LLM Model Leaderboard',
   defaultEnabled: true,
 
@@ -45,7 +45,7 @@ const plugin: HermesPlugin = {
         id: 'open',
         area: PALETTE_AREA,
         data: {
-          id: 'hermes-model-leaderboard.open',
+          id: 'model-leaderboard.open',
           label: 'LLM Model Leaderboard : open the leaderboard',
           keywords: ['llm', 'leaderboard', 'model', 'benchmark', 'pricing'],
           run: () => host.navigate('/model-leaderboard')

@@ -1,11 +1,14 @@
 /**
- * i18n for the hermes-model-leaderboard plugin — same pattern as the
- * kanban-gantt plugin (usePluginI18n + en/fr locales).
+ * i18n for the model-leaderboard plugin — same pattern as the kanban-gantt
+ * plugin (usePluginI18n + en/fr locales).
+ *
+ * ``ID`` must be the plugin's real key (``plugin.yaml``'s name): the desktop
+ * scopes both the i18n bundle and ``ctx.rest`` by it.
  */
 import { useMemo } from 'react'
 import { usePluginI18n } from '@hermes/plugin-sdk'
 
-const ID = 'hermes-model-leaderboard'
+const ID = 'model-leaderboard'
 
 const LOCALES = {
   en: {

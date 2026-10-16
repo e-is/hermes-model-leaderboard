@@ -24934,7 +24934,7 @@ function api(path2, opts) {
 // src/i18n.ts
 import { useMemo as useMemo3 } from "react";
 import { usePluginI18n } from "@hermes/plugin-sdk";
-var ID = "hermes-model-leaderboard";
+var ID = "model-leaderboard";
 var LOCALES = {
   en: {
     title: "LLM Model Leaderboard",
@@ -26456,7 +26456,7 @@ function App() {
 // src/main.tsx
 import { jsx as jsx3 } from "react/jsx-runtime";
 var plugin = {
-  id: "hermes-model-leaderboard",
+  id: "model-leaderboard",
   name: "LLM Model Leaderboard",
   defaultEnabled: true,
   register(ctx) {
@@ -26481,7 +26481,7 @@ var plugin = {
         id: "open",
         area: PALETTE_AREA,
         data: {
-          id: "hermes-model-leaderboard.open",
+          id: "model-leaderboard.open",
           label: "LLM Model Leaderboard : open the leaderboard",
           keywords: ["llm", "leaderboard", "model", "benchmark", "pricing"],
           run: () => host.navigate("/model-leaderboard")
