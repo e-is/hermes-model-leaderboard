@@ -316,6 +316,8 @@ function DuelView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
 const PRICE_KEYS = ['price_in', 'price_out', 'cache_read'] as const
 /** Floor for the log-scale cost axis: free models sit on it instead of at -infinity. */
 const COST_FLOOR = 0.01
+/** Log-axis ticks ($/M tk): 1-3-10 steps read naturally on a price scale. */
+const COST_TICKS = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100]
 
 type ValuePoint = { id: string; label: string; quality: number; cost: number; rawCost: number; score: number; rank: number }
 
@@ -342,13 +344,17 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
       quality: computeGenericScore(m, qualityW, maxes),
     }
   })
-  const frontier = paretoFrontier(points).sort((a, b) => a.quality - b.quality)
+  const frontier = paretoFrontier(points) // cost order = left to right
   const onFrontier = new Set(frontier.map(p => p.id))
   const others = points.filter(p => !onFrontier.has(p.id))
 
+  const costs = points.map(p => p.cost)
+  const lo = Math.max(COST_FLOOR, ...COST_TICKS.filter(v => v <= Math.min(...costs)))
+  const hi = Math.min(...COST_TICKS.filter(v => v >= Math.max(...costs)), COST_TICKS[COST_TICKS.length - 1])
+  const ticks = COST_TICKS.filter(v => v >= lo && v <= hi)
   const fmtCost = (v: number) => (v <= COST_FLOOR ? t.views.free : `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}`)
-  const xLabel = `${t.views.axisQuality} — ${qualityKeys.map(k => `${metaOf(k).label} ×${qualityW[k]}`).join(', ')}`
-  const yLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k, w]) => `${metaOf(k as CriterionKey).label} ×${w}`).join(', ')}`
+  const qualityLabel = `${t.views.axisQuality} — ${qualityKeys.map(k => `${metaOf(k).label} ×${qualityW[k]}`).join(', ')}`
+  const costLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k, w]) => `${metaOf(k as CriterionKey).label} ×${w}`).join(', ')}`
 
   const TooltipBox = ({ active, payload }: any) => {
     const p: ValuePoint | undefined = active && payload?.[0]?.payload
@@ -367,15 +373,19 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
 
   return (
     <div style={box}>
-      <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginBottom: 6 }}>↘ {t.views.valueRead}</div>
+      <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginBottom: 6, display: 'grid', gap: 2 }}>
+        <span>↖ {t.views.valueRead}</span>
+        <span>↑ {qualityLabel}</span>
+        <span>→ {costLabel}</span>
+      </div>
       <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 28, right: 32, bottom: 28, left: 12 }}>
+        <ScatterChart margin={{ top: 28, right: 56, bottom: 28, left: 12 }}>
           <CartesianGrid stroke="var(--ui-stroke-tertiary)" strokeDasharray="3 3" />
-          <XAxis type="number" dataKey="quality" domain={[0, 100]} tick={axisTick} stroke="var(--ui-stroke-secondary)"
-            label={{ value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: 'var(--ui-text-secondary)' }} />
-          <YAxis type="number" dataKey="cost" scale="log" domain={['auto', 'auto']} allowDataOverflow={false} tickFormatter={fmtCost}
-            tick={axisTick} stroke="var(--ui-stroke-secondary)" width={56}
-            label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 4, fontSize: 11, fill: 'var(--ui-text-secondary)', style: { textAnchor: 'middle' } }} />
+          <XAxis type="number" dataKey="cost" scale="log" domain={[lo, hi]} ticks={ticks} tickFormatter={fmtCost}
+            tick={axisTick} stroke="var(--ui-stroke-secondary)"
+            label={{ value: t.views.axisCostShort, position: 'insideBottom', offset: -16, fontSize: 11, fill: 'var(--ui-text-secondary)' }} />
+          <YAxis type="number" dataKey="quality" domain={[0, 100]} tick={axisTick} stroke="var(--ui-stroke-secondary)" width={44}
+            label={{ value: t.views.axisQualityShort, angle: -90, position: 'insideLeft', offset: 4, fontSize: 11, fill: 'var(--ui-text-secondary)', style: { textAnchor: 'middle' } }} />
           <Tooltip content={<TooltipBox />} cursor={{ strokeDasharray: '3 3' }} />
           <Scatter name={t.views.others} data={others} fill="var(--ui-text-quaternary)" isAnimationActive={false}>
             <LabelList dataKey="label" position="top" fontSize={10} fill="var(--ui-text-tertiary)" />
@@ -389,7 +399,7 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
         <b style={{ color: 'var(--ui-orange)' }}>★ {t.views.frontier}</b>
         <span style={{ color: 'var(--ui-text-tertiary)' }}> — {t.views.frontierHint}</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-          {[...frontier].reverse().map(p => (
+          {frontier.map(p => (
             <span key={p.id} style={{ padding: '2px 8px', borderRadius: 999, border: '1px solid var(--ui-orange)', fontSize: 11 }}>
               {p.label} · {r0(p.quality)} · {fmtCost(p.rawCost)}
             </span>

@@ -97,11 +97,13 @@ const LOCALES = {
       versus: 'vs',
       axisQuality: 'Quality',
       axisCost: 'Cost $/M tk',
+      axisCostShort: 'Weighted cost ($/M tk, log scale)',
+      axisQualityShort: 'Quality (0–100)',
       free: 'free',
       frontier: 'Best trade-offs',
       frontierHint: 'no other model is both cheaper and better (Pareto frontier).',
       others: 'Dominated',
-      valueRead: 'Bottom-right is best: high quality, low cost.',
+      valueRead: 'Top-left is best: low cost, high quality.',
       noQuality: 'This profile only weights prices — add a quality criterion (intelligence, coding…) to plot quality against cost.'
     },
     news: {
@@ -256,11 +258,13 @@ const LOCALES = {
       versus: 'vs',
       axisQuality: 'Qualité',
       axisCost: 'Coût $/M tk',
+      axisCostShort: 'Coût pondéré ($/M tk, échelle log)',
+      axisQualityShort: 'Qualité (0–100)',
       free: 'gratuit',
       frontier: 'Meilleurs compromis',
       frontierHint: 'aucun autre modèle n\u2019est à la fois moins cher et meilleur (frontière de Pareto).',
       others: 'Dominés',
-      valueRead: 'Le meilleur est en bas à droite : qualité haute, coût bas.',
+      valueRead: 'Le meilleur est en haut à gauche : coût bas, qualité haute.',
       noQuality: 'Ce profil ne pondère que les prix — ajoutez un critère de qualité (intelligence, code…) pour comparer qualité et coût.'
     },
     news: {

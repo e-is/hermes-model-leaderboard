@@ -26151,11 +26151,13 @@ var LOCALES = {
       versus: "vs",
       axisQuality: "Quality",
       axisCost: "Cost $/M tk",
+      axisCostShort: "Weighted cost ($/M tk, log scale)",
+      axisQualityShort: "Quality (0–100)",
       free: "free",
       frontier: "Best trade-offs",
       frontierHint: "no other model is both cheaper and better (Pareto frontier).",
       others: "Dominated",
-      valueRead: "Bottom-right is best: high quality, low cost.",
+      valueRead: "Top-left is best: low cost, high quality.",
       noQuality: "This profile only weights prices — add a quality criterion (intelligence, coding…) to plot quality against cost."
     },
     news: {
@@ -26317,11 +26319,13 @@ var LOCALES = {
       versus: "vs",
       axisQuality: "Qualité",
       axisCost: "Coût $/M tk",
+      axisCostShort: "Coût pondéré ($/M tk, échelle log)",
+      axisQualityShort: "Qualité (0–100)",
       free: "gratuit",
       frontier: "Meilleurs compromis",
       frontierHint: "aucun autre modèle n’est à la fois moins cher et meilleur (frontière de Pareto).",
       others: "Dominés",
-      valueRead: "Le meilleur est en bas à droite : qualité haute, coût bas.",
+      valueRead: "Le meilleur est en haut à gauche : coût bas, qualité haute.",
       noQuality: "Ce profil ne pondère que les prix — ajoutez un critère de qualité (intelligence, code…) pour comparer qualité et coût."
     },
     news: {
@@ -26735,6 +26739,7 @@ ${cb ? tip(t, metaOf(ca.key), cb) : ""}`, children: [
 }
 var PRICE_KEYS = ["price_in", "price_out", "cache_read"];
 var COST_FLOOR = 0.01;
+var COST_TICKS = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100];
 function ValueView({ models, weights, maxes, metaOf, t }) {
   const priceW = {};
   for (const k2 of PRICE_KEYS) if ((weights[k2] ?? 0) > 0) priceW[k2] = weights[k2];
@@ -26760,12 +26765,16 @@ function ValueView({ models, weights, maxes, metaOf, t }) {
       quality: computeGenericScore(m, qualityW, maxes)
     };
   });
-  const frontier = paretoFrontier(points).sort((a2, b) => a2.quality - b.quality);
+  const frontier = paretoFrontier(points);
   const onFrontier = new Set(frontier.map((p) => p.id));
   const others = points.filter((p) => !onFrontier.has(p.id));
+  const costs = points.map((p) => p.cost);
+  const lo = Math.max(COST_FLOOR, ...COST_TICKS.filter((v) => v <= Math.min(...costs)));
+  const hi = Math.min(...COST_TICKS.filter((v) => v >= Math.max(...costs)), COST_TICKS[COST_TICKS.length - 1]);
+  const ticks2 = COST_TICKS.filter((v) => v >= lo && v <= hi);
   const fmtCost = (v) => v <= COST_FLOOR ? t.views.free : `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}`;
-  const xLabel = `${t.views.axisQuality} — ${qualityKeys.map((k2) => `${metaOf(k2).label} ×${qualityW[k2]}`).join(", ")}`;
-  const yLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k2, w]) => `${metaOf(k2).label} ×${w}`).join(", ")}`;
+  const qualityLabel = `${t.views.axisQuality} — ${qualityKeys.map((k2) => `${metaOf(k2).label} ×${qualityW[k2]}`).join(", ")}`;
+  const costLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k2, w]) => `${metaOf(k2).label} ×${w}`).join(", ")}`;
   const TooltipBox = ({ active, payload }) => {
     const p = active && payload?.[0]?.payload;
     if (!p) return null;
@@ -26800,36 +26809,46 @@ function ValueView({ models, weights, maxes, metaOf, t }) {
   };
   const axisTick = { fontSize: 11, fill: "var(--ui-text-tertiary)" };
   return /* @__PURE__ */ jsxs2("div", { style: box, children: [
-    /* @__PURE__ */ jsxs2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginBottom: 6 }, children: [
-      "↘ ",
-      t.views.valueRead
+    /* @__PURE__ */ jsxs2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginBottom: 6, display: "grid", gap: 2 }, children: [
+      /* @__PURE__ */ jsxs2("span", { children: [
+        "↖ ",
+        t.views.valueRead
+      ] }),
+      /* @__PURE__ */ jsxs2("span", { children: [
+        "↑ ",
+        qualityLabel
+      ] }),
+      /* @__PURE__ */ jsxs2("span", { children: [
+        "→ ",
+        costLabel
+      ] })
     ] }),
-    /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 400, children: /* @__PURE__ */ jsxs2(ScatterChart, { margin: { top: 28, right: 32, bottom: 28, left: 12 }, children: [
+    /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 400, children: /* @__PURE__ */ jsxs2(ScatterChart, { margin: { top: 28, right: 56, bottom: 28, left: 12 }, children: [
       /* @__PURE__ */ jsx2(CartesianGrid, { stroke: "var(--ui-stroke-tertiary)", strokeDasharray: "3 3" }),
       /* @__PURE__ */ jsx2(
         XAxis,
         {
           type: "number",
-          dataKey: "quality",
-          domain: [0, 100],
+          dataKey: "cost",
+          scale: "log",
+          domain: [lo, hi],
+          ticks: ticks2,
+          tickFormatter: fmtCost,
           tick: axisTick,
           stroke: "var(--ui-stroke-secondary)",
-          label: { value: xLabel, position: "insideBottom", offset: -16, fontSize: 11, fill: "var(--ui-text-secondary)" }
+          label: { value: t.views.axisCostShort, position: "insideBottom", offset: -16, fontSize: 11, fill: "var(--ui-text-secondary)" }
         }
       ),
       /* @__PURE__ */ jsx2(
         YAxis,
         {
           type: "number",
-          dataKey: "cost",
-          scale: "log",
-          domain: ["auto", "auto"],
-          allowDataOverflow: false,
-          tickFormatter: fmtCost,
+          dataKey: "quality",
+          domain: [0, 100],
           tick: axisTick,
           stroke: "var(--ui-stroke-secondary)",
-          width: 56,
-          label: { value: yLabel, angle: -90, position: "insideLeft", offset: 4, fontSize: 11, fill: "var(--ui-text-secondary)", style: { textAnchor: "middle" } }
+          width: 44,
+          label: { value: t.views.axisQualityShort, angle: -90, position: "insideLeft", offset: 4, fontSize: 11, fill: "var(--ui-text-secondary)", style: { textAnchor: "middle" } }
         }
       ),
       /* @__PURE__ */ jsx2(Tooltip, { content: /* @__PURE__ */ jsx2(TooltipBox, {}), cursor: { strokeDasharray: "3 3" } }),
@@ -26845,7 +26864,7 @@ function ValueView({ models, weights, maxes, metaOf, t }) {
         " — ",
         t.views.frontierHint
       ] }),
-      /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }, children: [...frontier].reverse().map((p) => /* @__PURE__ */ jsxs2("span", { style: { padding: "2px 8px", borderRadius: 999, border: "1px solid var(--ui-orange)", fontSize: 11 }, children: [
+      /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }, children: frontier.map((p) => /* @__PURE__ */ jsxs2("span", { style: { padding: "2px 8px", borderRadius: 999, border: "1px solid var(--ui-orange)", fontSize: 11 }, children: [
         p.label,
         " · ",
         r0(p.quality),
