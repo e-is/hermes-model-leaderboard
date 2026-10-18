@@ -71,3 +71,15 @@ export function computeGenericScore(m: any, weights: Record<string, number>, max
   const weighted = CRITERIA_KEYS.reduce((sum, key) => sum + (values[key] ?? 0) * Math.max(0, weights[key] ?? 0), 0)
   return Math.max(0, Math.min(100, (weighted / totalWeight) * 100))
 }
+
+/** Points no other point beats on both axes (cheaper-or-equal AND better-or-equal),
+ *  in increasing cost order. */
+export function paretoFrontier<T extends { quality: number; cost: number }>(points: T[]): T[] {
+  const byCost = [...points].sort((a, b) => a.cost - b.cost || b.quality - a.quality)
+  const out: T[] = []
+  let best = -Infinity
+  for (const p of byCost) {
+    if (p.quality > best) { out.push(p); best = p.quality }
+  }
+  return out
+}

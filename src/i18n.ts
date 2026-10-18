@@ -65,13 +65,14 @@ const LOCALES = {
     },
     views: {
       label: 'View:',
-      names: { classic: 'Cards', stacked: 'Score bars', columns: 'Histograms', heatmap: 'Heatmap', duel: 'Duel' },
+      names: { classic: 'Cards', stacked: 'Score bars', columns: 'Histograms', heatmap: 'Heatmap', duel: 'Duel', value: 'Quality / cost' },
       hint: {
         classic: 'Top 5 with price and context.',
         stacked: 'Each segment = points earned on one criterion (weight × grade).',
         columns: 'One bar per criterion: height = grade, width = weight.',
         heatmap: 'Grade 0–100 per criterion, heaviest criteria first. Click a column to sort.',
-        duel: 'Pick two models and compare them criterion by criterion.'
+        duel: 'Pick two models and compare them criterion by criterion.',
+        value: 'Quality (non-price criteria) against weighted cost; the dashed line links the best trade-offs.'
       },
       short: {
         intelligence: 'Intelligence', coding: 'Coding', agentic: 'Agentic',
@@ -93,7 +94,15 @@ const LOCALES = {
       weakness: 'Weakness',
       missingData: 'Missing data counts as 0',
       winsOn: (n: number) => `ahead on ${n} criteri${n > 1 ? 'a' : 'on'}`,
-      versus: 'vs'
+      versus: 'vs',
+      axisQuality: 'Quality',
+      axisCost: 'Cost $/M tk',
+      free: 'free',
+      frontier: 'Best trade-offs',
+      frontierHint: 'no other model is both cheaper and better (Pareto frontier).',
+      others: 'Dominated',
+      valueRead: 'Bottom-right is best: high quality, low cost.',
+      noQuality: 'This profile only weights prices — add a quality criterion (intelligence, coding…) to plot quality against cost.'
     },
     news: {
       title: '📰 News & Updates',
@@ -215,13 +224,14 @@ const LOCALES = {
     },
     views: {
       label: 'Affichage :',
-      names: { classic: 'Cartes', stacked: 'Barres de score', columns: 'Histogrammes', heatmap: 'Heatmap', duel: 'Duel' },
+      names: { classic: 'Cartes', stacked: 'Barres de score', columns: 'Histogrammes', heatmap: 'Heatmap', duel: 'Duel', value: 'Qualité / coût' },
       hint: {
         classic: 'Top 5 avec prix et contexte.',
         stacked: 'Chaque segment = points gagnés sur un critère (poids × note).',
         columns: 'Une barre par critère : hauteur = note, largeur = poids.',
         heatmap: 'Note 0–100 par critère, critères les plus lourds d\u2019abord. Cliquer une colonne pour trier.',
-        duel: 'Choisir deux modèles et les comparer critère par critère.'
+        duel: 'Choisir deux modèles et les comparer critère par critère.',
+        value: 'Qualité (critères hors prix) face au coût pondéré ; la ligne pointillée relie les meilleurs compromis.'
       },
       short: {
         intelligence: 'Intelligence', coding: 'Code', agentic: 'Agentique',
@@ -243,7 +253,15 @@ const LOCALES = {
       weakness: 'Faiblesse',
       missingData: 'Donnée manquante comptée 0',
       winsOn: (n: number) => `devant sur ${n} critère${n > 1 ? 's' : ''}`,
-      versus: 'vs'
+      versus: 'vs',
+      axisQuality: 'Qualité',
+      axisCost: 'Coût $/M tk',
+      free: 'gratuit',
+      frontier: 'Meilleurs compromis',
+      frontierHint: 'aucun autre modèle n\u2019est à la fois moins cher et meilleur (frontière de Pareto).',
+      others: 'Dominés',
+      valueRead: 'Le meilleur est en bas à droite : qualité haute, coût bas.',
+      noQuality: 'Ce profil ne pondère que les prix — ajoutez un critère de qualité (intelligence, code…) pour comparer qualité et coût.'
     },
     news: {
       title: '📰 Actualités & Nouveautés',

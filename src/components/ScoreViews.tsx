@@ -7,15 +7,19 @@
  *   columns  — top cards with a vertical histogram (height = grade, width = weight)
  *   heatmap  — models × criteria matrix of grades, columns ordered by weight
  *   duel     — two models side by side, criterion by criterion
+ *   value    — quality (non-price criteria) vs weighted cost, with the Pareto frontier
  *
  * Pure CSS (no recharts): the bars are flex boxes, which keeps them crisp at any
  * width and themable through the desktop CSS variables.
  */
 import { useMemo, useState, type ReactNode } from 'react'
-import { scoreBreakdown, type CriterionBreakdown, type CriterionKey } from '../core/scoring'
+import {
+  CartesianGrid, LabelList, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis,
+} from 'recharts'
+import { computeGenericScore, paretoFrontier, scoreBreakdown, type CriterionBreakdown, type CriterionKey } from '../core/scoring'
 
-export type ScoreViewId = 'classic' | 'stacked' | 'columns' | 'heatmap' | 'duel'
-export const SCORE_VIEWS: ScoreViewId[] = ['classic', 'stacked', 'columns', 'heatmap', 'duel']
+export type ScoreViewId = 'classic' | 'stacked' | 'columns' | 'heatmap' | 'duel' | 'value'
+export const SCORE_VIEWS: ScoreViewId[] = ['classic', 'stacked', 'columns', 'heatmap', 'duel', 'value']
 
 export type CriterionMeta = { key: CriterionKey; label: string; icon: string }
 
@@ -307,6 +311,95 @@ function DuelView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
   )
 }
 
+
+// ---- 5. Quality vs cost -------------------------------------------------------------
+const PRICE_KEYS = ['price_in', 'price_out', 'cache_read'] as const
+/** Floor for the log-scale cost axis: free models sit on it instead of at -infinity. */
+const COST_FLOOR = 0.01
+
+type ValuePoint = { id: string; label: string; quality: number; cost: number; rawCost: number; score: number; rank: number }
+
+function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: Record<string, number>; maxes: Record<string, number> }) {
+  // Cost blend follows the profile's price weights; a profile that ignores
+  // price still gets a meaningful axis (input and output at equal weight).
+  const priceW: Record<string, number> = {}
+  for (const k of PRICE_KEYS) if ((weights[k] ?? 0) > 0) priceW[k] = weights[k]
+  if (!Object.keys(priceW).length) { priceW.price_in = 1; priceW.price_out = 1 }
+  const priceTotal = Object.values(priceW).reduce((a, b) => a + b, 0)
+
+  const qualityW: Record<string, number> = {}
+  for (const [k, w] of Object.entries(weights)) if (w > 0 && !(PRICE_KEYS as readonly string[]).includes(k)) qualityW[k] = w
+  const qualityKeys = Object.keys(qualityW) as CriterionKey[]
+  if (!qualityKeys.length) return <div style={{ ...box, fontSize: 12, color: 'var(--ui-text-tertiary)' }}>{t.views.noQuality}</div>
+
+  const priceOf = (m: Scored, k: string) =>
+    k === 'price_in' ? m.prompt_price : k === 'price_out' ? m.completion_price : (m.cache_read_price ?? m.prompt_price)
+  const points: ValuePoint[] = models.map(m => {
+    const rawCost = Object.entries(priceW).reduce((sum, [k, w]) => sum + (priceOf(m, k) ?? 0) * w, 0) / priceTotal
+    return {
+      id: m.id, label: m.label, rank: m._rank, score: m._score, rawCost,
+      cost: Math.max(COST_FLOOR, rawCost),
+      quality: computeGenericScore(m, qualityW, maxes),
+    }
+  })
+  const frontier = paretoFrontier(points).sort((a, b) => a.quality - b.quality)
+  const onFrontier = new Set(frontier.map(p => p.id))
+  const others = points.filter(p => !onFrontier.has(p.id))
+
+  const fmtCost = (v: number) => (v <= COST_FLOOR ? t.views.free : `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}`)
+  const xLabel = `${t.views.axisQuality} — ${qualityKeys.map(k => `${metaOf(k).label} ×${qualityW[k]}`).join(', ')}`
+  const yLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k, w]) => `${metaOf(k as CriterionKey).label} ×${w}`).join(', ')}`
+
+  const TooltipBox = ({ active, payload }: any) => {
+    const p: ValuePoint | undefined = active && payload?.[0]?.payload
+    if (!p) return null
+    return (
+      <div style={{ ...box, padding: '6px 10px', fontSize: 12, boxShadow: 'var(--shadow-sm)' }}>
+        <b>{medal(p.rank)} {p.label}</b>
+        <div>{t.views.axisQuality} : {r0(p.quality)}/100</div>
+        <div>{t.views.axisCost} : {fmtCost(p.rawCost)}/M tk</div>
+        <div>{t.views.score} : {r0(p.score)}</div>
+        {onFrontier.has(p.id) && <div style={{ color: 'var(--ui-orange)' }}>★ {t.views.frontier}</div>}
+      </div>
+    )
+  }
+  const axisTick = { fontSize: 11, fill: 'var(--ui-text-tertiary)' }
+
+  return (
+    <div style={box}>
+      <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginBottom: 6 }}>↘ {t.views.valueRead}</div>
+      <ResponsiveContainer width="100%" height={400}>
+        <ScatterChart margin={{ top: 28, right: 32, bottom: 28, left: 12 }}>
+          <CartesianGrid stroke="var(--ui-stroke-tertiary)" strokeDasharray="3 3" />
+          <XAxis type="number" dataKey="quality" domain={[0, 100]} tick={axisTick} stroke="var(--ui-stroke-secondary)"
+            label={{ value: xLabel, position: 'insideBottom', offset: -16, fontSize: 11, fill: 'var(--ui-text-secondary)' }} />
+          <YAxis type="number" dataKey="cost" scale="log" domain={['auto', 'auto']} allowDataOverflow={false} tickFormatter={fmtCost}
+            tick={axisTick} stroke="var(--ui-stroke-secondary)" width={56}
+            label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 4, fontSize: 11, fill: 'var(--ui-text-secondary)', style: { textAnchor: 'middle' } }} />
+          <Tooltip content={<TooltipBox />} cursor={{ strokeDasharray: '3 3' }} />
+          <Scatter name={t.views.others} data={others} fill="var(--ui-text-quaternary)" isAnimationActive={false}>
+            <LabelList dataKey="label" position="top" fontSize={10} fill="var(--ui-text-tertiary)" />
+          </Scatter>
+          <Scatter name={t.views.frontier} data={frontier} fill="var(--ui-orange)" line={{ stroke: 'var(--ui-orange)', strokeDasharray: '4 3' }} lineType="joint" isAnimationActive={false}>
+            <LabelList dataKey="label" position="top" fontSize={11} fontWeight={700} fill="var(--ui-text-primary)" />
+          </Scatter>
+        </ScatterChart>
+      </ResponsiveContainer>
+      <div style={{ fontSize: 12, marginTop: 4 }}>
+        <b style={{ color: 'var(--ui-orange)' }}>★ {t.views.frontier}</b>
+        <span style={{ color: 'var(--ui-text-tertiary)' }}> — {t.views.frontierHint}</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+          {[...frontier].reverse().map(p => (
+            <span key={p.id} style={{ padding: '2px 8px', borderRadius: 999, border: '1px solid var(--ui-orange)', fontSize: 11 }}>
+              {p.label} · {r0(p.quality)} · {fmtCost(p.rawCost)}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---- plumbing ------------------------------------------------------------------------
 type ViewArgs = {
   models: Scored[]
@@ -333,5 +426,6 @@ export function ScoreView({ view, models, weights, maxes, criteria, icon, t }: P
   if (view === 'stacked') return <StackedView {...args} />
   if (view === 'columns') return <ColumnsView {...args} />
   if (view === 'heatmap') return <HeatmapView {...args} />
+  if (view === 'value') return <ValueView {...args} weights={weights} maxes={maxes} />
   return <DuelView {...args} />
 }

@@ -76,3 +76,14 @@ test('missing benchmark data is a null note worth 0 points', async () => {
   assert.equal(intel.note, null)
   assert.equal(intel.points, 0)
 })
+
+test('paretoFrontier keeps only the non-dominated models', async () => {
+  const { paretoFrontier } = await import('../../src/core/scoring.ts')
+  const pts = [
+    { id: 'cheap-weak', cost: 0.1, quality: 30 },
+    { id: 'mid', cost: 1, quality: 70 },
+    { id: 'dominated', cost: 2, quality: 60 },
+    { id: 'premium', cost: 10, quality: 90 },
+  ]
+  assert.deepEqual(paretoFrontier(pts).map((p: any) => p.id), ['cheap-weak', 'mid', 'premium'])
+})
