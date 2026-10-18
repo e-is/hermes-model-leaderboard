@@ -40,8 +40,18 @@ export const CRITERION_COLORS: Record<CriterionKey, string> = {
 
 type Scored = { id: string; label: string; _score: number; _rank: number; [k: string]: any }
 
+/** Criteria backed by a benchmark index — the only ones a user can type in. */
+const INDEX_FIELD: Partial<Record<CriterionKey, string>> = {
+  intelligence: 'intelligence_index',
+  coding: 'coding_index',
+  agentic: 'agentic_index',
+}
+
+type SetIndex = (modelId: string, field: string, value: number | null) => Promise<unknown>
+
 type Props = {
   view: Exclude<ScoreViewId, 'classic'>
+  onSetIndex?: SetIndex
   models: Scored[]
   weights: Record<string, number>
   maxes: Record<string, number>
@@ -64,9 +74,17 @@ function useBreakdowns(models: Scored[], weights: Record<string, number>, maxes:
   }, [models, weights, maxes])
 }
 
-function tip(t: any, meta: CriterionMeta, c: CriterionBreakdown): string {
+function tip(t: any, meta: CriterionMeta, c: CriterionBreakdown, m?: Scored): string {
   const grade = c.note == null ? t.views.na : `${r0(c.note)}/100`
-  return `${meta.icon} ${meta.label} — ${t.views.weight} ×${c.weight} · ${t.views.grade} ${grade} → +${r1(c.points)} / ${r1(c.maxPoints)} ${t.views.points}`
+  const line = `${meta.icon} ${meta.label} — ${t.views.weight} ×${c.weight} · ${t.views.grade} ${grade} → +${r1(c.points)} / ${r1(c.maxPoints)} ${t.views.points}`
+  const field = INDEX_FIELD[c.key]
+  const src = field && m?.sources?.[field]
+  if (src === 'estimated') {
+    const e = m!.estimates?.[field!]
+    return `${line}\n~ ${e ? t.views.estimatedHint(t.views.fieldName[e.from] ?? e.from, e.r2, e.n) : ''}`
+  }
+  if (src === 'manual') return `${line}\n✎ ${t.views.manualHint}`
+  return line
 }
 
 /** Grade → background: transparent at 0, saturated green at 100. */
@@ -115,7 +133,7 @@ function StackedView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
               {(breakdowns[m.id] ?? []).map(c => (
                 <div
                   key={c.key}
-                  title={tip(t, metaOf(c.key), c)}
+                  title={tip(t, metaOf(c.key), c, m)}
                   style={{
                     width: `${c.points}%`,
                     background: CRITERION_COLORS[c.key],
@@ -161,7 +179,7 @@ function ColumnsView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
               {parts.map(c => (
                 <div
                   key={c.key}
-                  title={tip(t, metaOf(c.key), c)}
+                  title={tip(t, metaOf(c.key), c, m)}
                   style={{
                     flex: `${c.weight} 1 0`,
                     height: c.note == null ? '100%' : `${Math.max(2, c.note)}%`,
@@ -185,6 +203,7 @@ function ColumnsView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
               {best && <span>💪 {t.views.strength} : {metaOf(best.key).label} {r0(best.note ?? 0)}</span>}
               {worst && worst !== best && <span>⚠️ {t.views.weakness} : {metaOf(worst.key).label} {r0(worst.note ?? 0)}</span>}
               {parts.some(c => c.note == null) && <span>❔ {t.views.missingData}</span>}
+              {parts.some(c => INDEX_FIELD[c.key] && m.sources?.[INDEX_FIELD[c.key]!] === 'estimated') && <span>~ {t.views.hasEstimates}</span>}
             </div>
           </div>
         )
@@ -194,8 +213,15 @@ function ColumnsView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
 }
 
 // ---- 3. Heatmap matrix -------------------------------------------------------------
-function HeatmapView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
+function HeatmapView({ models, breakdowns, metaOf, icon, t, onSetIndex }: ViewArgs) {
   const [sortKey, setSortKey] = useState<CriterionKey | null>(null)
+  const [editing, setEditing] = useState<{ id: string; field: string } | null>(null)
+  const commit = (raw: string) => {
+    if (!editing || !onSetIndex) return
+    const v = raw.trim() === '' ? null : Number(raw.replace(',', '.'))
+    if (v !== null && !Number.isFinite(v)) return
+    onSetIndex(editing.id, editing.field, v).finally(() => setEditing(null))
+  }
   const columns = [...(breakdowns[models[0]?.id] ?? [])].sort((a, b) => b.weight - a.weight)
   const noteOf = (id: string, key: CriterionKey) => breakdowns[id]?.find(c => c.key === key)?.note ?? null
   const rows = sortKey ? [...models].sort((a, b) => (noteOf(b.id, sortKey) ?? -1) - (noteOf(a.id, sortKey) ?? -1)) : models
@@ -226,10 +252,32 @@ function HeatmapView({ models, breakdowns, metaOf, icon, t }: ViewArgs) {
               {columns.map(col => {
                 const c = breakdowns[m.id]?.find(x => x.key === col.key)
                 const note = c?.note ?? null
+                const field = INDEX_FIELD[col.key]
+                const src = field ? m.sources?.[field] : undefined
+                const editable = !!(field && onSetIndex)
+                if (editing && field && editing.id === m.id && editing.field === field) {
+                  return (
+                    <td key={col.key} style={{ padding: 2, textAlign: 'center' }}>
+                      <input autoFocus type="text" inputMode="decimal" defaultValue={src === 'manual' ? String(m[field]) : ''}
+                        placeholder={m[field] != null ? String(m[field]) : t.views.rawIndex}
+                        onKeyDown={e => { if (e.key === 'Enter') commit((e.target as HTMLInputElement).value); if (e.key === 'Escape') setEditing(null) }}
+                        onBlur={() => setEditing(null)}
+                        style={{ width: 56, fontSize: 12, padding: '2px 4px', textAlign: 'center' }} />
+                    </td>
+                  )
+                }
                 return (
-                  <td key={col.key} title={c ? tip(t, metaOf(col.key), c) : ''}
-                    style={{ textAlign: 'center', padding: '5px 4px', background: gradeBg(note), color: note == null ? 'var(--ui-text-quaternary)' : 'var(--ui-text-primary)', fontStyle: note == null ? 'italic' : undefined }}>
-                    {note == null ? t.views.na : r0(note)}
+                  <td key={col.key}
+                    title={(c ? tip(t, metaOf(col.key), c, m) : '') + (editable ? `\n${t.views.editHint}` : '')}
+                    onClick={editable ? () => setEditing({ id: m.id, field: field! }) : undefined}
+                    style={{
+                      textAlign: 'center', padding: '5px 4px', background: gradeBg(note),
+                      color: note == null || src === 'estimated' ? 'var(--ui-text-tertiary)' : 'var(--ui-text-primary)',
+                      fontStyle: note == null || src === 'estimated' ? 'italic' : undefined,
+                      cursor: editable ? 'pointer' : undefined,
+                    }}>
+                    {note == null ? t.views.na : `${src === 'estimated' ? '~' : ''}${r0(note)}`}
+                    {src === 'manual' && <sup style={{ fontSize: 9 }}>✎</sup>}
                   </td>
                 )
               })}
@@ -412,6 +460,7 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
 
 // ---- plumbing ------------------------------------------------------------------------
 type ViewArgs = {
+  onSetIndex?: SetIndex
   models: Scored[]
   breakdowns: Record<string, CriterionBreakdown[]>
   metaOf: (k: CriterionKey) => CriterionMeta
@@ -426,13 +475,13 @@ function Row({ children }: { children: ReactNode }) {
 
 const linkBtn = { marginTop: 8, border: 'none', background: 'transparent', color: 'var(--ui-accent)', cursor: 'pointer', fontSize: 12, padding: 0 } as const
 
-export function ScoreView({ view, models, weights, maxes, criteria, icon, t }: Props) {
+export function ScoreView({ view, models, weights, maxes, criteria, icon, t, onSetIndex }: Props) {
   const breakdowns = useBreakdowns(models, weights, maxes)
   const metaOf = (k: CriterionKey) => criteria.find(c => c.key === k) ?? { key: k, label: k, icon: '•' }
   if (!models.length) return null
   if (!(breakdowns[models[0].id] ?? []).length) return <div style={{ ...box, fontSize: 12, color: 'var(--ui-text-tertiary)' }}>{t.views.noCriteria}</div>
 
-  const args = { models, breakdowns, metaOf, icon, t }
+  const args = { models, breakdowns, metaOf, icon, t, onSetIndex }
   if (view === 'stacked') return <StackedView {...args} />
   if (view === 'columns') return <ColumnsView {...args} />
   if (view === 'heatmap') return <HeatmapView {...args} />

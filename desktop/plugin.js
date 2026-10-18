@@ -26158,6 +26158,13 @@ var LOCALES = {
       frontierHint: "no other model is both cheaper and better (Pareto frontier).",
       others: "Dominated",
       valueRead: "Top-left is best: low cost, high quality.",
+      fieldName: { intelligence_index: "Intelligence", coding_index: "Coding", agentic_index: "Agentic" },
+      estimatedHint: (from, r2, n) => `Estimated from ${from} — linear fit on ${n} OpenRouter models (R² ${r2}). Click a heatmap cell to enter the real value.`,
+      manualHint: "Value entered manually (overrides OpenRouter).",
+      naHint: "No data: not published, and no other index to estimate it from.",
+      editHint: "Click to enter the value (empty = back to OpenRouter / estimate).",
+      rawIndex: "raw index",
+      hasEstimates: "Some grades are estimated (~)",
       noQuality: "This profile only weights prices — add a quality criterion (intelligence, coding…) to plot quality against cost."
     },
     news: {
@@ -26326,6 +26333,13 @@ var LOCALES = {
       frontierHint: "aucun autre modèle n’est à la fois moins cher et meilleur (frontière de Pareto).",
       others: "Dominés",
       valueRead: "Le meilleur est en haut à gauche : coût bas, qualité haute.",
+      fieldName: { intelligence_index: "Intelligence", coding_index: "Code", agentic_index: "Agentique" },
+      estimatedHint: (from, r2, n) => `Estimé depuis ${from} — régression sur ${n} modèles OpenRouter (R² ${r2}). Cliquer une cellule de la heatmap pour saisir la vraie valeur.`,
+      manualHint: "Valeur saisie manuellement (prime sur OpenRouter).",
+      naHint: "Aucune donnée : non publiée, et aucun autre indice pour l’estimer.",
+      editHint: "Cliquer pour saisir la valeur (vide = retour à OpenRouter / estimation).",
+      rawIndex: "indice brut",
+      hasEstimates: "Certaines notes sont estimées (~)",
       noQuality: "Ce profil ne pondère que les prix — ajoutez un critère de qualité (intelligence, code…) pour comparer qualité et coût."
     },
     news: {
@@ -26424,7 +26438,7 @@ var CRITERIA_KEYS = [
   "fits_64gb"
 ];
 function criterionValues(m, maxes) {
-  const ratio = (v, max3) => v == null ? null : v / (max3 || 1);
+  const ratio = (v, max3) => v == null ? null : Math.min(1, v / (max3 || 1));
   const cheap = (v, max3) => max3 > 0 ? 1 - Math.min(1, (v ?? 0) / max3) : 1;
   return {
     intelligence: ratio(m.intelligence_index, maxes.maxIntel),
@@ -26488,6 +26502,11 @@ var CRITERION_COLORS = {
   open_weights: "#12a594",
   fits_64gb: "#8a8f98"
 };
+var INDEX_FIELD = {
+  intelligence: "intelligence_index",
+  coding: "coding_index",
+  agentic: "agentic_index"
+};
 var medal = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
 var r0 = (v) => Math.round(v);
 var DRAW_PTS = 0.5;
@@ -26499,9 +26518,19 @@ function useBreakdowns(models, weights, maxes) {
     return out;
   }, [models, weights, maxes]);
 }
-function tip(t, meta, c2) {
+function tip(t, meta, c2, m) {
   const grade = c2.note == null ? t.views.na : `${r0(c2.note)}/100`;
-  return `${meta.icon} ${meta.label} — ${t.views.weight} ×${c2.weight} · ${t.views.grade} ${grade} → +${r1(c2.points)} / ${r1(c2.maxPoints)} ${t.views.points}`;
+  const line = `${meta.icon} ${meta.label} — ${t.views.weight} ×${c2.weight} · ${t.views.grade} ${grade} → +${r1(c2.points)} / ${r1(c2.maxPoints)} ${t.views.points}`;
+  const field = INDEX_FIELD[c2.key];
+  const src = field && m?.sources?.[field];
+  if (src === "estimated") {
+    const e = m.estimates?.[field];
+    return `${line}
+~ ${e ? t.views.estimatedHint(t.views.fieldName[e.from] ?? e.from, e.r2, e.n) : ""}`;
+  }
+  if (src === "manual") return `${line}
+✎ ${t.views.manualHint}`;
+  return line;
 }
 function gradeBg(note) {
   if (note == null) return "transparent";
@@ -26541,7 +26570,7 @@ function StackedView({ models, breakdowns, metaOf, icon, t }) {
       /* @__PURE__ */ jsx2("div", { style: { display: "flex", height: 18, borderRadius: 4, overflow: "hidden", background: "var(--ui-bg-tertiary)" }, children: (breakdowns[m.id] ?? []).map((c2) => /* @__PURE__ */ jsx2(
         "div",
         {
-          title: tip(t, metaOf(c2.key), c2),
+          title: tip(t, metaOf(c2.key), c2, m),
           style: {
             width: `${c2.points}%`,
             background: CRITERION_COLORS[c2.key],
@@ -26577,7 +26606,7 @@ function ColumnsView({ models, breakdowns, metaOf, icon, t }) {
         parts.map((c2) => /* @__PURE__ */ jsx2(
           "div",
           {
-            title: tip(t, metaOf(c2.key), c2),
+            title: tip(t, metaOf(c2.key), c2, m),
             style: {
               flex: `${c2.weight} 1 0`,
               height: c2.note == null ? "100%" : `${Math.max(2, c2.note)}%`,
@@ -26612,13 +26641,24 @@ function ColumnsView({ models, breakdowns, metaOf, icon, t }) {
         parts.some((c2) => c2.note == null) && /* @__PURE__ */ jsxs2("span", { children: [
           "❔ ",
           t.views.missingData
+        ] }),
+        parts.some((c2) => INDEX_FIELD[c2.key] && m.sources?.[INDEX_FIELD[c2.key]] === "estimated") && /* @__PURE__ */ jsxs2("span", { children: [
+          "~ ",
+          t.views.hasEstimates
         ] })
       ] })
     ] }, m.id);
   }) });
 }
-function HeatmapView({ models, breakdowns, metaOf, icon, t }) {
+function HeatmapView({ models, breakdowns, metaOf, icon, t, onSetIndex }) {
   const [sortKey, setSortKey] = useState6(null);
+  const [editing, setEditing] = useState6(null);
+  const commit = (raw) => {
+    if (!editing || !onSetIndex) return;
+    const v = raw.trim() === "" ? null : Number(raw.replace(",", "."));
+    if (v !== null && !Number.isFinite(v)) return;
+    onSetIndex(editing.id, editing.field, v).finally(() => setEditing(null));
+  };
   const columns = [...breakdowns[models[0]?.id] ?? []].sort((a2, b) => b.weight - a2.weight);
   const noteOf = (id, key) => breakdowns[id]?.find((c2) => c2.key === key)?.note ?? null;
   const rows = sortKey ? [...models].sort((a2, b) => (noteOf(b.id, sortKey) ?? -1) - (noteOf(a2.id, sortKey) ?? -1)) : models;
@@ -26653,12 +26693,45 @@ function HeatmapView({ models, breakdowns, metaOf, icon, t }) {
       columns.map((col) => {
         const c2 = breakdowns[m.id]?.find((x2) => x2.key === col.key);
         const note = c2?.note ?? null;
-        return /* @__PURE__ */ jsx2(
+        const field = INDEX_FIELD[col.key];
+        const src = field ? m.sources?.[field] : void 0;
+        const editable = !!(field && onSetIndex);
+        if (editing && field && editing.id === m.id && editing.field === field) {
+          return /* @__PURE__ */ jsx2("td", { style: { padding: 2, textAlign: "center" }, children: /* @__PURE__ */ jsx2(
+            "input",
+            {
+              autoFocus: true,
+              type: "text",
+              inputMode: "decimal",
+              defaultValue: src === "manual" ? String(m[field]) : "",
+              placeholder: m[field] != null ? String(m[field]) : t.views.rawIndex,
+              onKeyDown: (e) => {
+                if (e.key === "Enter") commit(e.target.value);
+                if (e.key === "Escape") setEditing(null);
+              },
+              onBlur: () => setEditing(null),
+              style: { width: 56, fontSize: 12, padding: "2px 4px", textAlign: "center" }
+            }
+          ) }, col.key);
+        }
+        return /* @__PURE__ */ jsxs2(
           "td",
           {
-            title: c2 ? tip(t, metaOf(col.key), c2) : "",
-            style: { textAlign: "center", padding: "5px 4px", background: gradeBg(note), color: note == null ? "var(--ui-text-quaternary)" : "var(--ui-text-primary)", fontStyle: note == null ? "italic" : void 0 },
-            children: note == null ? t.views.na : r0(note)
+            title: (c2 ? tip(t, metaOf(col.key), c2, m) : "") + (editable ? `
+${t.views.editHint}` : ""),
+            onClick: editable ? () => setEditing({ id: m.id, field }) : void 0,
+            style: {
+              textAlign: "center",
+              padding: "5px 4px",
+              background: gradeBg(note),
+              color: note == null || src === "estimated" ? "var(--ui-text-tertiary)" : "var(--ui-text-primary)",
+              fontStyle: note == null || src === "estimated" ? "italic" : void 0,
+              cursor: editable ? "pointer" : void 0
+            },
+            children: [
+              note == null ? t.views.na : `${src === "estimated" ? "~" : ""}${r0(note)}`,
+              src === "manual" && /* @__PURE__ */ jsx2("sup", { style: { fontSize: 9 }, children: "✎" })
+            ]
           },
           col.key
         );
@@ -26878,12 +26951,12 @@ function Row({ children }) {
   return /* @__PURE__ */ jsx2(Fragment2, { children });
 }
 var linkBtn = { marginTop: 8, border: "none", background: "transparent", color: "var(--ui-accent)", cursor: "pointer", fontSize: 12, padding: 0 };
-function ScoreView({ view, models, weights, maxes, criteria, icon, t }) {
+function ScoreView({ view, models, weights, maxes, criteria, icon, t, onSetIndex }) {
   const breakdowns = useBreakdowns(models, weights, maxes);
   const metaOf = (k2) => criteria.find((c2) => c2.key === k2) ?? { key: k2, label: k2, icon: "•" };
   if (!models.length) return null;
   if (!(breakdowns[models[0].id] ?? []).length) return /* @__PURE__ */ jsx2("div", { style: { ...box, fontSize: 12, color: "var(--ui-text-tertiary)" }, children: t.views.noCriteria });
-  const args = { models, breakdowns, metaOf, icon, t };
+  const args = { models, breakdowns, metaOf, icon, t, onSetIndex };
   if (view === "stacked") return /* @__PURE__ */ jsx2(StackedView, { ...args });
   if (view === "columns") return /* @__PURE__ */ jsx2(ColumnsView, { ...args });
   if (view === "heatmap") return /* @__PURE__ */ jsx2(HeatmapView, { ...args });
@@ -26938,9 +27011,25 @@ function fmtPrice(v) {
   if (v === 0) return "$0";
   return "$" + v.toFixed(2) + "/M tk";
 }
-function fmtIdx(v) {
-  if (v == null) return "…";
-  return v.toFixed(1);
+function SourcedIdx({ m, field, t }) {
+  const v = m[field];
+  const src = m.sources?.[field];
+  if (v == null) return /* @__PURE__ */ jsx3("span", { title: t.views.naHint, children: "…" });
+  if (src === "estimated") {
+    const e = m.estimates?.[field];
+    return /* @__PURE__ */ jsxs3("i", { style: { color: "var(--ui-text-tertiary)" }, title: e ? t.views.estimatedHint(t.views.fieldName[e.from] ?? e.from, e.r2, e.n) : "", children: [
+      "~",
+      v.toFixed(1)
+    ] });
+  }
+  if (src === "manual") return /* @__PURE__ */ jsxs3("span", { title: t.views.manualHint, children: [
+    v.toFixed(1),
+    /* @__PURE__ */ jsx3("sup", { style: { fontSize: 9 }, children: "✎" })
+  ] });
+  return /* @__PURE__ */ jsx3(Fragment3, { children: v.toFixed(1) });
+}
+function measured(m, field) {
+  return m.sources?.[field] === "estimated" ? 0 : m[field] || 0;
 }
 function fmtCtx(v) {
   if (!v) return "?";
@@ -27222,6 +27311,7 @@ function App() {
     }).finally(() => setAdding(false));
   };
   const removeModel = (id) => setPendingDelete(id);
+  const setIndexOverride = (modelId, field, value) => api("/benchmarks", { method: "POST", body: { model_id: modelId, field, value } }).then(() => api("/models")).then(applyModels).catch((err) => setLoadError(err?.message || String(err)));
   const confirmRemove = async () => {
     const id = pendingDelete;
     if (!id) return;
@@ -27354,9 +27444,11 @@ function App() {
     maxPriceIn: Math.max(0.01, ...models.map((m) => m.prompt_price || 0)),
     maxPriceOut: Math.max(0.01, ...models.map((m) => m.completion_price || 0)),
     maxPriceCache: Math.max(0.01, ...models.map((m) => m.cache_read_price || 0)),
-    maxIntel: Math.max(1, ...models.map((m) => m.intelligence_index || 0)),
-    maxCoding: Math.max(1, ...models.map((m) => m.coding_index || 0)),
-    maxAgentic: Math.max(1, ...models.map((m) => m.agentic_index || 0))
+    // Index maxima from MEASURED values only: an estimate must not set the
+    // 100 % mark that every other model is graded against.
+    maxIntel: Math.max(1, ...models.map((m) => measured(m, "intelligence_index"))),
+    maxCoding: Math.max(1, ...models.map((m) => measured(m, "coding_index"))),
+    maxAgentic: Math.max(1, ...models.map((m) => measured(m, "agentic_index")))
   }), [models]);
   const scoredModels = useMemo5(() => {
     const withScores = active.map((m) => ({
@@ -27555,7 +27647,8 @@ function App() {
                 maxes,
                 criteria: AVAILABLE_CRITERIA.map((c2) => ({ key: c2.key, icon: c2.icon, label: i18n.views.short[c2.key] })),
                 icon: providerIcon,
-                t: i18n
+                t: i18n,
+                onSetIndex: setIndexOverride
               }
             ) : /* @__PURE__ */ jsx3("div", { style: { display: "flex", gap: 16, flexWrap: "wrap" }, children: scoredModels.slice(0, 5).map((m) => /* @__PURE__ */ jsxs3(
               "div",
@@ -27739,9 +27832,9 @@ function App() {
                 /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.prompt_price) }),
                 /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.completion_price) }),
                 /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right", color: m.cache_read_price ? "var(--ui-blue)" : "var(--ui-text-quaternary)" }, children: m.cache_read_price != null ? fmtPrice(m.cache_read_price) : "–" }),
-                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.intelligence_index) }),
-                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.coding_index) }),
-                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.agentic_index) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx3(SourcedIdx, { m, field: "intelligence_index", t: i18n }) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx3(SourcedIdx, { m, field: "coding_index", t: i18n }) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx3(SourcedIdx, { m, field: "agentic_index", t: i18n }) }),
                 /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + "%" : "…" }),
                 /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: m.has_vision ? "👁" : "" }),
                 /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: m.open_weights ? "✅" : "❌" }),

@@ -87,3 +87,8 @@ test('paretoFrontier keeps only the non-dominated models', async () => {
   ]
   assert.deepEqual(paretoFrontier(pts).map((p: any) => p.id), ['cheap-weak', 'mid', 'premium'])
 })
+
+test('a grade never exceeds 100 even above the reference maximum', async () => {
+  const { criterionValues } = await import('../../src/core/scoring.ts')
+  assert.equal(criterionValues({ ...baseModel, coding_index: 80 }, MAXES).coding, 1)
+})

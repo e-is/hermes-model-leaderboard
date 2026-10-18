@@ -35,7 +35,7 @@ def _isolate_data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(main_mod, "DATA_DIR", tmp_path, raising=False)
     for attr in (
         "MODELS_FILE", "BENCHMARKS_FILE", "PRICE_HISTORY_FILE",
-        "CACHE_FILE", "PROFILES_FILE",
+        "CACHE_FILE", "PROFILES_FILE", "HF_CACHE_FILE",
     ):
         if hasattr(main_mod, attr):
             monkeypatch.setattr(main_mod, attr, tmp_path / attr.lower(), raising=False)
@@ -574,3 +574,68 @@ def test_refresh_without_force_keeps_the_cache(monkeypatch):
     res = client.post(f"{PREFIX}/refresh", json={})
     assert res.status_code == 200
     assert main_mod.CACHE_FILE.exists()
+
+
+# ---------------------------------------------------------------------------
+# Criterion completeness: manual > openrouter > estimated, HF model size
+# ---------------------------------------------------------------------------
+def _catalog(n=40):
+    """A catalogue where coding = 10 + 1.5 * intelligence exactly."""
+    return [{"id": f"m{i}", "benchmarks": {"artificial_analysis": {
+        "intelligence_index": float(i), "coding_index": 10 + 1.5 * i, "agentic_index": None}}}
+        for i in range(n)]
+
+
+def test_missing_index_is_estimated_from_the_catalogue_fit():
+    est = main_mod._index_estimators(_catalog())
+    m = main_mod._complete_indices({"intelligence_index": 20.0, "coding_index": None}, {}, est)
+    assert m["coding_index"] == 40.0
+    assert m["sources"] == {"intelligence_index": "openrouter", "coding_index": "estimated"}
+    assert m["estimates"]["coding_index"]["from"] == "intelligence_index"
+    # agentic has no catalogue pairs at all: stays missing rather than invented
+    assert m.get("agentic_index") is None and "agentic_index" not in m["sources"]
+
+
+def test_manual_override_beats_openrouter_and_feeds_estimates():
+    est = main_mod._index_estimators(_catalog())
+    m = main_mod._complete_indices({"intelligence_index": 20.0}, {"intelligence_index": 30.0}, est)
+    assert m["intelligence_index"] == 30.0 and m["sources"]["intelligence_index"] == "manual"
+    assert m["coding_index"] == 55.0  # estimated from the manual value
+
+
+def test_no_estimate_from_a_too_small_catalogue():
+    est = main_mod._index_estimators(_catalog(5))
+    m = main_mod._complete_indices({"intelligence_index": 20.0}, {}, est)
+    assert "coding_index" not in m["sources"]
+
+
+def test_get_models_reports_sources(monkeypatch):
+    main_mod.CACHE_FILE.write_text(json.dumps({"ts": 1, "data": _catalog()}))
+    monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x/y", "intelligence_index": 20.0}])
+    m = client.get(f"{PREFIX}/models").json()["models"][0]
+    assert m["coding_index"] == 40.0 and m["sources"]["coding_index"] == "estimated"
+
+
+def test_benchmark_null_clears_the_override():
+    client.post(f"{PREFIX}/benchmarks", json={"model_id": "x/y", "field": "coding_index", "value": 70})
+    assert client.get(f"{PREFIX}/benchmarks").json()["x/y"]["coding_index"] == 70
+    client.post(f"{PREFIX}/benchmarks", json={"model_id": "x/y", "field": "coding_index", "value": None})
+    assert "x/y" not in client.get(f"{PREFIX}/benchmarks").json()
+    res = client.post(f"{PREFIX}/benchmarks", json={"model_id": "x/y", "field": "coding_index", "value": "high"})
+    assert res.status_code == 400
+
+
+def test_open_weights_size_comes_from_hugging_face(monkeypatch):
+    monkeypatch.setattr(main_mod, "_hf_param_count", lambda hf: 753_329_940_480)
+    e = main_mod._fill_model_size({"hugging_face_id": "zai-org/GLM-5.3", "model_size": None})
+    assert e["model_size"] == "753B" and e["size_source"] == "huggingface"
+    assert e["gpu"]["fits_64gb"] is False
+    # a name-derived size is kept; a closed model is left alone
+    assert main_mod._fill_model_size({"hugging_face_id": "q/Q-27B", "model_size": "27B"})["model_size"] == "27B"
+    assert main_mod._fill_model_size({"hugging_face_id": None})  == {"hugging_face_id": None}
+
+
+def test_estimate_is_clamped_to_the_observed_range():
+    est = main_mod._index_estimators(_catalog())  # coding observed in [10, 68.5]
+    m = main_mod._complete_indices({"intelligence_index": 80.0}, {}, est)
+    assert m["coding_index"] == 68.5

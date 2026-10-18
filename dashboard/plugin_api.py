@@ -25,6 +25,8 @@ BENCHMARKS_FILE = DATA_DIR / "benchmarks.json"
 PRICE_HISTORY_FILE = DATA_DIR / "price_history.json"
 
 CACHE_FILE = DATA_DIR / "_openrouter_cache.json"
+HF_CACHE_FILE = DATA_DIR / "_hf_cache.json"
+HF_API_URL = "https://huggingface.co/api/models/{}?expand[]=safetensors"
 PROFILES_FILE = DATA_DIR / "profiles.json"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/models"
 CACHE_TTL = int(os.environ.get("LLM_DASH_CACHE_TTL", 300))
@@ -193,6 +195,134 @@ def _estimate_gpu(model_size_str):
     }
 
 
+# -----------------------------------------------------------------------------
+# Criterion completeness: every index gets a value AND says where it came from
+# -----------------------------------------------------------------------------
+#
+# OpenRouter only relays the Artificial Analysis indices it has: on the live
+# catalogue ~290 models carry `intelligence_index`, but only ~170 a
+# `coding_index` and ~130 an `agentic_index`. A missing index used to score 0,
+# silently sinking a good model. Precedence, highest first:
+#
+#   manual     — a value the user (or the refresh-benchmarks skill) entered,
+#                stored in benchmarks.json under the same field name;
+#   openrouter — the Artificial Analysis value relayed by OpenRouter;
+#   estimated  — a linear fit on the OTHER indices of the same model, learnt
+#                on the whole OpenRouter catalogue (R² 0.81–0.94 there).
+#
+# Each model carries `sources[field]` and, for estimates, `estimates[field]`
+# ({from, r2, n}) so the UI can show "~62" and explain it.
+
+INDEX_FIELDS = ("intelligence_index", "coding_index", "agentic_index")
+#: Below this many catalogue pairs, or this fit quality, no estimate is made.
+_MIN_FIT_N = 20
+_MIN_FIT_R2 = 0.6
+
+
+def _fit_line(pairs):
+    """Least-squares y = a + b·x over (x, y) pairs → (a, b, r2), or None."""
+    n = len(pairs)
+    if n < _MIN_FIT_N:
+        return None
+    mx = sum(x for x, _ in pairs) / n
+    my = sum(y for _, y in pairs) / n
+    sxx = sum((x - mx) ** 2 for x, _ in pairs)
+    syy = sum((y - my) ** 2 for _, y in pairs)
+    sxy = sum((x - mx) * (y - my) for x, y in pairs)
+    if sxx <= 0 or syy <= 0:
+        return None
+    b = sxy / sxx
+    return my - b * mx, b, (sxy * sxy) / (sxx * syy)
+
+
+def _index_estimators(catalog):
+    """{target: [(predictor, a, b, r2, n, lo, hi), ...]} best fit first, from the catalogue.
+
+    `lo`/`hi` is the range of `target` actually observed: an estimate is clamped
+    to it, so the top model of one index is never extrapolated past every
+    measured model on another (a fit is not evidence of a record)."""
+    rows = [((m.get("benchmarks") or {}).get("artificial_analysis") or {}) for m in catalog or []]
+    out = {}
+    for target in INDEX_FIELDS:
+        seen = [r[target] for r in rows if isinstance(r.get(target), (int, float))]
+        fits = []
+        for pred in INDEX_FIELDS:
+            if pred == target:
+                continue
+            pairs = [(r[pred], r[target]) for r in rows
+                     if isinstance(r.get(pred), (int, float)) and isinstance(r.get(target), (int, float))]
+            fit = _fit_line(pairs)
+            if fit and fit[2] >= _MIN_FIT_R2:
+                fits.append((pred, fit[0], fit[1], fit[2], len(pairs), min(seen), max(seen)))
+        out[target] = sorted(fits, key=lambda f: -f[3])
+    return out
+
+
+def _complete_indices(model, overrides, estimators):
+    """Fill the index fields of one model in place: manual > openrouter > estimated."""
+    sources, estimates = {}, {}
+    for field in INDEX_FIELDS:
+        manual = (overrides or {}).get(field)
+        if isinstance(manual, (int, float)):
+            model[field] = manual
+            sources[field] = "manual"
+        elif model.get(field) is not None:
+            sources[field] = "openrouter"
+    # Estimate only from measured (manual / openrouter) values — never chain an
+    # estimate on an estimate.
+    measured = {f: model[f] for f in sources}
+    for field in INDEX_FIELDS:
+        if field in sources:
+            continue
+        for pred, a, b, r2, n, lo, hi in estimators.get(field, []):
+            if pred in measured:
+                model[field] = round(min(hi, max(lo, a + b * measured[pred])), 1)
+                sources[field] = "estimated"
+                estimates[field] = {"from": pred, "r2": round(r2, 2), "n": n}
+                break
+    model["sources"] = sources
+    model["estimates"] = estimates
+    return model
+
+
+def _hf_param_count(hf_id):
+    """Total parameter count from the Hugging Face API (cached), or None.
+
+    The model size used to come only from a regex on the model *name* ("27B"),
+    so most open-weights models (GLM, Kimi, DeepSeek...) had no size and no
+    VRAM estimate. Hugging Face publishes the exact safetensors total."""
+    if not hf_id:
+        return None
+    try:
+        cache = json.loads(HF_CACHE_FILE.read_text()) if HF_CACHE_FILE.exists() else {}
+    except Exception:
+        cache = {}
+    if hf_id in cache:
+        return cache[hf_id]
+    try:
+        r = httpx.get(HF_API_URL.format(hf_id), timeout=15)
+        total = (r.json().get("safetensors") or {}).get("total") if r.status_code == 200 else None
+    except Exception as e:
+        logger.info(f"Hugging Face size lookup failed for {hf_id}: {e}")
+        return None  # transient: not cached, retried on the next refresh
+    cache[hf_id] = total if isinstance(total, (int, float)) else None
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    HF_CACHE_FILE.write_text(json.dumps(cache, indent=2))
+    return cache[hf_id]
+
+
+def _fill_model_size(entry):
+    """Give an open-weights model without a name-derived size its HF size."""
+    if entry.get("model_size") or not entry.get("hugging_face_id"):
+        return entry
+    total = _hf_param_count(entry["hugging_face_id"])
+    if total:
+        entry["model_size"] = f"{round(total / 1e9)}B"
+        entry["size_source"] = "huggingface"
+        entry["gpu"] = _estimate_gpu(entry["model_size"])
+    return entry
+
+
 class ModelIn(BaseModel):
     id: str
     label: str | None = None
@@ -202,9 +332,14 @@ class ModelIn(BaseModel):
 def get_models():
     models = _load_models()
     benchmarks = _load_benchmarks()
+    # Read the catalogue from disk only (stale is fine for fitting): this
+    # endpoint is polled every minute and must never wait on OpenRouter.
+    cached = _read_cache() if CACHE_FILE.exists() else None
+    estimators = _index_estimators(cached["data"] if cached else [])
     for m in models:
         m["benchmarks"] = benchmarks.get(m["id"], {})
-        if "gpu" not in m and m.get("model_size"):
+        _complete_indices(m, m["benchmarks"], estimators)
+        if not m.get("gpu") and m.get("model_size"):
             m["gpu"] = _estimate_gpu(m["model_size"])
     return {"models": models, "last_refresh": _meta().get("last_refresh"), "cache_age_s": _cache_age()}
 
@@ -220,6 +355,7 @@ def add_model(m: ModelIn):
     if mid in or_data:
         entry.update(or_data[mid])
         entry["available"] = True
+        _fill_model_size(entry)
     else:
         entry["available"] = False
     models.append(entry)
@@ -356,6 +492,7 @@ def refresh(force: bool = False, payload: dict = Body(default={})):
     for m in models:
         if m["id"] in or_data:
             m.update(or_data[m["id"]]); m["available"] = True; m["last_updated"] = now
+            _fill_model_size(m)
         else: m["available"] = False
     _save_models(models)
     (DATA_DIR / "_meta.json").write_text(json.dumps({"last_refresh": now}))
@@ -533,11 +670,25 @@ def get_benchmarks(): return _load_benchmarks()
 def update_benchmarks(data: dict):
     mid, field, value = data.get("model_id"), data.get("field"), data.get("value")
     if not mid or not field: raise HTTPException(400, "model_id and field required")
+    if value is not None and not isinstance(value, (int, float)):
+        raise HTTPException(400, "value must be a number or null")
     allb = _load_benchmarks()
-    allb.setdefault(mid, {})[field] = value
-    full = {"_description": "Scores curates manuellement.", "_last_updated": "2026-08-21",
-            "_sources": BENCHMARKS_FILE.exists() and json.loads(BENCHMARKS_FILE.read_text()).get("_sources", {}),
-            "models": allb}
+    entry = allb.setdefault(mid, {})
+    if value is None:
+        # null clears a manual override (the field falls back to OpenRouter / estimate)
+        entry.pop(field, None)
+        if not entry:
+            allb.pop(mid, None)
+    else:
+        entry[field] = value
+    try:
+        full = json.loads(BENCHMARKS_FILE.read_text()) if BENCHMARKS_FILE.exists() else {}
+    except Exception:
+        full = {}
+    full.setdefault("_description", "Scores curates manuellement.")
+    full["_last_updated"] = time.strftime("%Y-%m-%d")
+    full["models"] = allb
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     BENCHMARKS_FILE.write_text(json.dumps(full, indent=2, ensure_ascii=False))
     return {"updated": mid, field: value}
 

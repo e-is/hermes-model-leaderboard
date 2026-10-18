@@ -104,6 +104,13 @@ const LOCALES = {
       frontierHint: 'no other model is both cheaper and better (Pareto frontier).',
       others: 'Dominated',
       valueRead: 'Top-left is best: low cost, high quality.',
+      fieldName: { intelligence_index: 'Intelligence', coding_index: 'Coding', agentic_index: 'Agentic' },
+      estimatedHint: (from: string, r2: number, n: number) => `Estimated from ${from} — linear fit on ${n} OpenRouter models (R² ${r2}). Click a heatmap cell to enter the real value.`,
+      manualHint: 'Value entered manually (overrides OpenRouter).',
+      naHint: 'No data: not published, and no other index to estimate it from.',
+      editHint: 'Click to enter the value (empty = back to OpenRouter / estimate).',
+      rawIndex: 'raw index',
+      hasEstimates: 'Some grades are estimated (~)',
       noQuality: 'This profile only weights prices — add a quality criterion (intelligence, coding…) to plot quality against cost.'
     },
     news: {
@@ -265,6 +272,13 @@ const LOCALES = {
       frontierHint: 'aucun autre modèle n\u2019est à la fois moins cher et meilleur (frontière de Pareto).',
       others: 'Dominés',
       valueRead: 'Le meilleur est en haut à gauche : coût bas, qualité haute.',
+      fieldName: { intelligence_index: 'Intelligence', coding_index: 'Code', agentic_index: 'Agentique' },
+      estimatedHint: (from: string, r2: number, n: number) => `Estimé depuis ${from} — régression sur ${n} modèles OpenRouter (R² ${r2}). Cliquer une cellule de la heatmap pour saisir la vraie valeur.`,
+      manualHint: 'Valeur saisie manuellement (prime sur OpenRouter).',
+      naHint: 'Aucune donnée : non publiée, et aucun autre indice pour l\u2019estimer.',
+      editHint: 'Cliquer pour saisir la valeur (vide = retour à OpenRouter / estimation).',
+      rawIndex: 'indice brut',
+      hasEstimates: 'Certaines notes sont estimées (~)',
       noQuality: 'Ce profil ne pondère que les prix — ajoutez un critère de qualité (intelligence, code…) pour comparer qualité et coût.'
     },
     news: {

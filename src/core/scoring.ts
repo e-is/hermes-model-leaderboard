@@ -17,7 +17,7 @@ export type CriterionKey = typeof CRITERIA_KEYS[number]
  * caused by a hole in the data is not mistaken for a weak model.
  */
 export function criterionValues(m: any, maxes: Record<string, number>): Record<CriterionKey, number | null> {
-  const ratio = (v: number | null | undefined, max: number) => (v == null ? null : v / (max || 1))
+  const ratio = (v: number | null | undefined, max: number) => (v == null ? null : Math.min(1, v / (max || 1)))
   const cheap = (v: number | null | undefined, max: number) => (max > 0 ? 1 - Math.min(1, (v ?? 0) / max) : 1)
 
   return {

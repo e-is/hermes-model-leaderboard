@@ -34,6 +34,24 @@ Shape (one entry per model, keyed by the OpenRouter model id):
   value, never carry another model's score over — a wrong number silently
   distorts every ranking that uses it.
 
+## Filling missing Artificial Analysis indices
+
+`intelligence_index`, `coding_index` and `agentic_index` normally come from
+OpenRouter (which relays Artificial Analysis). When OpenRouter has none, the
+plugin *estimates* them from the model's other indices and shows them as
+`~62` — an estimate is better than a 0, but a measured value is better still.
+The same `benchmarks.json` entry takes these fields too, and a value written
+there overrides both OpenRouter and the estimate:
+
+```json
+"poolside/laguna-s-2.1": { "intelligence_index": 31.2, "coding_index": null }
+```
+
+Take them from <https://artificialanalysis.ai/models> (same scale as
+OpenRouter's: the Intelligence / Coding / Agentic Index of the model page).
+Send `"value": null` to remove an override. A model the leaderboard shows as
+`n/a` on every index has nothing to estimate from: those are the priority.
+
 ## Procedure
 
 1. **List the tracked models** — read `dashboard/data/models.json` (the `id`

@@ -28,7 +28,13 @@ type ModelRecord = {
   model_size?: string | null; reasoning?: boolean; hidden?: boolean
   benchmarks?: Record<string, number | null>
   gpu?: GpuInfo
+  /** Where each index value comes from (backend `_complete_indices`). */
+  sources?: Record<string, IndexSource>
+  estimates?: Record<string, { from: string; r2: number; n: number }>
+  size_source?: string
 }
+
+type IndexSource = 'manual' | 'openrouter' | 'estimated'
 
 type SearchHit = {
   id: string; name: string; context_length?: number
@@ -149,9 +155,23 @@ function fmtPrice(v: number | null | undefined): string {
   if (v === 0) return '$0'
   return '$' + v.toFixed(2) + '/M tk'
 }
-function fmtIdx(v: number | null | undefined): string {
-  if (v == null) return '…'
-  return v.toFixed(1)
+
+/** An index cell that says where its value comes from: "~62" estimated, "62✎" manual. */
+function SourcedIdx({ m, field, t }: { m: ModelRecord; field: string; t: any }) {
+  const v = (m as any)[field] as number | null | undefined
+  const src = m.sources?.[field]
+  if (v == null) return <span title={t.views.naHint}>…</span>
+  if (src === 'estimated') {
+    const e = m.estimates?.[field]
+    return <i style={{ color: 'var(--ui-text-tertiary)' }} title={e ? t.views.estimatedHint(t.views.fieldName[e.from] ?? e.from, e.r2, e.n) : ''}>~{v.toFixed(1)}</i>
+  }
+  if (src === 'manual') return <span title={t.views.manualHint}>{v.toFixed(1)}<sup style={{ fontSize: 9 }}>✎</sup></span>
+  return <>{v.toFixed(1)}</>
+}
+
+/** An index value if it was measured (OpenRouter or typed in), else 0. */
+function measured(m: ModelRecord, field: string): number {
+  return m.sources?.[field] === 'estimated' ? 0 : ((m as any)[field] || 0)
 }
 
 function modelSafeKey(m: string): string {
@@ -473,6 +493,13 @@ export default function App() {
   // Deletion goes through the desktop's shared ConfirmDialog (exported by the
   // plugin SDK) — no inline "are you sure" button in the table.
   const removeModel = (id: string) => setPendingDelete(id)
+
+  /** Manual value for a benchmark index (null clears it → OpenRouter / estimate). */
+  const setIndexOverride = (modelId: string, field: string, value: number | null) =>
+    api('/benchmarks', { method: 'POST', body: { model_id: modelId, field, value } })
+      .then(() => api('/models'))
+      .then(applyModels)
+      .catch((err: any) => setLoadError(err?.message || String(err)))
   // Throwing keeps the dialog open and shows the message inline.
   const confirmRemove = async () => {
     const id = pendingDelete
@@ -634,9 +661,11 @@ export default function App() {
     maxPriceIn: Math.max(0.01, ...models.map(m => m.prompt_price || 0)),
     maxPriceOut: Math.max(0.01, ...models.map(m => m.completion_price || 0)),
     maxPriceCache: Math.max(0.01, ...models.map(m => m.cache_read_price || 0)),
-    maxIntel: Math.max(1, ...models.map(m => m.intelligence_index || 0)),
-    maxCoding: Math.max(1, ...models.map(m => m.coding_index || 0)),
-    maxAgentic: Math.max(1, ...models.map(m => m.agentic_index || 0)),
+    // Index maxima from MEASURED values only: an estimate must not set the
+    // 100 % mark that every other model is graded against.
+    maxIntel: Math.max(1, ...models.map(m => measured(m, 'intelligence_index'))),
+    maxCoding: Math.max(1, ...models.map(m => measured(m, 'coding_index'))),
+    maxAgentic: Math.max(1, ...models.map(m => measured(m, 'agentic_index'))),
   }), [models])
 
   // Scores + ranks (using generic scoring algorithm based on currentProfile.weights)
@@ -863,6 +892,7 @@ export default function App() {
                       criteria={AVAILABLE_CRITERIA.map(c => ({ key: c.key, icon: c.icon, label: i18n.views.short[c.key] }))}
                       icon={providerIcon}
                       t={i18n}
+                      onSetIndex={setIndexOverride}
                     />
                   ) : (
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -1010,9 +1040,9 @@ export default function App() {
                             <td style={{ ...S.td, textAlign: 'right', color: m.cache_read_price ? 'var(--ui-blue)' : 'var(--ui-text-quaternary)' }}>
                               {m.cache_read_price != null ? fmtPrice(m.cache_read_price) : '–'}
                             </td>
-                            <td style={{ ...S.td, textAlign: 'center' }}>{fmtIdx(m.intelligence_index)}</td>
-                            <td style={{ ...S.td, textAlign: 'center' }}>{fmtIdx(m.coding_index)}</td>
-                            <td style={{ ...S.td, textAlign: 'center' }}>{fmtIdx(m.agentic_index)}</td>
+                            <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="intelligence_index" t={i18n} /></td>
+                            <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="coding_index" t={i18n} /></td>
+                            <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="agentic_index" t={i18n} /></td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + '%' : '…'}</td>
                                                         <td style={{ ...S.td, textAlign: 'center' }}>{m.has_vision ? '👁' : ''}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.open_weights ? '✅' : '❌'}</td>
