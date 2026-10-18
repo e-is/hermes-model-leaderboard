@@ -252,16 +252,30 @@ def _extract_model_size(raw):
     return " / ".join(out) if out else None
 
 
+def _read_cache():
+    try:
+        cached = json.loads(CACHE_FILE.read_text())
+        return cached if isinstance(cached.get("data"), list) else None
+    except Exception:
+        return None
+
+
 def _get_cached_or_fetch(force=False):
-    if not force and CACHE_FILE.exists():
-        try:
-            cached = json.loads(CACHE_FILE.read_text())
-            if time.time() - cached["ts"] < CACHE_TTL:
-                return cached["data"]
-        except: pass
-    r = httpx.get(OPENROUTER_URL, timeout=30)
-    r.raise_for_status()
-    data = r.json()["data"]
+    cached = _read_cache() if CACHE_FILE.exists() else None
+    if not force and cached and time.time() - cached.get("ts", 0) < CACHE_TTL:
+        return cached["data"]
+    try:
+        r = httpx.get(OPENROUTER_URL, timeout=30)
+        r.raise_for_status()
+        data = r.json()["data"]
+    except Exception as e:
+        # Stale-on-error: a 429 / network blip must not blank the page while a
+        # previous payload is still on disk — serve it, however old.
+        if cached:
+            logger.warning(f"OpenRouter unavailable ({e}); serving the stale cache")
+            return cached["data"]
+        raise HTTPException(502, f"OpenRouter inaccessible: {e}")
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     CACHE_FILE.write_text(json.dumps({"ts": time.time(), "data": data}))
     return data
 
@@ -272,9 +286,8 @@ def _cache_age():
     except: return None
 
 
-def _fetch_openrouter(ids):
-    try: all_models = _get_cached_or_fetch()
-    except Exception as e: raise HTTPException(502, f"OpenRouter inaccessible: {e}")
+def _fetch_openrouter(ids, force=False):
+    all_models = _get_cached_or_fetch(force=force)
 
     out = {}
     for m in all_models:
@@ -336,8 +349,9 @@ def refresh(force: bool = False, payload: dict = Body(default={})):
     ids = [m["id"] for m in models]
     if not ids: return {"refreshed": 0}
     force = force or bool((payload or {}).get("force"))
-    if force: CACHE_FILE.unlink(missing_ok=True)
-    or_data = _fetch_openrouter(ids)
+    # A forced refresh refetches but keeps the cache file: it is the stale
+    # fallback if OpenRouter fails right now.
+    or_data = _fetch_openrouter(ids, force=force)
     now = time.time()
     for m in models:
         if m["id"] in or_data:

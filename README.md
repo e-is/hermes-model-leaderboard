@@ -28,6 +28,11 @@ Notes — the three things that trip people up:
   `plugin.yaml` decides the namespace the renderer's `ctx.rest` scopes to, while the
   manifest decides the path the gateway mounts the router under. A mismatch 404s every
   API call (`No such API endpoint: /api/plugins/model-leaderboard/...`).
+- **The desktop needs its own toggle.** A plugin coming from `~/.hermes/plugins/` ships
+  *disabled* in Hermes Desktop until you switch it on in **Settings → Plugins**. That
+  choice is stored per renderer id: if you enabled an earlier build published as
+  `hermes-model-leaderboard`, the `model-leaderboard` renderer is a new id and starts
+  off again — no sidebar entry, no page. Enable it once more.
 - **`enable` asks about built-in tool override** — "Allow this plugin to replace built-in
   tools (e.g. shell_exec, write_file)?". Answer **no**: this plugin registers no agent
   tools at all (it ships a dashboard API router, a desktop renderer and a read-only
@@ -84,7 +89,8 @@ assets/              screenshots
 npm install
 npm run build                                      # src/ → desktop/plugin.js
 node --experimental-strip-types --test "tests/unit/*.test.ts"   # scoring + path guards
-pytest tests/test_backend.py -q                    # backend (23 tests)
+pytest tests/test_backend.py -q                    # backend
+npm test                                           # both
 ```
 
 To iterate without reinstalling: copy `desktop/plugin.js` into

@@ -7,8 +7,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node --check desktop/plugin.js",
-    "test": "bash tests/run_tests.sh",
-    "test:ui": "node tests/ui/esm-render.mjs"
+    "test": "node --experimental-strip-types --test tests/unit/*.test.ts && python3 -m pytest -q tests"
   },
   "dependencies": {
     "recharts": "^2.15.0"

@@ -221,7 +221,7 @@ function providerName(id: string): string {
 // ---- Colors ----------------------------------------------------
 const colors = [
   'var(--ui-purple)', '#82ca9d', '#ffc658', 'var(--ui-orange)', '#00C49F', '#0088FE', '#FFBB28', '#FF8042',
-  '#a4de6c', '#d0ed57', '#83a6ed', '#8dd1e1', 'var(--ui-red)', '#ba68c8', '#4db6ac', 'var(--ui-bg-editor)176'
+  '#a4de6c', '#d0ed57', '#83a6ed', '#8dd1e1', 'var(--ui-red)', '#ba68c8', '#4db6ac', '#795548'
 ]
 
 // ---- Generic Scoring Algorithm (impl in src/core/scoring.ts) ----
@@ -377,10 +377,19 @@ export default function App() {
   }
 
   const [lastRefresh, setLastRefresh] = useState<number | null>(null)
+  // Last /models failure. Without it a gateway that is asleep (--idle-exit) or
+  // restarting rendered as an empty table, indistinguishable from "no models".
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const applyModels = (d: any) => {
+    setModels(Array.isArray(d?.models) ? d.models : [])
+    setLastRefresh(d?.last_refresh ?? null)
+    setLoadError(null)
+  }
   const fetchModels = () => {
     setLoading(true)
     api('/models')
-      .then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) })
+      .then(applyModels)
+      .catch((err: any) => setLoadError(err?.message || String(err)))
       .finally(() => setLoading(false))
   }
   useEffect(() => { fetchModels() }, [])
@@ -391,7 +400,7 @@ export default function App() {
     // Cheap poll: re-reads local state only (no OpenRouter call).
     const uiPoll = setInterval(() => {
       if (document.visibilityState !== 'visible') return
-      api('/models').then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) }).catch(() => undefined)
+      api('/models').then(applyModels).catch(() => undefined)
       api('/news').then(d => setNews(d)).catch(() => undefined)
     }, 60_000)
     // Real pull: the backend cache is 5 min, so a 10-min tick always refetches
@@ -401,7 +410,7 @@ export default function App() {
       if (document.visibilityState !== 'visible') return
       api('/refresh', { method: 'POST', body: {} })
         .then(() => Promise.all([
-          api('/models').then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) }),
+          api('/models').then(applyModels),
           api('/news').then(d => setNews(d)),
         ]))
         .catch(() => undefined)
@@ -413,7 +422,7 @@ export default function App() {
 
   const fetchNews = () => {
     setLoadingNews(true)
-    api('/news').then(d => setNews(d)).finally(() => setLoadingNews(false))
+    api('/news').then(d => setNews(d)).catch(() => undefined).finally(() => setLoadingNews(false))
   }
   useEffect(() => { fetchNews() }, [])
 
@@ -426,9 +435,12 @@ export default function App() {
     // button re-merged the cached payload and nothing moved.
     api('/refresh', { method: 'POST', body: { force: true } })
       .then(() => api('/models'))
-      .then(d => { setModels(d.models); setLastRefresh(d.last_refresh ?? null) })
+      .then(applyModels)
       .then(() => fetchNews())
-      .catch(err => console.error('[leaderboard] refresh failed:', err))
+      .catch(err => {
+        console.error('[leaderboard] refresh failed:', err)
+        setLoadError(err?.message || String(err))
+      })
       .finally(() => setLoading(false))
   }
 
@@ -804,6 +816,12 @@ export default function App() {
               )}
             </div>
 
+            {loadError && (
+              <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 12, borderRadius: 6, border: '1px solid var(--ui-red)', background: 'color-mix(in srgb, var(--ui-red) 8%, transparent)', fontSize: 12 }}>
+                <span style={{ flex: 1 }}><b>{i18n.loadError}</b> — {loadError}</span>
+                <button onClick={fetchModels} style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer' }}>{i18n.retry}</button>
+              </div>
+            )}
             {loading ? (<p>{i18n.loading}</p>) : (
               <>
                 {/* ---- CLASSEMENT ---- */}
@@ -827,7 +845,7 @@ export default function App() {
                         title={buildModelTooltip(m)}
                         style={{
                           flex: 1, minWidth: 160, padding: 10,
-                          background: m._rank === 1 ? 'var(--ui-bg-editor)7ed' : m._rank === 2 ? 'var(--ui-row-hover-background)' : 'var(--ui-bg-editor)',
+                          background: m._rank === 1 ? 'color-mix(in srgb, var(--ui-orange) 10%, var(--ui-bg-editor))' : m._rank === 2 ? 'var(--ui-row-hover-background)' : 'var(--ui-bg-editor)',
                           borderRadius: 6,
                           border: m._rank <= 3 ? '2px solid var(--ui-orange)' : '1px solid var(--ui-stroke-tertiary)',
                           cursor: 'help',
@@ -975,7 +993,7 @@ export default function App() {
                               {m.gpu ? <span title={`Q8: ${m.gpu.vram_q8_gb}GB, FP16: ${m.gpu.vram_fp16_gb}GB`}>{m.gpu.vram_q4_gb}GB{m.gpu.fits_64gb ? ' ✓' : ''}</span> : '-'}
                             </td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{(m.supported_parameters || []).includes('tools') ? '✅' : '❌'}</td>
-                                                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, background: top3 ? 'var(--ui-bg-editor)3e0' : undefined }}>
+                                                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, background: top3 ? 'color-mix(in srgb, var(--ui-orange) 10%, transparent)' : undefined }}>
                               <span title={`Score ${currentProfile.name}: ${sc}`} style={{ color: top3 ? 'var(--ui-orange)' : sc > 50 ? 'var(--ui-green)' : 'var(--ui-text-tertiary)' }}>
                                 {rankStr}
                                 {top3 && <span style={{ fontSize: 10, marginLeft: 2 }}>🥇</span>}
@@ -1070,7 +1088,7 @@ export default function App() {
                         return (
                           <span key={label} onClick={() => toggleRadar(label)}
                             title={hiddenR ? i18n.clickToShow : i18n.clickToHide}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 11, userSelect: 'none', opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? 'line-through' : 'none', padding: '2px 5px', borderRadius: 4, background: hiddenR ? 'transparent' : colors[ci2 % colors.length] + '18' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 11, userSelect: 'none', opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? 'line-through' : 'none', padding: '2px 5px', borderRadius: 4, background: hiddenR ? 'transparent' : `color-mix(in srgb, ${colors[ci2 % colors.length]} 10%, transparent)` }}>
                             <span style={{ display: 'inline-block', width: 9, height: 9, background: colors[ci2 % colors.length], borderRadius: 2 }} />
                             {label}
                           </span>
@@ -1228,7 +1246,7 @@ export default function App() {
                       <div
                         key={crit.key}
                         style={{
-                          background: currentWeight > 0 ? 'var(--ui-row-hover-background)' : 'var(--ui-bg-editor)fff',
+                          background: currentWeight > 0 ? 'var(--ui-row-hover-background)' : 'var(--ui-bg-editor)',
                           border: `1px solid ${currentWeight > 0 ? 'var(--ui-stroke-secondary)' : 'var(--ui-bg-tertiary)'}`,
                           borderRadius: 8,
                           padding: '8px 12px',

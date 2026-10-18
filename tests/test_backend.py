@@ -134,7 +134,7 @@ def test_add_and_delete_model(tmp_path, monkeypatch):
     models_file = tmp_path / "models.json"
     models_file.write_text("[]")
     monkeypatch.setattr(main_mod, "MODELS_FILE", models_file)
-    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids, force=False: {
         "vendor/model-1": {"name": "Model 1", "context_length": 128_000}
     })
 
@@ -474,7 +474,7 @@ def test_news_rolling_price_variations(client_nomonkey, monkeypatch):
 # ---------------------------------------------------------------------------
 def test_post_models_accepts_object_body(monkeypatch):
     monkeypatch.setattr(main_mod, "_load_models", lambda: [])
-    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids, force=False: {})
     saved = {}
     monkeypatch.setattr(main_mod, "_save_models", lambda m: saved.update({"models": m}))
 
@@ -504,7 +504,7 @@ def test_post_models_rejects_double_encoded_body(monkeypatch):
 def test_first_run_seeds_tracked_models_from_profiles(monkeypatch):
     """No models.json yet -> the tracked list starts from the profile models."""
     monkeypatch.setattr(main_mod, "_profile_model_ids", lambda: ["x-ai/grok-4.7", "default/cheap"])
-    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids, force=False: {})
     assert not main_mod.MODELS_FILE.exists()
 
     models = main_mod._load_models()
@@ -521,22 +521,44 @@ def test_first_run_without_profile_models_stays_empty(monkeypatch):
 
 
 def test_refresh_force_from_body_bypasses_the_cache(monkeypatch):
-    """POST /refresh {"force": true} must drop the cache (the button sent no
-    force and re-merged the cached payload, which looked like a no-op)."""
+    """POST /refresh {"force": true} must refetch OpenRouter (the button sent no
+    force and re-merged the cached payload, which looked like a no-op) — while
+    keeping the cache file as the stale fallback."""
     main_mod.CACHE_FILE.write_text('{"ts": 1, "data": []}')
+    seen = {}
     monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x-ai/grok-4.7"}])
-    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids, force=False: seen.update(force=force) or {})
     monkeypatch.setattr(main_mod, "_save_models", lambda models: None)
 
     res = client.post(f"{PREFIX}/refresh", json={"force": True})
     assert res.status_code == 200, res.text
-    assert not main_mod.CACHE_FILE.exists(), "force=true must invalidate the cache"
+    assert seen["force"] is True, "force=true must bypass the cache"
+    assert main_mod.CACHE_FILE.exists(), "the cache stays as the stale fallback"
+
+
+def _openrouter_down(monkeypatch):
+    def boom(*a, **k):
+        raise main_mod.httpx.ConnectError("429 / network down")
+    monkeypatch.setattr(main_mod.httpx, "get", boom)
+
+
+def test_openrouter_error_serves_the_stale_cache(monkeypatch):
+    main_mod.CACHE_FILE.write_text(json.dumps({"ts": 1, "data": [{"id": "x-ai/grok-4.7"}]}))
+    _openrouter_down(monkeypatch)
+    assert main_mod._get_cached_or_fetch() == [{"id": "x-ai/grok-4.7"}]
+    assert main_mod._get_cached_or_fetch(force=True) == [{"id": "x-ai/grok-4.7"}]
+
+
+def test_openrouter_error_without_cache_is_a_502(monkeypatch):
+    _openrouter_down(monkeypatch)
+    res = client.get(f"{PREFIX}/openrouter/search?q=x")
+    assert res.status_code == 502
 
 
 def test_refresh_without_force_keeps_the_cache(monkeypatch):
     main_mod.CACHE_FILE.write_text('{"ts": 1, "data": []}')
     monkeypatch.setattr(main_mod, "_load_models", lambda: [{"id": "x-ai/grok-4.7"}])
-    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids: {})
+    monkeypatch.setattr(main_mod, "_fetch_openrouter", lambda ids, force=False: {})
     monkeypatch.setattr(main_mod, "_save_models", lambda models: None)
 
     res = client.post(f"{PREFIX}/refresh", json={})

@@ -24946,6 +24946,8 @@ var LOCALES = {
     editCriteria: "Edit scoring criteria",
     trackingProfile: "Tracking profile",
     loading: "Loading…",
+    loadError: "Could not load the tracked models",
+    retry: "Retry",
     searchPlaceholder: "Search a model…",
     search: "Search",
     searchUntracked: "Search untracked models",
@@ -25062,6 +25064,8 @@ var LOCALES = {
     editCriteria: "Modifier les critères de notation",
     trackingProfile: "Profil de suivi",
     loading: "Chargement…",
+    loadError: "Impossible de charger les modèles suivis",
+    retry: "Réessayer",
     searchPlaceholder: "Rechercher un modèle…",
     search: "Chercher",
     searchUntracked: "Rechercher dans les modèles non suivis",
@@ -25340,7 +25344,7 @@ var colors = [
   "var(--ui-red)",
   "#ba68c8",
   "#4db6ac",
-  "var(--ui-bg-editor)176"
+  "#795548"
 ];
 var S = {
   wrap: { fontFamily: "var(--dt-font-sans)", color: "var(--ui-text-primary)", padding: "8px 14px" },
@@ -25479,12 +25483,15 @@ function App() {
     });
   };
   const [lastRefresh, setLastRefresh] = useState6(null);
+  const [loadError, setLoadError] = useState6(null);
+  const applyModels = (d) => {
+    setModels(Array.isArray(d?.models) ? d.models : []);
+    setLastRefresh(d?.last_refresh ?? null);
+    setLoadError(null);
+  };
   const fetchModels = () => {
     setLoading(true);
-    api("/models").then((d) => {
-      setModels(d.models);
-      setLastRefresh(d.last_refresh ?? null);
-    }).finally(() => setLoading(false));
+    api("/models").then(applyModels).catch((err) => setLoadError(err?.message || String(err))).finally(() => setLoading(false));
   };
   useEffect5(() => {
     fetchModels();
@@ -25492,19 +25499,13 @@ function App() {
   useEffect5(() => {
     const uiPoll = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      api("/models").then((d) => {
-        setModels(d.models);
-        setLastRefresh(d.last_refresh ?? null);
-      }).catch(() => void 0);
+      api("/models").then(applyModels).catch(() => void 0);
       api("/news").then((d) => setNews(d)).catch(() => void 0);
     }, 6e4);
     const dataPull = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       api("/refresh", { method: "POST", body: {} }).then(() => Promise.all([
-        api("/models").then((d) => {
-          setModels(d.models);
-          setLastRefresh(d.last_refresh ?? null);
-        }),
+        api("/models").then(applyModels),
         api("/news").then((d) => setNews(d))
       ])).catch(() => void 0);
     }, 10 * 6e4);
@@ -25518,17 +25519,17 @@ function App() {
   }, []);
   const fetchNews = () => {
     setLoadingNews(true);
-    api("/news").then((d) => setNews(d)).finally(() => setLoadingNews(false));
+    api("/news").then((d) => setNews(d)).catch(() => void 0).finally(() => setLoadingNews(false));
   };
   useEffect5(() => {
     fetchNews();
   }, []);
   const refresh = () => {
     setLoading(true);
-    api("/refresh", { method: "POST", body: { force: true } }).then(() => api("/models")).then((d) => {
-      setModels(d.models);
-      setLastRefresh(d.last_refresh ?? null);
-    }).then(() => fetchNews()).catch((err) => console.error("[leaderboard] refresh failed:", err)).finally(() => setLoading(false));
+    api("/refresh", { method: "POST", body: { force: true } }).then(() => api("/models")).then(applyModels).then(() => fetchNews()).catch((err) => {
+      console.error("[leaderboard] refresh failed:", err);
+      setLoadError(err?.message || String(err));
+    }).finally(() => setLoading(false));
   };
   const addModel = (id) => {
     setAdding(true);
@@ -25830,6 +25831,14 @@ function App() {
             children: "📰 Actualités ▶"
           }
         ) }),
+        loadError && /* @__PURE__ */ jsxs2("div", { role: "alert", style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid var(--ui-red)", background: "color-mix(in srgb, var(--ui-red) 8%, transparent)", fontSize: 12 }, children: [
+          /* @__PURE__ */ jsxs2("span", { style: { flex: 1 }, children: [
+            /* @__PURE__ */ jsx2("b", { children: i18n.loadError }),
+            " — ",
+            loadError
+          ] }),
+          /* @__PURE__ */ jsx2("button", { onClick: fetchModels, style: { padding: "4px 10px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer" }, children: i18n.retry })
+        ] }),
         loading ? /* @__PURE__ */ jsx2("p", { children: i18n.loading }) : /* @__PURE__ */ jsxs2(Fragment2, { children: [
           /* @__PURE__ */ jsxs2("div", { style: { marginBottom: 24, padding: 16, background: "var(--ui-row-hover-background)", borderRadius: 8, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
             /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, children: [
@@ -25854,7 +25863,7 @@ function App() {
                   flex: 1,
                   minWidth: 160,
                   padding: 10,
-                  background: m._rank === 1 ? "var(--ui-bg-editor)7ed" : m._rank === 2 ? "var(--ui-row-hover-background)" : "var(--ui-bg-editor)",
+                  background: m._rank === 1 ? "color-mix(in srgb, var(--ui-orange) 10%, var(--ui-bg-editor))" : m._rank === 2 ? "var(--ui-row-hover-background)" : "var(--ui-bg-editor)",
                   borderRadius: 6,
                   border: m._rank <= 3 ? "2px solid var(--ui-orange)" : "1px solid var(--ui-stroke-tertiary)",
                   cursor: "help",
@@ -26041,7 +26050,7 @@ function App() {
                   m.gpu.fits_64gb ? " ✓" : ""
                 ] }) : "-" }),
                 /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: (m.supported_parameters || []).includes("tools") ? "✅" : "❌" }),
-                /* @__PURE__ */ jsxs2("td", { style: { ...S.td, textAlign: "center", fontWeight: 700, background: top3 ? "var(--ui-bg-editor)3e0" : void 0 }, children: [
+                /* @__PURE__ */ jsxs2("td", { style: { ...S.td, textAlign: "center", fontWeight: 700, background: top3 ? "color-mix(in srgb, var(--ui-orange) 10%, transparent)" : void 0 }, children: [
                   /* @__PURE__ */ jsxs2("span", { title: `Score ${currentProfile.name}: ${sc}`, style: { color: top3 ? "var(--ui-orange)" : sc > 50 ? "var(--ui-green)" : "var(--ui-text-tertiary)" }, children: [
                     rankStr,
                     top3 && /* @__PURE__ */ jsx2("span", { style: { fontSize: 10, marginLeft: 2 }, children: "🥇" })
@@ -26136,7 +26145,7 @@ function App() {
                 {
                   onClick: () => toggleRadar(label),
                   title: hiddenR ? i18n.clickToShow : i18n.clickToHide,
-                  style: { display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 11, userSelect: "none", opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? "line-through" : "none", padding: "2px 5px", borderRadius: 4, background: hiddenR ? "transparent" : colors[ci2 % colors.length] + "18" },
+                  style: { display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 11, userSelect: "none", opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? "line-through" : "none", padding: "2px 5px", borderRadius: 4, background: hiddenR ? "transparent" : `color-mix(in srgb, ${colors[ci2 % colors.length]} 10%, transparent)` },
                   children: [
                     /* @__PURE__ */ jsx2("span", { style: { display: "inline-block", width: 9, height: 9, background: colors[ci2 % colors.length], borderRadius: 2 } }),
                     label
@@ -26289,7 +26298,7 @@ function App() {
               "div",
               {
                 style: {
-                  background: currentWeight > 0 ? "var(--ui-row-hover-background)" : "var(--ui-bg-editor)fff",
+                  background: currentWeight > 0 ? "var(--ui-row-hover-background)" : "var(--ui-bg-editor)",
                   border: `1px solid ${currentWeight > 0 ? "var(--ui-stroke-secondary)" : "var(--ui-bg-tertiary)"}`,
                   borderRadius: 8,
                   padding: "8px 12px",
