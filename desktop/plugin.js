@@ -4790,7 +4790,7 @@ import {
 } from "@hermes/plugin-sdk";
 
 // src/LeaderboardPage.tsx
-import { useEffect as useEffect5, useMemo as useMemo4, useState as useState6 } from "react";
+import { useEffect as useEffect5, useMemo as useMemo5, useState as useState7 } from "react";
 
 // node_modules/recharts/es6/container/Surface.js
 import React from "react";
@@ -7258,21 +7258,21 @@ function renderContent(content, props) {
 }
 var EPS = 1;
 var Legend = /* @__PURE__ */ (function(_PureComponent) {
-  function Legend2() {
+  function Legend3() {
     var _this;
-    _classCallCheck2(this, Legend2);
+    _classCallCheck2(this, Legend3);
     for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
       args[_key] = arguments[_key];
     }
-    _this = _callSuper2(this, Legend2, [].concat(args));
+    _this = _callSuper2(this, Legend3, [].concat(args));
     _defineProperty3(_this, "lastBoundingBox", {
       width: -1,
       height: -1
     });
     return _this;
   }
-  _inherits2(Legend2, _PureComponent);
-  return _createClass2(Legend2, [{
+  _inherits2(Legend3, _PureComponent);
+  return _createClass2(Legend3, [{
     key: "componentDidMount",
     value: function componentDidMount() {
       this.updateBBox();
@@ -7286,10 +7286,10 @@ var Legend = /* @__PURE__ */ (function(_PureComponent) {
     key: "getBBox",
     value: function getBBox() {
       if (this.wrapperNode && this.wrapperNode.getBoundingClientRect) {
-        var box = this.wrapperNode.getBoundingClientRect();
-        box.height = this.wrapperNode.offsetHeight;
-        box.width = this.wrapperNode.offsetWidth;
-        return box;
+        var box2 = this.wrapperNode.getBoundingClientRect();
+        box2.height = this.wrapperNode.offsetHeight;
+        box2.width = this.wrapperNode.offsetWidth;
+        return box2;
       }
       return null;
     }
@@ -7297,13 +7297,13 @@ var Legend = /* @__PURE__ */ (function(_PureComponent) {
     key: "updateBBox",
     value: function updateBBox() {
       var onBBoxUpdate = this.props.onBBoxUpdate;
-      var box = this.getBBox();
-      if (box) {
-        if (Math.abs(box.width - this.lastBoundingBox.width) > EPS || Math.abs(box.height - this.lastBoundingBox.height) > EPS) {
-          this.lastBoundingBox.width = box.width;
-          this.lastBoundingBox.height = box.height;
+      var box2 = this.getBBox();
+      if (box2) {
+        if (Math.abs(box2.width - this.lastBoundingBox.width) > EPS || Math.abs(box2.height - this.lastBoundingBox.height) > EPS) {
+          this.lastBoundingBox.width = box2.width;
+          this.lastBoundingBox.height = box2.height;
           if (onBBoxUpdate) {
-            onBBoxUpdate(box);
+            onBBoxUpdate(box2);
           }
         }
       } else if (this.lastBoundingBox.width !== -1 || this.lastBoundingBox.height !== -1) {
@@ -7332,9 +7332,9 @@ var Legend = /* @__PURE__ */ (function(_PureComponent) {
       var hPos, vPos;
       if (!style || (style.left === void 0 || style.left === null) && (style.right === void 0 || style.right === null)) {
         if (align === "center" && layout === "vertical") {
-          var box = this.getBBoxSnapshot();
+          var box2 = this.getBBoxSnapshot();
           hPos = {
-            left: ((chartWidth || 0) - box.width) / 2
+            left: ((chartWidth || 0) - box2.width) / 2
           };
         } else {
           hPos = align === "right" ? {
@@ -7889,12 +7889,12 @@ var TooltipBoundingBox = /* @__PURE__ */ (function(_PureComponent) {
     key: "updateBBox",
     value: function updateBBox() {
       if (this.wrapperNode && this.wrapperNode.getBoundingClientRect) {
-        var box = this.wrapperNode.getBoundingClientRect();
-        if (Math.abs(box.width - this.state.lastBoundingBox.width) > EPSILON || Math.abs(box.height - this.state.lastBoundingBox.height) > EPSILON) {
+        var box2 = this.wrapperNode.getBoundingClientRect();
+        if (Math.abs(box2.width - this.state.lastBoundingBox.width) > EPSILON || Math.abs(box2.height - this.state.lastBoundingBox.height) > EPSILON) {
           this.setState({
             lastBoundingBox: {
-              width: box.width,
-              height: box.height
+              width: box2.width,
+              height: box2.height
             }
           });
         }
@@ -9462,10 +9462,10 @@ function ordinal() {
 
 // node_modules/d3-scale/src/band.js
 function band() {
-  var scale = ordinal().unknown(void 0), domain = scale.domain, ordinalRange = scale.range, r0 = 0, r1 = 1, step, bandwidth, round = false, paddingInner = 0, paddingOuter = 0, align = 0.5;
+  var scale = ordinal().unknown(void 0), domain = scale.domain, ordinalRange = scale.range, r02 = 0, r12 = 1, step, bandwidth, round = false, paddingInner = 0, paddingOuter = 0, align = 0.5;
   delete scale.unknown;
   function rescale() {
-    var n = domain().length, reverse3 = r1 < r0, start = reverse3 ? r1 : r0, stop = reverse3 ? r0 : r1;
+    var n = domain().length, reverse3 = r12 < r02, start = reverse3 ? r12 : r02, stop = reverse3 ? r02 : r12;
     step = (stop - start) / Math.max(1, n - paddingInner + paddingOuter * 2);
     if (round) step = Math.floor(step);
     start += (stop - start - step * (n - paddingInner)) * align;
@@ -9480,10 +9480,10 @@ function band() {
     return arguments.length ? (domain(_), rescale()) : domain();
   };
   scale.range = function(_) {
-    return arguments.length ? ([r0, r1] = _, r0 = +r0, r1 = +r1, rescale()) : [r0, r1];
+    return arguments.length ? ([r02, r12] = _, r02 = +r02, r12 = +r12, rescale()) : [r02, r12];
   };
   scale.rangeRound = function(_) {
-    return [r0, r1] = _, r0 = +r0, r1 = +r1, round = true, rescale();
+    return [r02, r12] = _, r02 = +r02, r12 = +r12, round = true, rescale();
   };
   scale.bandwidth = function() {
     return bandwidth;
@@ -9507,7 +9507,7 @@ function band() {
     return arguments.length ? (align = Math.max(0, Math.min(1, _)), rescale()) : align;
   };
   scale.copy = function() {
-    return band(domain(), [r0, r1]).round(round).paddingInner(paddingInner).paddingOuter(paddingOuter).align(align);
+    return band(domain(), [r02, r12]).round(round).paddingInner(paddingInner).paddingOuter(paddingOuter).align(align);
   };
   return initRange.apply(rescale(), arguments);
 }
@@ -10112,11 +10112,11 @@ function clamper(a2, b) {
   };
 }
 function bimap(domain, range6, interpolate) {
-  var d0 = domain[0], d1 = domain[1], r0 = range6[0], r1 = range6[1];
-  if (d1 < d0) d0 = normalize(d1, d0), r0 = interpolate(r1, r0);
-  else d0 = normalize(d0, d1), r0 = interpolate(r0, r1);
+  var d0 = domain[0], d1 = domain[1], r02 = range6[0], r12 = range6[1];
+  if (d1 < d0) d0 = normalize(d1, d0), r02 = interpolate(r12, r02);
+  else d0 = normalize(d0, d1), r02 = interpolate(r02, r12);
   return function(x2) {
-    return r0(d0(x2));
+    return r02(d0(x2));
   };
 }
 function polymap(domain, range6, interpolate) {
@@ -11811,8 +11811,8 @@ function transformer2() {
   };
   function range6(interpolate) {
     return function(_) {
-      var r0, r1;
-      return arguments.length ? ([r0, r1] = _, interpolator = interpolate(r0, r1), scale) : [interpolator(0), interpolator(1)];
+      var r02, r12;
+      return arguments.length ? ([r02, r12] = _, interpolator = interpolate(r02, r12), scale) : [interpolator(0), interpolator(1)];
     };
   }
   scale.range = range6(value_default);
@@ -11905,8 +11905,8 @@ function transformer3() {
   };
   function range6(interpolate) {
     return function(_) {
-      var r0, r1, r2;
-      return arguments.length ? ([r0, r1, r2] = _, interpolator = piecewise(interpolate, [r0, r1, r2]), scale) : [interpolator(0), interpolator(0.5), interpolator(1)];
+      var r02, r12, r2;
+      return arguments.length ? ([r02, r12, r2] = _, interpolator = piecewise(interpolate, [r02, r12, r2]), scale) : [interpolator(0), interpolator(0.5), interpolator(1)];
     };
   }
   scale.range = range6(value_default);
@@ -23394,18 +23394,18 @@ var generateCategoricalChart = function generateCategoricalChart2(_ref6) {
       _this = _callSuper17(this, CategoricalChartWrapper2, [_props]);
       _defineProperty43(_this, "eventEmitterSymbol", /* @__PURE__ */ Symbol("rechartsEventEmitter"));
       _defineProperty43(_this, "accessibilityManager", new AccessibilityManager());
-      _defineProperty43(_this, "handleLegendBBoxUpdate", function(box) {
-        if (box) {
+      _defineProperty43(_this, "handleLegendBBoxUpdate", function(box2) {
+        if (box2) {
           var _this$state = _this.state, dataStartIndex = _this$state.dataStartIndex, dataEndIndex = _this$state.dataEndIndex, updateId = _this$state.updateId;
           _this.setState(_objectSpread38({
-            legendBBox: box
+            legendBBox: box2
           }, updateStateOfAxisMapsOffsetAndStackGroups({
             props: _this.props,
             dataStartIndex,
             dataEndIndex,
             updateId
           }, _objectSpread38(_objectSpread38({}, _this.state), {}, {
-            legendBBox: box
+            legendBBox: box2
           }))));
         }
       });
@@ -24988,6 +24988,45 @@ var LOCALES = {
       tools: "Tools",
       score: "Score"
     },
+    views: {
+      label: "View:",
+      names: { classic: "Cards", stacked: "Score bars", columns: "Histograms", heatmap: "Heatmap", duel: "Duel" },
+      hint: {
+        classic: "Top 5 with price and context.",
+        stacked: "Each segment = points earned on one criterion (weight × grade).",
+        columns: "One bar per criterion: height = grade, width = weight.",
+        heatmap: "Grade 0–100 per criterion, heaviest criteria first. Click a column to sort.",
+        duel: "Pick two models and compare them criterion by criterion."
+      },
+      short: {
+        intelligence: "Intelligence",
+        coding: "Coding",
+        agentic: "Agentic",
+        price_in: "Price in",
+        price_out: "Price out",
+        cache_read: "Cache price",
+        context: "Context",
+        tools: "Tools",
+        has_vision: "Vision",
+        open_weights: "Open weights",
+        fits_64gb: "VRAM ≤ 64G"
+      },
+      model: "Model",
+      score: "Score",
+      weight: "weight",
+      grade: "grade",
+      points: "pts",
+      na: "n/a",
+      noCriteria: "No criterion is weighted for this profile — edit the scoring criteria.",
+      needTwo: "Track at least two available models to compare them.",
+      showAll: (n) => `Show all (${n})`,
+      showLess: "Show less",
+      strength: "Strength",
+      weakness: "Weakness",
+      missingData: "Missing data counts as 0",
+      winsOn: (n) => `ahead on ${n} criteri${n > 1 ? "a" : "on"}`,
+      versus: "vs"
+    },
     news: {
       title: "📰 News & Updates",
       hidePanel: "Hide panel",
@@ -25106,6 +25145,45 @@ var LOCALES = {
       tools: "Tools",
       score: "Score"
     },
+    views: {
+      label: "Affichage :",
+      names: { classic: "Cartes", stacked: "Barres de score", columns: "Histogrammes", heatmap: "Heatmap", duel: "Duel" },
+      hint: {
+        classic: "Top 5 avec prix et contexte.",
+        stacked: "Chaque segment = points gagnés sur un critère (poids × note).",
+        columns: "Une barre par critère : hauteur = note, largeur = poids.",
+        heatmap: "Note 0–100 par critère, critères les plus lourds d’abord. Cliquer une colonne pour trier.",
+        duel: "Choisir deux modèles et les comparer critère par critère."
+      },
+      short: {
+        intelligence: "Intelligence",
+        coding: "Code",
+        agentic: "Agentique",
+        price_in: "Prix entrée",
+        price_out: "Prix sortie",
+        cache_read: "Prix cache",
+        context: "Contexte",
+        tools: "Outils",
+        has_vision: "Vision",
+        open_weights: "Poids ouverts",
+        fits_64gb: "VRAM ≤ 64G"
+      },
+      model: "Modèle",
+      score: "Score",
+      weight: "poids",
+      grade: "note",
+      points: "pts",
+      na: "n/d",
+      noCriteria: "Aucun critère n’est pondéré pour ce profil — modifiez les critères de notation.",
+      needTwo: "Suivez au moins deux modèles disponibles pour les comparer.",
+      showAll: (n) => `Tout afficher (${n})`,
+      showLess: "Réduire",
+      strength: "Atout",
+      weakness: "Faiblesse",
+      missingData: "Donnée manquante comptée 0",
+      winsOn: (n) => `devant sur ${n} critère${n > 1 ? "s" : ""}`,
+      versus: "vs"
+    },
     news: {
       title: "📰 Actualités & Nouveautés",
       hidePanel: "Masquer le volet",
@@ -25188,45 +25266,339 @@ function useLeaderboardI18n() {
 }
 
 // src/core/scoring.ts
-function computeGenericScore(m, weights, maxes) {
-  const totalWeight = Object.values(weights).reduce((sum, w) => sum + (w || 0), 0);
-  if (totalWeight <= 0) return 0;
-  const intel = (m.intelligence_index ?? 0) / (maxes.maxIntel || 1);
-  const coding = (m.coding_index ?? 0) / (maxes.maxCoding || 1);
-  const agentic = (m.agentic_index ?? 0) / (maxes.maxAgentic || 1);
-  const pIn = maxes.maxPrice > 0 ? 1 - Math.min(1, (m.prompt_price ?? 0) / maxes.maxPrice) : 1;
-  const pOut = maxes.maxPrice > 0 ? 1 - Math.min(1, (m.completion_price ?? 0) / maxes.maxPrice) : 1;
-  const pCache = (maxes.maxPriceCache || 1) > 0 ? 1 - Math.min(1, (m.cache_read_price ?? 0) / (maxes.maxPriceCache || 1)) : 1;
-  const ctx = maxes.maxCtx > 0 ? Math.min(1, (m.context_length ?? 0) / maxes.maxCtx) : 0;
-  const hasV = m.has_vision ? 1 : 0;
-  const hasT = (m.supported_parameters || []).includes("tools") ? 1 : 0;
-  const isOpen = m.open_weights ? 1 : 0;
-  const fits64 = m.gpu?.fits_64gb ? 1 : 0;
-  const values = {
-    intelligence: intel,
-    coding,
-    agentic,
-    price_in: pIn,
-    price_out: pOut,
-    cache_read: pCache,
-    context: ctx,
-    tools: hasT,
-    has_vision: hasV,
-    open_weights: isOpen,
-    fits_64gb: fits64
+var CRITERIA_KEYS = [
+  "intelligence",
+  "coding",
+  "agentic",
+  "price_in",
+  "price_out",
+  "cache_read",
+  "context",
+  "tools",
+  "has_vision",
+  "open_weights",
+  "fits_64gb"
+];
+function criterionValues(m, maxes) {
+  const ratio = (v, max3) => v == null ? null : v / (max3 || 1);
+  const cheap = (v, max3) => max3 > 0 ? 1 - Math.min(1, (v ?? 0) / max3) : 1;
+  return {
+    intelligence: ratio(m.intelligence_index, maxes.maxIntel),
+    coding: ratio(m.coding_index, maxes.maxCoding),
+    agentic: ratio(m.agentic_index, maxes.maxAgentic),
+    price_in: cheap(m.prompt_price, maxes.maxPrice),
+    price_out: cheap(m.completion_price, maxes.maxPrice),
+    cache_read: cheap(m.cache_read_price, maxes.maxPriceCache || 1),
+    context: maxes.maxCtx > 0 ? Math.min(1, (m.context_length ?? 0) / maxes.maxCtx) : 0,
+    tools: (m.supported_parameters || []).includes("tools") ? 1 : 0,
+    has_vision: m.has_vision ? 1 : 0,
+    open_weights: m.open_weights ? 1 : 0,
+    fits_64gb: m.gpu?.fits_64gb ? 1 : 0
   };
-  let weightedSum = 0;
-  for (const [k2, w] of Object.entries(weights)) {
-    if (w > 0) {
-      weightedSum += (values[k2] ?? 0) * w;
-    }
-  }
-  const score = weightedSum / totalWeight * 100;
-  return Math.max(0, Math.min(100, score));
+}
+function scoreBreakdown(m, weights, maxes) {
+  const totalWeight = Object.values(weights).reduce((sum, w) => sum + (w > 0 ? w : 0), 0);
+  if (totalWeight <= 0) return [];
+  const values = criterionValues(m, maxes);
+  return CRITERIA_KEYS.filter((key) => (weights[key] ?? 0) > 0).map((key) => {
+    const weight = weights[key];
+    const v = values[key];
+    const maxPoints = weight / totalWeight * 100;
+    return { key, weight, note: v == null ? null : v * 100, points: (v ?? 0) * maxPoints, maxPoints };
+  });
+}
+function computeGenericScore(m, weights, maxes) {
+  const totalWeight = Object.values(weights).reduce((sum, w) => sum + (w > 0 ? w : 0), 0);
+  if (totalWeight <= 0) return 0;
+  const values = criterionValues(m, maxes);
+  const weighted = CRITERIA_KEYS.reduce((sum, key) => sum + (values[key] ?? 0) * Math.max(0, weights[key] ?? 0), 0);
+  return Math.max(0, Math.min(100, weighted / totalWeight * 100));
+}
+
+// src/components/ScoreViews.tsx
+import { useMemo as useMemo4, useState as useState6 } from "react";
+import { Fragment as Fragment2, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+var SCORE_VIEWS = ["classic", "stacked", "columns", "heatmap", "duel"];
+var CRITERION_COLORS = {
+  intelligence: "#7c5cff",
+  coding: "#4f8ff7",
+  agentic: "#22b8cf",
+  price_in: "#2fb36d",
+  price_out: "#79c752",
+  cache_read: "#b5c934",
+  context: "#f5a524",
+  tools: "#f07b3f",
+  has_vision: "#e64980",
+  open_weights: "#12a594",
+  fits_64gb: "#8a8f98"
+};
+var medal = (rank) => rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
+var r0 = (v) => Math.round(v);
+var DRAW_PTS = 0.5;
+var r1 = (v) => Math.round(v * 10) / 10;
+function useBreakdowns(models, weights, maxes) {
+  return useMemo4(() => {
+    const out = {};
+    for (const m of models) out[m.id] = scoreBreakdown(m, weights, maxes);
+    return out;
+  }, [models, weights, maxes]);
+}
+function tip(t, meta, c2) {
+  const grade = c2.note == null ? t.views.na : `${r0(c2.note)}/100`;
+  return `${meta.icon} ${meta.label} — ${t.views.weight} ×${c2.weight} · ${t.views.grade} ${grade} → +${r1(c2.points)} / ${r1(c2.maxPoints)} ${t.views.points}`;
+}
+function gradeBg(note) {
+  if (note == null) return "transparent";
+  return `color-mix(in srgb, var(--ui-green) ${Math.round(8 + note * 0.5)}%, transparent)`;
+}
+var box = {
+  padding: 12,
+  background: "var(--ui-bg-editor)",
+  borderRadius: 8,
+  border: "1px solid var(--ui-stroke-tertiary)"
+};
+function Legend2({ parts, metaOf }) {
+  return /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 10, fontSize: 11, color: "var(--ui-text-secondary)" }, children: parts.map((c2) => /* @__PURE__ */ jsxs2("span", { style: { display: "inline-flex", alignItems: "center", gap: 4 }, children: [
+    /* @__PURE__ */ jsx2("span", { style: { width: 10, height: 10, borderRadius: 2, background: CRITERION_COLORS[c2.key] } }),
+    metaOf(c2.key).icon,
+    " ",
+    metaOf(c2.key).label,
+    /* @__PURE__ */ jsxs2("b", { style: { color: "var(--ui-text-primary)" }, children: [
+      "×",
+      c2.weight
+    ] })
+  ] }, c2.key)) });
+}
+function StackedView({ models, breakdowns, metaOf, icon, t }) {
+  const [showAll, setShowAll] = useState6(false);
+  const list = showAll ? models : models.slice(0, 8);
+  const parts = breakdowns[models[0]?.id] ?? [];
+  return /* @__PURE__ */ jsxs2("div", { style: box, children: [
+    /* @__PURE__ */ jsx2(Legend2, { parts, metaOf }),
+    /* @__PURE__ */ jsx2("div", { style: { display: "grid", gridTemplateColumns: "34px minmax(120px, 220px) 1fr 44px", gap: "6px 10px", alignItems: "center" }, children: list.map((m) => /* @__PURE__ */ jsxs2(Row, { children: [
+      /* @__PURE__ */ jsx2("span", { style: { fontSize: 13, textAlign: "center" }, children: medal(m._rank) }),
+      /* @__PURE__ */ jsxs2("span", { style: { fontSize: 12, fontWeight: m._rank <= 3 ? 700 : 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, title: m.id, children: [
+        icon(m.id),
+        " ",
+        m.label
+      ] }),
+      /* @__PURE__ */ jsx2("div", { style: { display: "flex", height: 18, borderRadius: 4, overflow: "hidden", background: "var(--ui-bg-tertiary)" }, children: (breakdowns[m.id] ?? []).map((c2) => /* @__PURE__ */ jsx2(
+        "div",
+        {
+          title: tip(t, metaOf(c2.key), c2),
+          style: {
+            width: `${c2.points}%`,
+            background: CRITERION_COLORS[c2.key],
+            borderRight: c2.points > 0 ? "1px solid var(--ui-bg-editor)" : void 0
+          }
+        },
+        c2.key
+      )) }),
+      /* @__PURE__ */ jsx2("b", { style: { fontSize: 13, textAlign: "right", color: m._rank <= 3 ? "var(--ui-orange)" : "var(--ui-text-primary)" }, children: r0(m._score) })
+    ] }, m.id)) }),
+    models.length > 8 && /* @__PURE__ */ jsx2("button", { onClick: () => setShowAll((v) => !v), style: linkBtn, children: showAll ? t.views.showLess : t.views.showAll(models.length) })
+  ] });
+}
+function ColumnsView({ models, breakdowns, metaOf, icon, t }) {
+  return /* @__PURE__ */ jsx2("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 12 }, children: models.slice(0, 6).map((m) => {
+    const parts = breakdowns[m.id] ?? [];
+    const graded = parts.filter((c2) => c2.note != null);
+    const best = graded.reduce((a2, c2) => !a2 || (c2.note ?? 0) > (a2.note ?? 0) ? c2 : a2, null);
+    const worst = graded.reduce((a2, c2) => !a2 || (c2.note ?? 0) < (a2.note ?? 0) ? c2 : a2, null);
+    return /* @__PURE__ */ jsxs2("div", { style: { ...box, border: m._rank === 1 ? "2px solid var(--ui-orange)" : box.border }, children: [
+      /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }, children: [
+        /* @__PURE__ */ jsxs2("span", { style: { fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, title: m.id, children: [
+          medal(m._rank),
+          " ",
+          icon(m.id),
+          " ",
+          m.label
+        ] }),
+        /* @__PURE__ */ jsx2("span", { style: { fontSize: 18, fontWeight: 800, color: "var(--ui-orange)" }, children: r0(m._score) })
+      ] }),
+      /* @__PURE__ */ jsxs2("div", { style: { position: "relative", display: "flex", alignItems: "flex-end", gap: 3, height: 96, marginTop: 10, borderBottom: "1px solid var(--ui-stroke-secondary)" }, children: [
+        [25, 50, 75].map((g) => /* @__PURE__ */ jsx2("div", { style: { position: "absolute", left: 0, right: 0, bottom: `${g}%`, borderTop: "1px dashed var(--ui-stroke-tertiary)" } }, g)),
+        parts.map((c2) => /* @__PURE__ */ jsx2(
+          "div",
+          {
+            title: tip(t, metaOf(c2.key), c2),
+            style: {
+              flex: `${c2.weight} 1 0`,
+              height: c2.note == null ? "100%" : `${Math.max(2, c2.note)}%`,
+              background: c2.note == null ? "transparent" : CRITERION_COLORS[c2.key],
+              border: c2.note == null ? `1px dashed ${CRITERION_COLORS[c2.key]}` : void 0,
+              borderRadius: "3px 3px 0 0",
+              position: "relative",
+              zIndex: 1
+            }
+          },
+          c2.key
+        ))
+      ] }),
+      /* @__PURE__ */ jsx2("div", { style: { display: "flex", gap: 3, marginTop: 3 }, children: parts.map((c2) => /* @__PURE__ */ jsx2("span", { title: metaOf(c2.key).label, style: { flex: `${c2.weight} 1 0`, textAlign: "center", fontSize: 11, overflow: "hidden" }, children: metaOf(c2.key).icon }, c2.key)) }),
+      /* @__PURE__ */ jsxs2("div", { style: { marginTop: 8, fontSize: 11, color: "var(--ui-text-tertiary)", display: "grid", gap: 2 }, children: [
+        best && /* @__PURE__ */ jsxs2("span", { children: [
+          "💪 ",
+          t.views.strength,
+          " : ",
+          metaOf(best.key).label,
+          " ",
+          r0(best.note ?? 0)
+        ] }),
+        worst && worst !== best && /* @__PURE__ */ jsxs2("span", { children: [
+          "⚠️ ",
+          t.views.weakness,
+          " : ",
+          metaOf(worst.key).label,
+          " ",
+          r0(worst.note ?? 0)
+        ] }),
+        parts.some((c2) => c2.note == null) && /* @__PURE__ */ jsxs2("span", { children: [
+          "❔ ",
+          t.views.missingData
+        ] })
+      ] })
+    ] }, m.id);
+  }) });
+}
+function HeatmapView({ models, breakdowns, metaOf, icon, t }) {
+  const [sortKey, setSortKey] = useState6(null);
+  const columns = [...breakdowns[models[0]?.id] ?? []].sort((a2, b) => b.weight - a2.weight);
+  const noteOf = (id, key) => breakdowns[id]?.find((c2) => c2.key === key)?.note ?? null;
+  const rows = sortKey ? [...models].sort((a2, b) => (noteOf(b.id, sortKey) ?? -1) - (noteOf(a2.id, sortKey) ?? -1)) : models;
+  const th = { padding: "6px 4px", fontSize: 11, fontWeight: 600, color: "var(--ui-text-secondary)", cursor: "pointer", userSelect: "none", verticalAlign: "bottom" };
+  return /* @__PURE__ */ jsx2("div", { style: { ...box, overflowX: "auto", padding: 0 }, children: /* @__PURE__ */ jsxs2("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12 }, children: [
+    /* @__PURE__ */ jsx2("thead", { children: /* @__PURE__ */ jsxs2("tr", { style: { background: "var(--ui-bg-tertiary)" }, children: [
+      /* @__PURE__ */ jsxs2("th", { style: { ...th, textAlign: "left", paddingLeft: 10 }, onClick: () => setSortKey(null), children: [
+        t.views.model,
+        sortKey ? "" : " ↓"
+      ] }),
+      columns.map((c2) => /* @__PURE__ */ jsxs2("th", { style: { ...th, textAlign: "center", minWidth: 58 }, onClick: () => setSortKey(c2.key), title: metaOf(c2.key).label, children: [
+        /* @__PURE__ */ jsx2("div", { style: { fontSize: 14 }, children: metaOf(c2.key).icon }),
+        /* @__PURE__ */ jsxs2("div", { style: { whiteSpace: "nowrap" }, children: [
+          metaOf(c2.key).label,
+          sortKey === c2.key ? " ↓" : ""
+        ] }),
+        /* @__PURE__ */ jsxs2("div", { style: { display: "inline-block", marginTop: 2, padding: "0 5px", borderRadius: 999, background: CRITERION_COLORS[c2.key], color: "#fff", fontWeight: 700 }, children: [
+          "×",
+          c2.weight
+        ] })
+      ] }, c2.key)),
+      /* @__PURE__ */ jsx2("th", { style: { ...th, textAlign: "right", paddingRight: 10 }, onClick: () => setSortKey(null), children: t.views.score })
+    ] }) }),
+    /* @__PURE__ */ jsx2("tbody", { children: rows.map((m) => /* @__PURE__ */ jsxs2("tr", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)" }, children: [
+      /* @__PURE__ */ jsxs2("td", { style: { padding: "5px 10px", whiteSpace: "nowrap", fontWeight: m._rank <= 3 ? 700 : 500 }, title: m.id, children: [
+        medal(m._rank),
+        " ",
+        icon(m.id),
+        " ",
+        m.label
+      ] }),
+      columns.map((col) => {
+        const c2 = breakdowns[m.id]?.find((x2) => x2.key === col.key);
+        const note = c2?.note ?? null;
+        return /* @__PURE__ */ jsx2(
+          "td",
+          {
+            title: c2 ? tip(t, metaOf(col.key), c2) : "",
+            style: { textAlign: "center", padding: "5px 4px", background: gradeBg(note), color: note == null ? "var(--ui-text-quaternary)" : "var(--ui-text-primary)", fontStyle: note == null ? "italic" : void 0 },
+            children: note == null ? t.views.na : r0(note)
+          },
+          col.key
+        );
+      }),
+      /* @__PURE__ */ jsxs2("td", { style: { padding: "5px 10px", textAlign: "right", whiteSpace: "nowrap" }, children: [
+        /* @__PURE__ */ jsx2("span", { style: { display: "inline-block", width: 50, height: 6, marginRight: 6, borderRadius: 3, background: "var(--ui-bg-tertiary)", verticalAlign: "middle", overflow: "hidden" }, children: /* @__PURE__ */ jsx2("span", { style: { display: "block", width: `${m._score}%`, height: "100%", background: "var(--ui-orange)" } }) }),
+        /* @__PURE__ */ jsx2("b", { children: r0(m._score) })
+      ] })
+    ] }, m.id)) })
+  ] }) });
+}
+function DuelView({ models, breakdowns, metaOf, icon, t }) {
+  const [aId, setA] = useState6(null);
+  const [bId, setB] = useState6(null);
+  const a2 = models.find((m) => m.id === aId) ?? models[0];
+  const b = models.find((m) => m.id === bId && m.id !== a2?.id) ?? models.find((m) => m.id !== a2?.id);
+  if (!a2 || !b) return /* @__PURE__ */ jsx2("div", { style: box, children: t.views.needTwo });
+  const pa = breakdowns[a2.id] ?? [];
+  const pb = breakdowns[b.id] ?? [];
+  const winsA = pa.filter((c2, i) => c2.points - (pb[i]?.points ?? 0) >= DRAW_PTS).length;
+  const winsB = pb.filter((c2, i) => c2.points - (pa[i]?.points ?? 0) >= DRAW_PTS).length;
+  const select = (value, onChange, exclude) => /* @__PURE__ */ jsx2("select", { value, onChange: (e) => onChange(e.target.value), style: { padding: "4px 6px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", color: "var(--ui-text-primary)", fontSize: 12, maxWidth: 220 }, children: models.filter((m) => m.id !== exclude).map((m) => /* @__PURE__ */ jsxs2("option", { value: m.id, children: [
+    "#",
+    m._rank,
+    " ",
+    m.label
+  ] }, m.id)) });
+  const bar = (c2, win, dir) => /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: dir === "left" ? "flex-end" : "flex-start", alignItems: "center", gap: 6 }, children: [
+    dir === "left" && /* @__PURE__ */ jsx2("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: c2?.note == null ? t.views.na : r0(c2.note) }),
+    /* @__PURE__ */ jsx2("div", { style: { width: "70%", display: "flex", justifyContent: dir === "left" ? "flex-end" : "flex-start", height: 14, background: "var(--ui-bg-tertiary)", borderRadius: 3, overflow: "hidden" }, children: /* @__PURE__ */ jsx2("div", { style: { width: `${c2?.note ?? 0}%`, background: c2 ? win ? CRITERION_COLORS[c2.key] : `color-mix(in srgb, ${CRITERION_COLORS[c2.key]} 30%, transparent)` : void 0 } }) }),
+    dir === "right" && /* @__PURE__ */ jsx2("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: c2?.note == null ? t.views.na : r0(c2.note) })
+  ] });
+  return /* @__PURE__ */ jsxs2("div", { style: box, children: [
+    /* @__PURE__ */ jsxs2("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 10, alignItems: "center", marginBottom: 12 }, children: [
+      /* @__PURE__ */ jsxs2("div", { style: { textAlign: "right" }, children: [
+        select(a2.id, setA, b.id),
+        /* @__PURE__ */ jsxs2("div", { style: { fontSize: 22, fontWeight: 800, color: a2._score >= b._score ? "var(--ui-orange)" : "var(--ui-text-secondary)" }, children: [
+          icon(a2.id),
+          " ",
+          r0(a2._score)
+        ] }),
+        /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: t.views.winsOn(winsA) })
+      ] }),
+      /* @__PURE__ */ jsx2("div", { style: { fontWeight: 800, color: "var(--ui-text-tertiary)" }, children: t.views.versus }),
+      /* @__PURE__ */ jsxs2("div", { children: [
+        select(b.id, setB, a2.id),
+        /* @__PURE__ */ jsxs2("div", { style: { fontSize: 22, fontWeight: 800, color: b._score > a2._score ? "var(--ui-orange)" : "var(--ui-text-secondary)" }, children: [
+          r0(b._score),
+          " ",
+          icon(b.id)
+        ] }),
+        /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: t.views.winsOn(winsB) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx2("div", { style: { display: "grid", gridTemplateColumns: "1fr 150px 1fr", gap: "6px 8px", alignItems: "center" }, children: pa.map((ca, i) => {
+      const cb = pb[i];
+      const diff = ca.points - (cb?.points ?? 0);
+      return /* @__PURE__ */ jsxs2(Row, { children: [
+        bar(ca, diff >= DRAW_PTS, "left"),
+        /* @__PURE__ */ jsxs2("div", { style: { textAlign: "center", fontSize: 11 }, title: `${tip(t, metaOf(ca.key), ca)}
+${cb ? tip(t, metaOf(ca.key), cb) : ""}`, children: [
+          /* @__PURE__ */ jsxs2("div", { style: { fontWeight: 600 }, children: [
+            metaOf(ca.key).icon,
+            " ",
+            metaOf(ca.key).label,
+            " ",
+            /* @__PURE__ */ jsxs2("span", { style: { color: "var(--ui-text-tertiary)" }, children: [
+              "×",
+              ca.weight
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx2("div", { style: { color: Math.abs(diff) < DRAW_PTS ? "var(--ui-text-quaternary)" : "var(--ui-text-secondary)" }, children: Math.abs(diff) < DRAW_PTS ? "=" : `${diff > 0 ? "◀" : ""} ${r1(Math.abs(diff))} ${t.views.points} ${diff < 0 ? "▶" : ""}` })
+        ] }),
+        bar(cb, diff <= -DRAW_PTS, "right")
+      ] }, ca.key);
+    }) })
+  ] });
+}
+function Row({ children }) {
+  return /* @__PURE__ */ jsx2(Fragment2, { children });
+}
+var linkBtn = { marginTop: 8, border: "none", background: "transparent", color: "var(--ui-accent)", cursor: "pointer", fontSize: 12, padding: 0 };
+function ScoreView({ view, models, weights, maxes, criteria, icon, t }) {
+  const breakdowns = useBreakdowns(models, weights, maxes);
+  const metaOf = (k2) => criteria.find((c2) => c2.key === k2) ?? { key: k2, label: k2, icon: "•" };
+  if (!models.length) return null;
+  if (!(breakdowns[models[0].id] ?? []).length) return /* @__PURE__ */ jsx2("div", { style: { ...box, fontSize: 12, color: "var(--ui-text-tertiary)" }, children: t.views.noCriteria });
+  const args = { models, breakdowns, metaOf, icon, t };
+  if (view === "stacked") return /* @__PURE__ */ jsx2(StackedView, { ...args });
+  if (view === "columns") return /* @__PURE__ */ jsx2(ColumnsView, { ...args });
+  if (view === "heatmap") return /* @__PURE__ */ jsx2(HeatmapView, { ...args });
+  return /* @__PURE__ */ jsx2(DuelView, { ...args });
 }
 
 // src/LeaderboardPage.tsx
-import { Fragment as Fragment2, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+import { Fragment as Fragment3, jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 var AVAILABLE_CRITERIA = [
   { key: "intelligence", label: "Intelligence globale", icon: "🧠", desc: "Indice Artificial Analysis intelligence (raisonnement & logique)" },
   { key: "coding", label: "Génération de code", icon: "💻", desc: "Indice Artificial Analysis coding (syntaxe & algo)" },
@@ -25391,30 +25763,45 @@ var S = {
 };
 function App() {
   const i18n = useLeaderboardI18n();
-  const [hermesProfiles, setHermesProfiles] = useState6([]);
-  const [serverProfiles, setServerProfiles] = useState6(DEFAULT_PROFILES);
-  const [selectedProfileId, setSelectedProfileId] = useState6("default");
-  const [editingProfile, setEditingProfile] = useState6(null);
-  const [isNewProfile, setIsNewProfile] = useState6(false);
-  const [modalOpen, setModalOpen] = useState6(false);
-  const [savingProfile, setSavingProfile] = useState6(false);
-  const [models, setModels] = useState6([]);
-  const [hiddenIds, setHiddenIds] = useState6(/* @__PURE__ */ new Set());
-  const [radarHidden, setRadarHidden] = useState6(/* @__PURE__ */ new Set());
-  const [loading, setLoading] = useState6(true);
-  const [q, setQ] = useState6("");
-  const [searchRes, setSearchRes] = useState6([]);
-  const [adding, setAdding] = useState6(false);
-  const [searchUntracked, setSearchUntracked] = useState6(true);
-  const [pendingDelete, setPendingDelete] = useState6(null);
-  const [sortCol, setSortCol] = useState6(null);
-  const [sortAsc, setSortAsc] = useState6(true);
-  const [showNews, setShowNews] = useState6(true);
-  const [news, setNews] = useState6(null);
-  const [loadingNews, setLoadingNews] = useState6(false);
-  const [newsSortBy, setNewsSortBy] = useState6("date");
-  const [newsTimeWindow, setNewsTimeWindow] = useState6("1m");
-  const [newsVisibleLimit, setNewsVisibleLimit] = useState6(8);
+  const [hermesProfiles, setHermesProfiles] = useState7([]);
+  const [serverProfiles, setServerProfiles] = useState7(DEFAULT_PROFILES);
+  const [selectedProfileId, setSelectedProfileId] = useState7("default");
+  const [editingProfile, setEditingProfile] = useState7(null);
+  const [isNewProfile, setIsNewProfile] = useState7(false);
+  const [modalOpen, setModalOpen] = useState7(false);
+  const [savingProfile, setSavingProfile] = useState7(false);
+  const [models, setModels] = useState7([]);
+  const [hiddenIds, setHiddenIds] = useState7(/* @__PURE__ */ new Set());
+  const [radarHidden, setRadarHidden] = useState7(/* @__PURE__ */ new Set());
+  const [loading, setLoading] = useState7(true);
+  const [q, setQ] = useState7("");
+  const [searchRes, setSearchRes] = useState7([]);
+  const [adding, setAdding] = useState7(false);
+  const [searchUntracked, setSearchUntracked] = useState7(true);
+  const [pendingDelete, setPendingDelete] = useState7(null);
+  const [sortCol, setSortCol] = useState7(null);
+  const [sortAsc, setSortAsc] = useState7(true);
+  const [scoreView, setScoreViewState] = useState7(() => {
+    try {
+      const v = localStorage.getItem("llm-dash-score-view");
+      return v && SCORE_VIEWS.includes(v) ? v : "classic";
+    } catch {
+      return "classic";
+    }
+  });
+  const setScoreView = (v) => {
+    setScoreViewState(v);
+    try {
+      localStorage.setItem("llm-dash-score-view", v);
+    } catch {
+    }
+  };
+  const [showNews, setShowNews] = useState7(true);
+  const [news, setNews] = useState7(null);
+  const [loadingNews, setLoadingNews] = useState7(false);
+  const [newsSortBy, setNewsSortBy] = useState7("date");
+  const [newsTimeWindow, setNewsTimeWindow] = useState7("1m");
+  const [newsVisibleLimit, setNewsVisibleLimit] = useState7(8);
   useEffect5(() => {
     const raw = localStorage.getItem("llm-dash-hidden");
     if (raw) setHiddenIds(new Set(JSON.parse(raw)));
@@ -25450,7 +25837,7 @@ function App() {
     open_weights: 0,
     fits_64gb: 0
   };
-  const currentProfile = useMemo4(() => {
+  const currentProfile = useMemo5(() => {
     return effectiveProfiles[selectedProfileId] || {
       id: selectedProfileId,
       name: selectedProfileId,
@@ -25482,8 +25869,8 @@ function App() {
       return next;
     });
   };
-  const [lastRefresh, setLastRefresh] = useState6(null);
-  const [loadError, setLoadError] = useState6(null);
+  const [lastRefresh, setLastRefresh] = useState7(null);
+  const [loadError, setLoadError] = useState7(null);
   const applyModels = (d) => {
     setModels(Array.isArray(d?.models) ? d.models : []);
     setLastRefresh(d?.last_refresh ?? null);
@@ -25587,8 +25974,8 @@ function App() {
     localStorage.setItem("llm-dash-profile", "default");
     setModalOpen(false);
   };
-  const [autoFilling, setAutoFilling] = useState6(false);
-  const [autoFillMsg, setAutoFillMsg] = useState6("");
+  const [autoFilling, setAutoFilling] = useState7(false);
+  const [autoFillMsg, setAutoFillMsg] = useState7("");
   const autoFillCriteria = () => {
     if (!editingProfile || autoFilling) return;
     setAutoFilling(true);
@@ -25667,7 +26054,7 @@ function App() {
   const visible = models.filter((m) => !hiddenIds.has(m.id));
   const hidden = models.filter((m) => hiddenIds.has(m.id));
   const active = visible.filter((m) => m.available);
-  const maxes = useMemo4(() => ({
+  const maxes = useMemo5(() => ({
     maxCtx: Math.max(1, ...models.map((m) => m.context_length || 0)),
     maxPrice: Math.max(0.01, ...models.flatMap((m) => [m.prompt_price || 0, m.completion_price || 0])),
     maxPriceIn: Math.max(0.01, ...models.map((m) => m.prompt_price || 0)),
@@ -25677,7 +26064,7 @@ function App() {
     maxCoding: Math.max(1, ...models.map((m) => m.coding_index || 0)),
     maxAgentic: Math.max(1, ...models.map((m) => m.agentic_index || 0))
   }), [models]);
-  const scoredModels = useMemo4(() => {
+  const scoredModels = useMemo5(() => {
     const withScores = active.map((m) => ({
       ...m,
       _score: Math.round(computeGenericScore(m, currentProfile.weights, maxes) * 100) / 100
@@ -25688,7 +26075,7 @@ function App() {
     });
     return withScores;
   }, [active, currentProfile, maxes]);
-  const top3Threshold = useMemo4(() => {
+  const top3Threshold = useMemo5(() => {
     if (scoredModels.length < 3) return 0;
     const rank3Score = Math.round(scoredModels[2]._score);
     const rank4Score = scoredModels.length >= 4 ? Math.round(scoredModels[3]._score) : rank3Score;
@@ -25698,14 +26085,14 @@ function App() {
   scoredModels.forEach((m) => {
     scoreMap[m.id] = m._score;
   });
-  const sortedModels = useMemo4(() => {
+  const sortedModels = useMemo5(() => {
     if (sortCol && sortFns[sortCol]) {
       const sorted = [...models].sort(sortFns[sortCol]);
       return sortAsc ? sorted : sorted.reverse();
     }
     return [...models].sort((a2, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a2.id] ?? 0));
   }, [models, sortCol, sortAsc, scoreMap]);
-  const processedNewModels = useMemo4(() => {
+  const processedNewModels = useMemo5(() => {
     if (!news?.new_models) return [];
     const nowTs = Math.floor(Date.now() / 1e3);
     const windowDays = newsTimeWindow === "1m" ? 30 : newsTimeWindow === "2m" ? 60 : newsTimeWindow === "3m" ? 90 : newsTimeWindow === "6m" ? 180 : newsTimeWindow === "1y" ? 365 : 99999;
@@ -25728,7 +26115,7 @@ function App() {
     }
     return list;
   }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Threshold]);
-  const processedPromotions = useMemo4(() => {
+  const processedPromotions = useMemo5(() => {
     if (!news?.promotions) return [];
     return news.promotions.map((p) => {
       const rawScore = computeGenericScore(p, currentProfile.weights, maxes);
@@ -25742,25 +26129,10 @@ function App() {
       };
     });
   }, [news?.promotions, currentProfile, maxes, top3Threshold]);
-  const radarData = useMemo4(() => {
+  const radarData = useMemo5(() => {
     if (active.length < 2) return [];
-    const maxCtx = maxes.maxCtx;
-    const maxPP = Math.max(0.01, ...active.map((m) => m.prompt_price || 0));
-    const maxCP = Math.max(0.01, ...active.map((m) => m.completion_price || 0));
-    const maxCache = Math.max(0.01, ...active.map((m) => m.cache_read_price || 0));
-    const criteriaDefinitions = [
-      { key: "intelligence", label: "Intelligence", getValue: (m) => (m.intelligence_index ?? 0) / maxes.maxIntel * 100 },
-      { key: "coding", label: "Coding", getValue: (m) => (m.coding_index ?? 0) / maxes.maxCoding * 100 },
-      { key: "agentic", label: "Agentic", getValue: (m) => (m.agentic_index ?? 0) / maxes.maxAgentic * 100 },
-      { key: "price_in", label: "Prix↓input", getValue: (m) => maxPP > 0 ? (1 - (m.prompt_price || 0) / maxPP) * 100 : 100 },
-      { key: "price_out", label: "Prix↓output", getValue: (m) => maxCP > 0 ? (1 - (m.completion_price || 0) / maxCP) * 100 : 100 },
-      { key: "cache_read", label: "Prix↓cache", getValue: (m) => maxCache > 0 ? (1 - (m.cache_read_price || 0) / maxCache) * 100 : 100 },
-      { key: "context", label: i18n.table.context, getValue: (m) => (m.context_length || 0) / maxCtx * 100 },
-      { key: "tools", label: "Tool Calls", getValue: (m) => (m.supported_parameters || []).includes("tools") ? 100 : 0 },
-      { key: "has_vision", label: "Vision", getValue: (m) => m.has_vision ? 100 : 0 },
-      { key: "open_weights", label: "Open weight", getValue: (m) => m.open_weights ? 100 : 0 },
-      { key: "fits_64gb", label: "VRAM ≤ 64G", getValue: (m) => m.gpu?.fits_64gb ? 100 : 0 }
-    ];
+    const short = i18n.views.short;
+    const criteriaDefinitions = AVAILABLE_CRITERIA.map((c2) => ({ key: c2.key, label: short[c2.key], getValue: (m) => (criterionValues(m, maxes)[c2.key] ?? 0) * 100 }));
     const activeCriteria = criteriaDefinitions.filter((c2) => (currentProfile.weights[c2.key] ?? 0) > 0);
     const finalCriteria = activeCriteria.length > 0 ? activeCriteria : criteriaDefinitions.slice(0, 5);
     return finalCriteria.map((crit) => {
@@ -25770,7 +26142,7 @@ function App() {
       }
       return entry;
     });
-  }, [active, maxes, currentProfile.weights]);
+  }, [active, maxes, currentProfile.weights, i18n]);
   const allLabels = active.map((m) => m.label);
   const colorByLabel = {};
   allLabels.forEach((l, i) => {
@@ -25780,16 +26152,16 @@ function App() {
   const byPriceIn = [...active].sort((a2, b) => (a2.prompt_price ?? 0) - (b.prompt_price ?? 0));
   const byPriceOut = [...active].sort((a2, b) => (a2.completion_price ?? 0) - (b.completion_price ?? 0));
   const byCtx = [...active].sort((a2, b) => (b.context_length ?? 0) - (a2.context_length ?? 0));
-  return /* @__PURE__ */ jsxs2("div", { style: S.wrap, children: [
-    /* @__PURE__ */ jsx2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 8 }, children: /* @__PURE__ */ jsxs2("div", { children: [
-      /* @__PURE__ */ jsx2("h1", { style: { marginBottom: 4, marginTop: 0, color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650, letterSpacing: "-0.01em" }, children: i18n.title }),
-      /* @__PURE__ */ jsx2("p", { style: { color: "var(--ui-text-tertiary)", fontSize: 13, marginTop: 0 }, children: i18n.subtitle })
+  return /* @__PURE__ */ jsxs3("div", { style: S.wrap, children: [
+    /* @__PURE__ */ jsx3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 8 }, children: /* @__PURE__ */ jsxs3("div", { children: [
+      /* @__PURE__ */ jsx3("h1", { style: { marginBottom: 4, marginTop: 0, color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650, letterSpacing: "-0.01em" }, children: i18n.title }),
+      /* @__PURE__ */ jsx3("p", { style: { color: "var(--ui-text-tertiary)", fontSize: 13, marginTop: 0 }, children: i18n.subtitle })
     ] }) }),
-    /* @__PURE__ */ jsxs2("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }, children: [
-      /* @__PURE__ */ jsx2("span", { style: { fontSize: 12, fontWeight: 500, color: "var(--ui-text-secondary)" }, children: i18n.appliesTo }),
-      /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: (hermesProfiles.length ? hermesProfiles : ["default"]).map((name) => {
+    /* @__PURE__ */ jsxs3("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }, children: [
+      /* @__PURE__ */ jsx3("span", { style: { fontSize: 12, fontWeight: 500, color: "var(--ui-text-secondary)" }, children: i18n.appliesTo }),
+      /* @__PURE__ */ jsx3("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: (hermesProfiles.length ? hermesProfiles : ["default"]).map((name) => {
         const active2 = name === selectedProfileId;
-        return /* @__PURE__ */ jsx2(
+        return /* @__PURE__ */ jsx3(
           "button",
           {
             onClick: () => {
@@ -25812,9 +26184,9 @@ function App() {
         );
       }) })
     ] }),
-    /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 10, alignItems: "flex-start" }, children: [
-      /* @__PURE__ */ jsxs2("div", { style: { flex: 1, minWidth: 0 }, children: [
-        /* @__PURE__ */ jsx2("div", { style: { ...S.flexRow, marginBottom: 16 }, children: !showNews && /* @__PURE__ */ jsx2(
+    /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 10, alignItems: "flex-start" }, children: [
+      /* @__PURE__ */ jsxs3("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx3("div", { style: { ...S.flexRow, marginBottom: 16 }, children: !showNews && /* @__PURE__ */ jsx3(
           "button",
           {
             onClick: toggleNews,
@@ -25831,21 +26203,21 @@ function App() {
             children: "📰 Actualités ▶"
           }
         ) }),
-        loadError && /* @__PURE__ */ jsxs2("div", { role: "alert", style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid var(--ui-red)", background: "color-mix(in srgb, var(--ui-red) 8%, transparent)", fontSize: 12 }, children: [
-          /* @__PURE__ */ jsxs2("span", { style: { flex: 1 }, children: [
-            /* @__PURE__ */ jsx2("b", { children: i18n.loadError }),
+        loadError && /* @__PURE__ */ jsxs3("div", { role: "alert", style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid var(--ui-red)", background: "color-mix(in srgb, var(--ui-red) 8%, transparent)", fontSize: 12 }, children: [
+          /* @__PURE__ */ jsxs3("span", { style: { flex: 1 }, children: [
+            /* @__PURE__ */ jsx3("b", { children: i18n.loadError }),
             " — ",
             loadError
           ] }),
-          /* @__PURE__ */ jsx2("button", { onClick: fetchModels, style: { padding: "4px 10px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer" }, children: i18n.retry })
+          /* @__PURE__ */ jsx3("button", { onClick: fetchModels, style: { padding: "4px 10px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer" }, children: i18n.retry })
         ] }),
-        loading ? /* @__PURE__ */ jsx2("p", { children: i18n.loading }) : /* @__PURE__ */ jsxs2(Fragment2, { children: [
-          /* @__PURE__ */ jsxs2("div", { style: { marginBottom: 24, padding: 16, background: "var(--ui-row-hover-background)", borderRadius: 8, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
-            /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, children: [
-              /* @__PURE__ */ jsx2("h3", { style: { margin: 0, color: "var(--ui-text-primary)" }, children: i18n.ranking(currentProfile.name) }),
-              /* @__PURE__ */ jsxs2("span", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
-                /* @__PURE__ */ jsx2("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)" }, children: i18n.customCriteria }),
-                /* @__PURE__ */ jsx2(
+        loading ? /* @__PURE__ */ jsx3("p", { children: i18n.loading }) : /* @__PURE__ */ jsxs3(Fragment3, { children: [
+          /* @__PURE__ */ jsxs3("div", { style: { marginBottom: 24, padding: 16, background: "var(--ui-row-hover-background)", borderRadius: 8, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
+            /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, children: [
+              /* @__PURE__ */ jsx3("h3", { style: { margin: 0, color: "var(--ui-text-primary)" }, children: i18n.ranking(currentProfile.name) }),
+              /* @__PURE__ */ jsxs3("span", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
+                /* @__PURE__ */ jsx3("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)" }, children: i18n.customCriteria }),
+                /* @__PURE__ */ jsx3(
                   "button",
                   {
                     onClick: openEditModal,
@@ -25855,7 +26227,43 @@ function App() {
                 )
               ] })
             ] }),
-            /* @__PURE__ */ jsx2("div", { style: { display: "flex", gap: 16, flexWrap: "wrap" }, children: scoredModels.slice(0, 5).map((m) => /* @__PURE__ */ jsxs2(
+            /* @__PURE__ */ jsxs3("div", { role: "tablist", "aria-label": i18n.views.label, style: { display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsx3("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)", marginRight: 4 }, children: i18n.views.label }),
+              SCORE_VIEWS.map((v) => /* @__PURE__ */ jsx3(
+                "button",
+                {
+                  role: "tab",
+                  "aria-selected": scoreView === v,
+                  onClick: () => setScoreView(v),
+                  title: i18n.views.hint[v],
+                  style: {
+                    padding: "3px 10px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    border: `1px solid ${scoreView === v ? "var(--ui-accent)" : "var(--ui-stroke-tertiary)"}`,
+                    background: scoreView === v ? "color-mix(in srgb, var(--ui-accent) 12%, var(--ui-bg-editor))" : "var(--ui-bg-editor)",
+                    color: scoreView === v ? "var(--ui-text-primary)" : "var(--ui-text-secondary)",
+                    fontWeight: scoreView === v ? 650 : 500
+                  },
+                  children: i18n.views.names[v]
+                },
+                v
+              )),
+              /* @__PURE__ */ jsx3("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)", marginLeft: 6 }, children: i18n.views.hint[scoreView] })
+            ] }),
+            scoreView !== "classic" ? /* @__PURE__ */ jsx3(
+              ScoreView,
+              {
+                view: scoreView,
+                models: scoredModels,
+                weights: currentProfile.weights,
+                maxes,
+                criteria: AVAILABLE_CRITERIA.map((c2) => ({ key: c2.key, icon: c2.icon, label: i18n.views.short[c2.key] })),
+                icon: providerIcon,
+                t: i18n
+              }
+            ) : /* @__PURE__ */ jsx3("div", { style: { display: "flex", gap: 16, flexWrap: "wrap" }, children: scoredModels.slice(0, 5).map((m) => /* @__PURE__ */ jsxs3(
               "div",
               {
                 title: buildModelTooltip(m),
@@ -25871,26 +26279,26 @@ function App() {
                   boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
                 },
                 children: [
-                  /* @__PURE__ */ jsxs2("div", { style: { fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-                    /* @__PURE__ */ jsxs2("span", { children: [
+                  /* @__PURE__ */ jsxs3("div", { style: { fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+                    /* @__PURE__ */ jsxs3("span", { children: [
                       m._rank === 1 ? "🥇" : m._rank === 2 ? "🥈" : m._rank === 3 ? "🥉" : `#${m._rank}`,
                       " ",
                       providerIcon(m.id),
                       " ",
                       m.label
                     ] }),
-                    /* @__PURE__ */ jsx2("span", { style: { fontSize: 10, background: "var(--ui-bg-tertiary)", padding: "1px 4px", borderRadius: 3, color: "var(--ui-text-secondary)" }, children: fmtCtx(m.context_length) })
+                    /* @__PURE__ */ jsx3("span", { style: { fontSize: 10, background: "var(--ui-bg-tertiary)", padding: "1px 4px", borderRadius: 3, color: "var(--ui-text-secondary)" }, children: fmtCtx(m.context_length) })
                   ] }),
-                  /* @__PURE__ */ jsxs2("div", { style: { fontSize: 18, fontWeight: 800, color: "var(--ui-orange)", marginTop: 2 }, children: [
+                  /* @__PURE__ */ jsxs3("div", { style: { fontSize: 18, fontWeight: 800, color: "var(--ui-orange)", marginTop: 2 }, children: [
                     m._score.toFixed(0),
                     "/100"
                   ] }),
-                  /* @__PURE__ */ jsxs2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 2, display: "flex", justifyContent: "space-between" }, children: [
-                    /* @__PURE__ */ jsxs2("span", { children: [
+                  /* @__PURE__ */ jsxs3("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 2, display: "flex", justifyContent: "space-between" }, children: [
+                    /* @__PURE__ */ jsxs3("span", { children: [
                       "in:",
                       fmtPrice(m.prompt_price)
                     ] }),
-                    /* @__PURE__ */ jsxs2("span", { children: [
+                    /* @__PURE__ */ jsxs3("span", { children: [
                       "out:",
                       fmtPrice(m.completion_price)
                     ] })
@@ -25900,8 +26308,8 @@ function App() {
               m.id
             )) })
           ] }),
-          /* @__PURE__ */ jsx2("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 10, background: "transparent" }, children: /* @__PURE__ */ jsxs2("div", { style: S.gap, children: [
-            /* @__PURE__ */ jsx2(
+          /* @__PURE__ */ jsx3("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 10, background: "transparent" }, children: /* @__PURE__ */ jsxs3("div", { style: S.gap, children: [
+            /* @__PURE__ */ jsx3(
               "input",
               {
                 placeholder: i18n.searchPlaceholder,
@@ -25911,7 +26319,7 @@ function App() {
                 style: { width: 220, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", fontSize: 13 }
               }
             ),
-            /* @__PURE__ */ jsx2(
+            /* @__PURE__ */ jsx3(
               "button",
               {
                 onClick: search,
@@ -25920,8 +26328,8 @@ function App() {
                 children: i18n.search
               }
             ),
-            /* @__PURE__ */ jsxs2("label", { style: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--ui-text-secondary)", cursor: "pointer" }, children: [
-              /* @__PURE__ */ jsx2(
+            /* @__PURE__ */ jsxs3("label", { style: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--ui-text-secondary)", cursor: "pointer" }, children: [
+              /* @__PURE__ */ jsx3(
                 "input",
                 {
                   type: "checkbox",
@@ -25934,8 +26342,8 @@ function App() {
               ),
               i18n.searchUntracked
             ] }),
-            /* @__PURE__ */ jsx2("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") }),
-            /* @__PURE__ */ jsx2(
+            /* @__PURE__ */ jsx3("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") }),
+            /* @__PURE__ */ jsx3(
               "button",
               {
                 onClick: refresh,
@@ -25944,82 +26352,82 @@ function App() {
                 children: "↻"
               }
             ),
-            lastRefresh ? /* @__PURE__ */ jsx2("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)" }, children: i18n.updatedAgo(Math.max(0, Math.round((Date.now() / 1e3 - lastRefresh) / 60))) }) : null
+            lastRefresh ? /* @__PURE__ */ jsx3("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)" }, children: i18n.updatedAgo(Math.max(0, Math.round((Date.now() / 1e3 - lastRefresh) / 60))) }) : null
           ] }) }),
-          searchUntracked && searchRes.length > 0 && /* @__PURE__ */ jsxs2("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
-            /* @__PURE__ */ jsx2("div", { style: { marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).length) }),
-            searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).map((s2, i) => /* @__PURE__ */ jsxs2("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
-              /* @__PURE__ */ jsxs2("div", { children: [
-                /* @__PURE__ */ jsx2("b", { children: s2.name || s2.id }),
-                /* @__PURE__ */ jsxs2("span", { style: { color: "var(--ui-text-tertiary)", marginLeft: 8 }, children: [
+          searchUntracked && searchRes.length > 0 && /* @__PURE__ */ jsxs3("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
+            /* @__PURE__ */ jsx3("div", { style: { marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).length) }),
+            searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).map((s2, i) => /* @__PURE__ */ jsxs3("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+              /* @__PURE__ */ jsxs3("div", { children: [
+                /* @__PURE__ */ jsx3("b", { children: s2.name || s2.id }),
+                /* @__PURE__ */ jsxs3("span", { style: { color: "var(--ui-text-tertiary)", marginLeft: 8 }, children: [
                   fmtPrice(s2.prompt_price),
                   " in / ",
                   fmtPrice(s2.completion_price),
                   " out · ctx: ",
                   (s2.context_length || 0).toLocaleString()
                 ] }),
-                s2.has_vision && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 6, background: "color-mix(in srgb, var(--ui-blue) 8%, transparent)", color: "var(--ui-blue)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "👁" }),
-                s2.open_weights && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-green) 12%, transparent)", color: "var(--ui-green)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "open" }),
-                s2.model_size && /* @__PURE__ */ jsx2("span", { style: { marginLeft: 4, color: "var(--ui-text-tertiary)", fontSize: 11 }, children: s2.model_size })
+                s2.has_vision && /* @__PURE__ */ jsx3("span", { style: { marginLeft: 6, background: "color-mix(in srgb, var(--ui-blue) 8%, transparent)", color: "var(--ui-blue)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "👁" }),
+                s2.open_weights && /* @__PURE__ */ jsx3("span", { style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-green) 12%, transparent)", color: "var(--ui-green)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "open" }),
+                s2.model_size && /* @__PURE__ */ jsx3("span", { style: { marginLeft: 4, color: "var(--ui-text-tertiary)", fontSize: 11 }, children: s2.model_size })
               ] }),
-              /* @__PURE__ */ jsx2("button", { onClick: () => addModel(s2.id), disabled: adding, style: { minWidth: 100, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", cursor: "pointer" }, children: i18n.add })
+              /* @__PURE__ */ jsx3("button", { onClick: () => addModel(s2.id), disabled: adding, style: { minWidth: 100, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", cursor: "pointer" }, children: i18n.add })
             ] }, s2.id))
           ] }),
-          /* @__PURE__ */ jsx2("h3", { style: { margin: "0 0 8px 0", color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650 }, children: i18n.tableTitle }),
-          /* @__PURE__ */ jsx2("div", { style: { overflowX: "auto", marginBottom: 24, border: "1px solid var(--ui-stroke-tertiary)", borderRadius: 8 }, children: /* @__PURE__ */ jsxs2("table", { style: S.table, children: [
-            /* @__PURE__ */ jsx2("thead", { children: /* @__PURE__ */ jsxs2("tr", { children: [
-              /* @__PURE__ */ jsx2("th", { style: S.th }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, cursor: "pointer", userSelect: "none" }, onClick: () => toggleSort("label"), children: [
+          /* @__PURE__ */ jsx3("h3", { style: { margin: "0 0 8px 0", color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650 }, children: i18n.tableTitle }),
+          /* @__PURE__ */ jsx3("div", { style: { overflowX: "auto", marginBottom: 24, border: "1px solid var(--ui-stroke-tertiary)", borderRadius: 8 }, children: /* @__PURE__ */ jsxs3("table", { style: S.table, children: [
+            /* @__PURE__ */ jsx3("thead", { children: /* @__PURE__ */ jsxs3("tr", { children: [
+              /* @__PURE__ */ jsx3("th", { style: S.th }),
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, cursor: "pointer", userSelect: "none" }, onClick: () => toggleSort("label"), children: [
                 i18n.table.model,
                 sortArrow("label")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("context_length"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("context_length"), children: [
                 i18n.table.context,
                 sortArrow("context_length")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("prompt_price"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("prompt_price"), children: [
                 "$ in",
                 sortArrow("prompt_price")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("completion_price"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("completion_price"), children: [
                 "$ out",
                 sortArrow("completion_price")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("cache_read_price"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("cache_read_price"), children: [
                 "$ cache",
                 sortArrow("cache_read_price")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("intelligence_index"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("intelligence_index"), children: [
                 "Intel.",
                 sortArrow("intelligence_index")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("coding_index"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("coding_index"), children: [
                 "Coding",
                 sortArrow("coding_index")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("agentic_index"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("agentic_index"), children: [
                 "Agentic",
                 sortArrow("agentic_index")
               ] }),
-              /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, children: "SWE" }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("has_vision"), children: [
+              /* @__PURE__ */ jsx3("th", { style: { ...S.th, textAlign: "center" }, children: "SWE" }),
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("has_vision"), children: [
                 "Vision",
                 sortArrow("has_vision")
               ] }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("open_weights"), children: [
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("open_weights"), children: [
                 "Open",
                 sortArrow("open_weights")
               ] }),
-              /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, children: "Taille" }),
-              /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, children: "GPU Q4" }),
-              /* @__PURE__ */ jsxs2("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("tools"), children: [
+              /* @__PURE__ */ jsx3("th", { style: { ...S.th, textAlign: "center" }, children: "Taille" }),
+              /* @__PURE__ */ jsx3("th", { style: { ...S.th, textAlign: "center" }, children: "GPU Q4" }),
+              /* @__PURE__ */ jsxs3("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("tools"), children: [
                 "Tools",
                 sortArrow("tools")
               ] }),
-              /* @__PURE__ */ jsx2("th", { style: { ...S.th, textAlign: "center" }, title: `Score ${currentProfile.name}`, children: "⭐" }),
-              /* @__PURE__ */ jsx2("th", { style: S.th })
+              /* @__PURE__ */ jsx3("th", { style: { ...S.th, textAlign: "center" }, title: `Score ${currentProfile.name}`, children: "⭐" }),
+              /* @__PURE__ */ jsx3("th", { style: S.th })
             ] }) }),
-            /* @__PURE__ */ jsx2("tbody", { children: sortedModels.filter((m) => {
+            /* @__PURE__ */ jsx3("tbody", { children: sortedModels.filter((m) => {
               const qL = q.trim().toLowerCase();
               return !qL || (m.label + " " + m.id).toLowerCase().includes(qL);
             }).map((m, i) => {
@@ -26027,38 +26435,38 @@ function App() {
               const rank = scoredModels.findIndex((sm) => sm.id === m.id);
               const rankStr = rank >= 0 ? `#${rank + 1}` : "-";
               const top3 = rank >= 0 && rank < 3;
-              return /* @__PURE__ */ jsxs2("tr", { style: { ...i % 2 === 0 ? S.trEven : S.trOdd, opacity: hiddenIds.has(m.id) ? 0.35 : m.available ? 1 : 0.4 }, children: [
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center", fontSize: 16 }, title: providerName(m.id), children: providerIcon(m.id) }),
-                /* @__PURE__ */ jsxs2("td", { style: S.td, children: [
-                  /* @__PURE__ */ jsx2("b", { children: m.label }),
-                  /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: "var(--ui-text-tertiary)" }, children: m.id })
+              return /* @__PURE__ */ jsxs3("tr", { style: { ...i % 2 === 0 ? S.trEven : S.trOdd, opacity: hiddenIds.has(m.id) ? 0.35 : m.available ? 1 : 0.4 }, children: [
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center", fontSize: 16 }, title: providerName(m.id), children: providerIcon(m.id) }),
+                /* @__PURE__ */ jsxs3("td", { style: S.td, children: [
+                  /* @__PURE__ */ jsx3("b", { children: m.label }),
+                  /* @__PURE__ */ jsx3("div", { style: { fontSize: 10, color: "var(--ui-text-tertiary)" }, children: m.id })
                 ] }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "right" }, title: `${(m.context_length || 0).toLocaleString()} tokens`, children: fmtCtx(m.context_length) }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.prompt_price) }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.completion_price) }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "right", color: m.cache_read_price ? "var(--ui-blue)" : "var(--ui-text-quaternary)" }, children: m.cache_read_price != null ? fmtPrice(m.cache_read_price) : "–" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.intelligence_index) }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.coding_index) }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.agentic_index) }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + "%" : "…" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.has_vision ? "👁" : "" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: m.open_weights ? "✅" : "❌" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center", fontSize: 11 }, children: m.model_size || "?" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center", fontSize: 11 }, children: m.gpu ? /* @__PURE__ */ jsxs2("span", { title: `Q8: ${m.gpu.vram_q8_gb}GB, FP16: ${m.gpu.vram_fp16_gb}GB`, children: [
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right" }, title: `${(m.context_length || 0).toLocaleString()} tokens`, children: fmtCtx(m.context_length) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.prompt_price) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.completion_price) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "right", color: m.cache_read_price ? "var(--ui-blue)" : "var(--ui-text-quaternary)" }, children: m.cache_read_price != null ? fmtPrice(m.cache_read_price) : "–" }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.intelligence_index) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.coding_index) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: fmtIdx(m.agentic_index) }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + "%" : "…" }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: m.has_vision ? "👁" : "" }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: m.open_weights ? "✅" : "❌" }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center", fontSize: 11 }, children: m.model_size || "?" }),
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center", fontSize: 11 }, children: m.gpu ? /* @__PURE__ */ jsxs3("span", { title: `Q8: ${m.gpu.vram_q8_gb}GB, FP16: ${m.gpu.vram_fp16_gb}GB`, children: [
                   m.gpu.vram_q4_gb,
                   "GB",
                   m.gpu.fits_64gb ? " ✓" : ""
                 ] }) : "-" }),
-                /* @__PURE__ */ jsx2("td", { style: { ...S.td, textAlign: "center" }, children: (m.supported_parameters || []).includes("tools") ? "✅" : "❌" }),
-                /* @__PURE__ */ jsxs2("td", { style: { ...S.td, textAlign: "center", fontWeight: 700, background: top3 ? "color-mix(in srgb, var(--ui-orange) 10%, transparent)" : void 0 }, children: [
-                  /* @__PURE__ */ jsxs2("span", { title: `Score ${currentProfile.name}: ${sc}`, style: { color: top3 ? "var(--ui-orange)" : sc > 50 ? "var(--ui-green)" : "var(--ui-text-tertiary)" }, children: [
+                /* @__PURE__ */ jsx3("td", { style: { ...S.td, textAlign: "center" }, children: (m.supported_parameters || []).includes("tools") ? "✅" : "❌" }),
+                /* @__PURE__ */ jsxs3("td", { style: { ...S.td, textAlign: "center", fontWeight: 700, background: top3 ? "color-mix(in srgb, var(--ui-orange) 10%, transparent)" : void 0 }, children: [
+                  /* @__PURE__ */ jsxs3("span", { title: `Score ${currentProfile.name}: ${sc}`, style: { color: top3 ? "var(--ui-orange)" : sc > 50 ? "var(--ui-green)" : "var(--ui-text-tertiary)" }, children: [
                     rankStr,
-                    top3 && /* @__PURE__ */ jsx2("span", { style: { fontSize: 10, marginLeft: 2 }, children: "🥇" })
+                    top3 && /* @__PURE__ */ jsx3("span", { style: { fontSize: 10, marginLeft: 2 }, children: "🥇" })
                   ] }),
-                  /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: "var(--ui-text-quaternary)" }, children: sc != null ? `${Math.round(sc)}` : "" })
+                  /* @__PURE__ */ jsx3("div", { style: { fontSize: 10, color: "var(--ui-text-quaternary)" }, children: sc != null ? `${Math.round(sc)}` : "" })
                 ] }),
-                /* @__PURE__ */ jsxs2("td", { style: { ...S.td, whiteSpace: "nowrap", textAlign: "right" }, children: [
-                  /* @__PURE__ */ jsx2(
+                /* @__PURE__ */ jsxs3("td", { style: { ...S.td, whiteSpace: "nowrap", textAlign: "right" }, children: [
+                  /* @__PURE__ */ jsx3(
                     "button",
                     {
                       onClick: () => toggleHidden(m.id),
@@ -26067,7 +26475,7 @@ function App() {
                       children: hiddenIds.has(m.id) ? "👁" : "🙈"
                     }
                   ),
-                  /* @__PURE__ */ jsx2(
+                  /* @__PURE__ */ jsx3(
                     "button",
                     {
                       onClick: () => removeModel(m.id),
@@ -26080,74 +26488,74 @@ function App() {
               ] }, m.id);
             }) })
           ] }) }),
-          active.length >= 2 && /* @__PURE__ */ jsxs2(Fragment2, { children: [
-            /* @__PURE__ */ jsx2("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: "Prix ($ / million tokens)" }),
-            /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 24, flexWrap: "wrap" }, children: [
-              /* @__PURE__ */ jsxs2("div", { style: { flex: 1, minWidth: 360 }, children: [
-                /* @__PURE__ */ jsx2("h3", { style: { fontSize: 14, color: "var(--ui-text-tertiary)" }, children: "Input (moins cher d'abord)" }),
-                /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 250, children: /* @__PURE__ */ jsxs2(BarChart, { data: byPriceIn, children: [
-                  /* @__PURE__ */ jsx2(XAxis, { dataKey: "label", fontSize: 11 }),
-                  /* @__PURE__ */ jsx2(Tooltip, { formatter: (v) => fmtPrice(v) }),
-                  /* @__PURE__ */ jsx2(Bar, { dataKey: "prompt_price", fill: "var(--ui-purple)", name: "$ / M tokens", isAnimationActive: false })
+          active.length >= 2 && /* @__PURE__ */ jsxs3(Fragment3, { children: [
+            /* @__PURE__ */ jsx3("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: "Prix ($ / million tokens)" }),
+            /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 24, flexWrap: "wrap" }, children: [
+              /* @__PURE__ */ jsxs3("div", { style: { flex: 1, minWidth: 360 }, children: [
+                /* @__PURE__ */ jsx3("h3", { style: { fontSize: 14, color: "var(--ui-text-tertiary)" }, children: "Input (moins cher d'abord)" }),
+                /* @__PURE__ */ jsx3(ResponsiveContainer, { width: "100%", height: 250, children: /* @__PURE__ */ jsxs3(BarChart, { data: byPriceIn, children: [
+                  /* @__PURE__ */ jsx3(XAxis, { dataKey: "label", fontSize: 11 }),
+                  /* @__PURE__ */ jsx3(Tooltip, { formatter: (v) => fmtPrice(v) }),
+                  /* @__PURE__ */ jsx3(Bar, { dataKey: "prompt_price", fill: "var(--ui-purple)", name: "$ / M tokens", isAnimationActive: false })
                 ] }) })
               ] }),
-              /* @__PURE__ */ jsxs2("div", { style: { flex: 1, minWidth: 360 }, children: [
-                /* @__PURE__ */ jsx2("h3", { style: { fontSize: 14, color: "var(--ui-text-tertiary)" }, children: "Output (moins cher d'abord)" }),
-                /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 250, children: /* @__PURE__ */ jsxs2(BarChart, { data: byPriceOut, children: [
-                  /* @__PURE__ */ jsx2(XAxis, { dataKey: "label", fontSize: 11 }),
-                  /* @__PURE__ */ jsx2(Tooltip, { formatter: (v) => fmtPrice(v) }),
-                  /* @__PURE__ */ jsx2(Bar, { dataKey: "completion_price", fill: "#82ca9d", name: "$ / M tokens", isAnimationActive: false })
+              /* @__PURE__ */ jsxs3("div", { style: { flex: 1, minWidth: 360 }, children: [
+                /* @__PURE__ */ jsx3("h3", { style: { fontSize: 14, color: "var(--ui-text-tertiary)" }, children: "Output (moins cher d'abord)" }),
+                /* @__PURE__ */ jsx3(ResponsiveContainer, { width: "100%", height: 250, children: /* @__PURE__ */ jsxs3(BarChart, { data: byPriceOut, children: [
+                  /* @__PURE__ */ jsx3(XAxis, { dataKey: "label", fontSize: 11 }),
+                  /* @__PURE__ */ jsx3(Tooltip, { formatter: (v) => fmtPrice(v) }),
+                  /* @__PURE__ */ jsx3(Bar, { dataKey: "completion_price", fill: "#82ca9d", name: "$ / M tokens", isAnimationActive: false })
                 ] }) })
               ] })
             ] }),
-            /* @__PURE__ */ jsx2("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: "Benchmarks Intelligence (Artificial Analysis)" }),
-            /* @__PURE__ */ jsx2("div", { style: { display: "flex", gap: 24, flexWrap: "wrap" }, children: [
+            /* @__PURE__ */ jsx3("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: "Benchmarks Intelligence (Artificial Analysis)" }),
+            /* @__PURE__ */ jsx3("div", { style: { display: "flex", gap: 24, flexWrap: "wrap" }, children: [
               { k: "intelligence_index", label: "Intelligence", color: "var(--ui-purple)" },
               { k: "coding_index", label: "Coding", color: "#82ca9d" },
               { k: "agentic_index", label: "Agentic", color: "var(--ui-orange)" }
             ].map((bm) => {
               const sorted = [...active].filter((m) => m[bm.k] != null).sort((a2, b) => (b[bm.k] ?? 0) - (a2[bm.k] ?? 0));
-              return /* @__PURE__ */ jsxs2("div", { style: { flex: 1, minWidth: 260 }, children: [
-                /* @__PURE__ */ jsx2("h3", { style: { fontSize: 14, color: "var(--ui-text-tertiary)" }, children: bm.label }),
-                /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 250, children: /* @__PURE__ */ jsxs2(BarChart, { data: sorted, children: [
-                  /* @__PURE__ */ jsx2(XAxis, { dataKey: "label", fontSize: 11 }),
-                  /* @__PURE__ */ jsx2(Tooltip, {}),
-                  /* @__PURE__ */ jsx2(Bar, { dataKey: bm.k, fill: bm.color, name: bm.label, isAnimationActive: false })
+              return /* @__PURE__ */ jsxs3("div", { style: { flex: 1, minWidth: 260 }, children: [
+                /* @__PURE__ */ jsx3("h3", { style: { fontSize: 14, color: "var(--ui-text-tertiary)" }, children: bm.label }),
+                /* @__PURE__ */ jsx3(ResponsiveContainer, { width: "100%", height: 250, children: /* @__PURE__ */ jsxs3(BarChart, { data: sorted, children: [
+                  /* @__PURE__ */ jsx3(XAxis, { dataKey: "label", fontSize: 11 }),
+                  /* @__PURE__ */ jsx3(Tooltip, {}),
+                  /* @__PURE__ */ jsx3(Bar, { dataKey: bm.k, fill: bm.color, name: bm.label, isAnimationActive: false })
                 ] }) })
               ] }, bm.k);
             }) }),
-            /* @__PURE__ */ jsx2("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: "Contexte (tokens)" }),
-            /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 300, children: /* @__PURE__ */ jsxs2(BarChart, { data: byCtx, layout: "vertical", children: [
-              /* @__PURE__ */ jsx2(XAxis, { type: "number", fontSize: 11, tickFormatter: (v) => (v / 1e3).toFixed(0) + "k" }),
-              /* @__PURE__ */ jsx2(YAxis, { type: "category", dataKey: "label", fontSize: 11, width: 130 }),
-              /* @__PURE__ */ jsx2(Tooltip, { formatter: (v) => v.toLocaleString() + " tokens" }),
-              /* @__PURE__ */ jsx2(Bar, { dataKey: "context_length", fill: "#ffc658", name: "Contexte", isAnimationActive: false })
+            /* @__PURE__ */ jsx3("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: "Contexte (tokens)" }),
+            /* @__PURE__ */ jsx3(ResponsiveContainer, { width: "100%", height: 300, children: /* @__PURE__ */ jsxs3(BarChart, { data: byCtx, layout: "vertical", children: [
+              /* @__PURE__ */ jsx3(XAxis, { type: "number", fontSize: 11, tickFormatter: (v) => (v / 1e3).toFixed(0) + "k" }),
+              /* @__PURE__ */ jsx3(YAxis, { type: "category", dataKey: "label", fontSize: 11, width: 130 }),
+              /* @__PURE__ */ jsx3(Tooltip, { formatter: (v) => v.toLocaleString() + " tokens" }),
+              /* @__PURE__ */ jsx3(Bar, { dataKey: "context_length", fill: "#ffc658", name: "Contexte", isAnimationActive: false })
             ] }) }),
-            /* @__PURE__ */ jsxs2("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: [
+            /* @__PURE__ */ jsxs3("h2", { style: { marginTop: 32, color: "var(--ui-text-primary)" }, children: [
               "Radar comparatif (",
               currentProfile.name,
               ") (0–100)"
             ] }),
-            /* @__PURE__ */ jsx2(ResponsiveContainer, { width: "100%", height: 450, children: /* @__PURE__ */ jsxs2(RadarChart, { data: radarData, children: [
-              /* @__PURE__ */ jsx2(PolarGrid, {}),
-              /* @__PURE__ */ jsx2(PolarAngleAxis, { dataKey: "label", fontSize: 11 }),
-              /* @__PURE__ */ jsx2(PolarRadiusAxis, { angle: 90, domain: [0, 100], tick: false }),
+            /* @__PURE__ */ jsx3(ResponsiveContainer, { width: "100%", height: 450, children: /* @__PURE__ */ jsxs3(RadarChart, { data: radarData, children: [
+              /* @__PURE__ */ jsx3(PolarGrid, {}),
+              /* @__PURE__ */ jsx3(PolarAngleAxis, { dataKey: "label", fontSize: 11 }),
+              /* @__PURE__ */ jsx3(PolarRadiusAxis, { angle: 90, domain: [0, 100], tick: false }),
               activeLabels.map((label) => {
                 const ci = colorByLabel[label] ?? 0;
-                return /* @__PURE__ */ jsx2(Radar, { dataKey: label, stroke: colors[ci % colors.length], fill: colors[ci % colors.length], fillOpacity: 0.12, isAnimationActive: false }, label);
+                return /* @__PURE__ */ jsx3(Radar, { dataKey: label, stroke: colors[ci % colors.length], fill: colors[ci % colors.length], fillOpacity: 0.12, isAnimationActive: false }, label);
               })
             ] }) }),
-            /* @__PURE__ */ jsx2("div", { style: { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 12 }, children: allLabels.map((label) => {
+            /* @__PURE__ */ jsx3("div", { style: { display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginTop: 12 }, children: allLabels.map((label) => {
               const ci2 = colorByLabel[label] ?? 0;
               const hiddenR = radarHidden.has(label);
-              return /* @__PURE__ */ jsxs2(
+              return /* @__PURE__ */ jsxs3(
                 "span",
                 {
                   onClick: () => toggleRadar(label),
                   title: hiddenR ? i18n.clickToShow : i18n.clickToHide,
                   style: { display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 11, userSelect: "none", opacity: hiddenR ? 0.35 : 1, textDecoration: hiddenR ? "line-through" : "none", padding: "2px 5px", borderRadius: 4, background: hiddenR ? "transparent" : `color-mix(in srgb, ${colors[ci2 % colors.length]} 10%, transparent)` },
                   children: [
-                    /* @__PURE__ */ jsx2("span", { style: { display: "inline-block", width: 9, height: 9, background: colors[ci2 % colors.length], borderRadius: 2 } }),
+                    /* @__PURE__ */ jsx3("span", { style: { display: "inline-block", width: 9, height: 9, background: colors[ci2 % colors.length], borderRadius: 2 } }),
                     label
                   ]
                 },
@@ -26157,7 +26565,7 @@ function App() {
           ] })
         ] })
       ] }),
-      showNews && /* @__PURE__ */ jsx2(
+      showNews && /* @__PURE__ */ jsx3(
         NewsPanel,
         {
           news,
@@ -26181,7 +26589,7 @@ function App() {
         }
       )
     ] }),
-    modalOpen && editingProfile && /* @__PURE__ */ jsx2("div", { style: {
+    modalOpen && editingProfile && /* @__PURE__ */ jsx3("div", { style: {
       position: "fixed",
       top: 0,
       left: 0,
@@ -26194,7 +26602,7 @@ function App() {
       alignItems: "center",
       zIndex: 1e3,
       padding: 16
-    }, children: /* @__PURE__ */ jsxs2("div", { style: {
+    }, children: /* @__PURE__ */ jsxs3("div", { style: {
       background: "var(--ui-bg-editor)",
       borderRadius: 12,
       width: "100%",
@@ -26206,7 +26614,7 @@ function App() {
       border: "1px solid var(--ui-stroke-tertiary)",
       overflow: "hidden"
     }, children: [
-      /* @__PURE__ */ jsxs2("div", { style: {
+      /* @__PURE__ */ jsxs3("div", { style: {
         padding: "16px 20px",
         borderBottom: "1px solid var(--ui-stroke-tertiary)",
         display: "flex",
@@ -26214,10 +26622,10 @@ function App() {
         alignItems: "center",
         background: "var(--ui-row-hover-background)"
       }, children: [
-        /* @__PURE__ */ jsxs2("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }, children: [
-          /* @__PURE__ */ jsx2("h3", { style: { margin: 0, fontSize: 17, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.modal.configTitle(editingProfile.name) }),
-          /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
-            /* @__PURE__ */ jsx2(
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }, children: [
+          /* @__PURE__ */ jsx3("h3", { style: { margin: 0, fontSize: 17, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.modal.configTitle(editingProfile.name) }),
+          /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
+            /* @__PURE__ */ jsx3(
               "button",
               {
                 onClick: autoFillCriteria,
@@ -26227,10 +26635,10 @@ function App() {
                 children: i18n.modal.autoFill
               }
             ),
-            autoFillMsg ? /* @__PURE__ */ jsx2("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)" }, children: autoFillMsg }) : null
+            autoFillMsg ? /* @__PURE__ */ jsx3("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)" }, children: autoFillMsg }) : null
           ] })
         ] }),
-        /* @__PURE__ */ jsx2(
+        /* @__PURE__ */ jsx3(
           "button",
           {
             onClick: () => setModalOpen(false),
@@ -26239,11 +26647,11 @@ function App() {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs2("div", { style: { padding: "16px 20px", overflowY: "auto", flex: 1 }, children: [
-        /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 12, marginBottom: 16 }, children: [
-          /* @__PURE__ */ jsxs2("div", { style: { flex: 1 }, children: [
-            /* @__PURE__ */ jsx2("label", { style: { display: "block", fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)", marginBottom: 4 }, children: "Identifiant technique :" }),
-            /* @__PURE__ */ jsx2(
+      /* @__PURE__ */ jsxs3("div", { style: { padding: "16px 20px", overflowY: "auto", flex: 1 }, children: [
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 12, marginBottom: 16 }, children: [
+          /* @__PURE__ */ jsxs3("div", { style: { flex: 1 }, children: [
+            /* @__PURE__ */ jsx3("label", { style: { display: "block", fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)", marginBottom: 4 }, children: "Identifiant technique :" }),
+            /* @__PURE__ */ jsx3(
               "input",
               {
                 type: "text",
@@ -26263,9 +26671,9 @@ function App() {
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs2("div", { style: { flex: 1.5 }, children: [
-            /* @__PURE__ */ jsx2("label", { style: { display: "block", fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)", marginBottom: 4 }, children: "Nom affiché :" }),
-            /* @__PURE__ */ jsx2(
+          /* @__PURE__ */ jsxs3("div", { style: { flex: 1.5 }, children: [
+            /* @__PURE__ */ jsx3("label", { style: { display: "block", fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)", marginBottom: 4 }, children: "Nom affiché :" }),
+            /* @__PURE__ */ jsx3(
               "input",
               {
                 type: "text",
@@ -26284,17 +26692,17 @@ function App() {
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxs2("div", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)", paddingTop: 12 }, children: [
-          /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
-            /* @__PURE__ */ jsx2("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.criteriaWeights }),
-            /* @__PURE__ */ jsxs2("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
+        /* @__PURE__ */ jsxs3("div", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)", paddingTop: 12 }, children: [
+          /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
+            /* @__PURE__ */ jsx3("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.criteriaWeights }),
+            /* @__PURE__ */ jsxs3("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
               "Total poids : ",
-              /* @__PURE__ */ jsx2("b", { children: Object.values(editingProfile.weights).reduce((a2, b) => a2 + (b || 0), 0) })
+              /* @__PURE__ */ jsx3("b", { children: Object.values(editingProfile.weights).reduce((a2, b) => a2 + (b || 0), 0) })
             ] })
           ] }),
-          /* @__PURE__ */ jsx2("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: AVAILABLE_CRITERIA.map((crit) => {
+          /* @__PURE__ */ jsx3("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: AVAILABLE_CRITERIA.map((crit) => {
             const currentWeight = editingProfile.weights[crit.key] ?? 0;
-            return /* @__PURE__ */ jsxs2(
+            return /* @__PURE__ */ jsxs3(
               "div",
               {
                 style: {
@@ -26308,11 +26716,11 @@ function App() {
                   transition: "all 0.15s ease"
                 },
                 children: [
-                  /* @__PURE__ */ jsx2("div", { style: { width: 28, fontSize: 18, textAlign: "center" }, children: crit.icon }),
-                  /* @__PURE__ */ jsxs2("div", { style: { flex: 1, minWidth: 0 }, children: [
-                    /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
-                      /* @__PURE__ */ jsx2("span", { style: { fontWeight: currentWeight > 0 ? 700 : 500, fontSize: 13, color: currentWeight > 0 ? "var(--ui-text-primary)" : "var(--ui-text-tertiary)" }, children: i18n.criteria[crit.key] || crit.label }),
-                      /* @__PURE__ */ jsxs2("span", { style: {
+                  /* @__PURE__ */ jsx3("div", { style: { width: 28, fontSize: 18, textAlign: "center" }, children: crit.icon }),
+                  /* @__PURE__ */ jsxs3("div", { style: { flex: 1, minWidth: 0 }, children: [
+                    /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+                      /* @__PURE__ */ jsx3("span", { style: { fontWeight: currentWeight > 0 ? 700 : 500, fontSize: 13, color: currentWeight > 0 ? "var(--ui-text-primary)" : "var(--ui-text-tertiary)" }, children: i18n.criteria[crit.key] || crit.label }),
+                      /* @__PURE__ */ jsxs3("span", { style: {
                         fontWeight: 800,
                         fontSize: 12,
                         background: currentWeight === 0 ? "var(--ui-bg-tertiary)" : currentWeight >= 4 ? "var(--ui-accent-secondary)" : "var(--ui-stroke-tertiary)",
@@ -26324,8 +26732,8 @@ function App() {
                         " / 5"
                       ] })
                     ] }),
-                    /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 2, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }, children: i18n.criteria["d_" + crit.key] || crit.desc }),
-                    /* @__PURE__ */ jsx2(
+                    /* @__PURE__ */ jsx3("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 2, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }, children: i18n.criteria["d_" + crit.key] || crit.desc }),
+                    /* @__PURE__ */ jsx3(
                       "input",
                       {
                         type: "range",
@@ -26359,7 +26767,7 @@ function App() {
           }) })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs2("div", { style: {
+      /* @__PURE__ */ jsxs3("div", { style: {
         padding: "14px 20px",
         borderTop: "1px solid var(--ui-stroke-tertiary)",
         display: "flex",
@@ -26367,8 +26775,8 @@ function App() {
         alignItems: "center",
         background: "var(--ui-row-hover-background)"
       }, children: [
-        /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 8 }, children: [
-          !isNewProfile && /* @__PURE__ */ jsx2(
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 8 }, children: [
+          !isNewProfile && /* @__PURE__ */ jsx3(
             "button",
             {
               onClick: deleteCurrentProfile,
@@ -26386,7 +26794,7 @@ function App() {
               children: i18n.modal.delete
             }
           ),
-          /* @__PURE__ */ jsx2(
+          /* @__PURE__ */ jsx3(
             "button",
             {
               onClick: resetToDefaultProfiles,
@@ -26405,8 +26813,8 @@ function App() {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 10 }, children: [
-          /* @__PURE__ */ jsx2(
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 10 }, children: [
+          /* @__PURE__ */ jsx3(
             "button",
             {
               onClick: () => setModalOpen(false),
@@ -26424,7 +26832,7 @@ function App() {
               children: i18n.modal.cancel
             }
           ),
-          /* @__PURE__ */ jsx2(
+          /* @__PURE__ */ jsx3(
             "button",
             {
               onClick: saveProfileConfig,
@@ -26446,7 +26854,7 @@ function App() {
         ] })
       ] })
     ] }) }),
-    /* @__PURE__ */ jsx2(
+    /* @__PURE__ */ jsx3(
       ConfirmDialog,
       {
         open: pendingDelete !== null,
@@ -26463,7 +26871,7 @@ function App() {
 }
 
 // src/main.tsx
-import { jsx as jsx3 } from "react/jsx-runtime";
+import { jsx as jsx4 } from "react/jsx-runtime";
 var plugin = {
   id: "model-leaderboard",
   name: "LLM Model Leaderboard",
@@ -26478,7 +26886,7 @@ var plugin = {
         id: "page",
         area: ROUTES_AREA,
         data: { path: "/model-leaderboard" },
-        render: () => /* @__PURE__ */ jsx3(App, {})
+        render: () => /* @__PURE__ */ jsx4(App, {})
       },
       {
         id: "nav",

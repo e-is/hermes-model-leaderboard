@@ -63,6 +63,38 @@ const LOCALES = {
       tools: 'Tools',
       score: 'Score'
     },
+    views: {
+      label: 'View:',
+      names: { classic: 'Cards', stacked: 'Score bars', columns: 'Histograms', heatmap: 'Heatmap', duel: 'Duel' },
+      hint: {
+        classic: 'Top 5 with price and context.',
+        stacked: 'Each segment = points earned on one criterion (weight × grade).',
+        columns: 'One bar per criterion: height = grade, width = weight.',
+        heatmap: 'Grade 0–100 per criterion, heaviest criteria first. Click a column to sort.',
+        duel: 'Pick two models and compare them criterion by criterion.'
+      },
+      short: {
+        intelligence: 'Intelligence', coding: 'Coding', agentic: 'Agentic',
+        price_in: 'Price in', price_out: 'Price out', cache_read: 'Cache price',
+        context: 'Context', tools: 'Tools', has_vision: 'Vision',
+        open_weights: 'Open weights', fits_64gb: 'VRAM ≤ 64G'
+      },
+      model: 'Model',
+      score: 'Score',
+      weight: 'weight',
+      grade: 'grade',
+      points: 'pts',
+      na: 'n/a',
+      noCriteria: 'No criterion is weighted for this profile — edit the scoring criteria.',
+      needTwo: 'Track at least two available models to compare them.',
+      showAll: (n: number) => `Show all (${n})`,
+      showLess: 'Show less',
+      strength: 'Strength',
+      weakness: 'Weakness',
+      missingData: 'Missing data counts as 0',
+      winsOn: (n: number) => `ahead on ${n} criteri${n > 1 ? 'a' : 'on'}`,
+      versus: 'vs'
+    },
     news: {
       title: '📰 News & Updates',
       hidePanel: 'Hide panel',
@@ -180,6 +212,38 @@ const LOCALES = {
       gpuOk: 'GPU OK',
       tools: 'Tools',
       score: 'Score'
+    },
+    views: {
+      label: 'Affichage :',
+      names: { classic: 'Cartes', stacked: 'Barres de score', columns: 'Histogrammes', heatmap: 'Heatmap', duel: 'Duel' },
+      hint: {
+        classic: 'Top 5 avec prix et contexte.',
+        stacked: 'Chaque segment = points gagnés sur un critère (poids × note).',
+        columns: 'Une barre par critère : hauteur = note, largeur = poids.',
+        heatmap: 'Note 0–100 par critère, critères les plus lourds d\u2019abord. Cliquer une colonne pour trier.',
+        duel: 'Choisir deux modèles et les comparer critère par critère.'
+      },
+      short: {
+        intelligence: 'Intelligence', coding: 'Code', agentic: 'Agentique',
+        price_in: 'Prix entrée', price_out: 'Prix sortie', cache_read: 'Prix cache',
+        context: 'Contexte', tools: 'Outils', has_vision: 'Vision',
+        open_weights: 'Poids ouverts', fits_64gb: 'VRAM ≤ 64G'
+      },
+      model: 'Modèle',
+      score: 'Score',
+      weight: 'poids',
+      grade: 'note',
+      points: 'pts',
+      na: 'n/d',
+      noCriteria: 'Aucun critère n\u2019est pondéré pour ce profil — modifiez les critères de notation.',
+      needTwo: 'Suivez au moins deux modèles disponibles pour les comparer.',
+      showAll: (n: number) => `Tout afficher (${n})`,
+      showLess: 'Réduire',
+      strength: 'Atout',
+      weakness: 'Faiblesse',
+      missingData: 'Donnée manquante comptée 0',
+      winsOn: (n: number) => `devant sur ${n} critère${n > 1 ? 's' : ''}`,
+      versus: 'vs'
     },
     news: {
       title: '📰 Actualités & Nouveautés',

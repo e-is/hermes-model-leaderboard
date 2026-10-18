@@ -58,3 +58,21 @@ test('score is clamped to 0..100', () => {
   const s = computeGenericScore(baseModel as any, { intelligence: 5 }, { ...MAXES, maxIntel: 1 })
   assert.equal(s, 100)
 })
+
+test('scoreBreakdown points add up to the score', async () => {
+  const { scoreBreakdown } = await import('../../src/core/scoring.ts')
+  const weights = { intelligence: 5, price_out: 3, tools: 2, coding: 0 }
+  const m = { ...baseModel, intelligence_index: 20, completion_price: 5 }
+  const parts = scoreBreakdown(m, weights, MAXES)
+  assert.deepEqual(parts.map(p => p.key), ['intelligence', 'price_out', 'tools'])
+  const sum = parts.reduce((s, p) => s + p.points, 0)
+  assert.ok(Math.abs(sum - computeGenericScore(m, weights, MAXES)) < 1e-9)
+  assert.ok(Math.abs(parts.reduce((s, p) => s + p.maxPoints, 0) - 100) < 1e-9)
+})
+
+test('missing benchmark data is a null note worth 0 points', async () => {
+  const { scoreBreakdown } = await import('../../src/core/scoring.ts')
+  const [intel] = scoreBreakdown({ ...baseModel, intelligence_index: null }, { intelligence: 5 }, MAXES)
+  assert.equal(intel.note, null)
+  assert.equal(intel.points, 0)
+})

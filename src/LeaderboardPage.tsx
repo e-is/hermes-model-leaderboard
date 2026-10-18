@@ -7,7 +7,8 @@ import { NewsPanel } from './components/NewsPanel'
 import { ConfirmDialog } from '@hermes/plugin-sdk'
 import { api } from './doors'
 import { useLeaderboardI18n } from './i18n'
-import { computeGenericScore } from './core/scoring'
+import { computeGenericScore, criterionValues, type CriterionKey } from './core/scoring'
+import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
 
 // ---- Types --------------------------------------------------
 type GpuInfo = { param_count_b: number; vram_q4_gb: number; vram_q8_gb: number; vram_fp16_gb: number; fits_64gb: boolean } | null
@@ -295,6 +296,18 @@ export default function App() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
+
+  // Score explanation view (selector above the ranking; persisted per viewer)
+  const [scoreView, setScoreViewState] = useState<ScoreViewId>(() => {
+    try {
+      const v = localStorage.getItem('llm-dash-score-view') as ScoreViewId | null
+      return v && SCORE_VIEWS.includes(v) ? v : 'classic'
+    } catch { return 'classic' }
+  })
+  const setScoreView = (v: ScoreViewId) => {
+    setScoreViewState(v)
+    try { localStorage.setItem('llm-dash-score-view', v) } catch { /* private mode */ }
+  }
 
   // News sidebar state
   const [showNews, setShowNews] = useState(true)
@@ -709,24 +722,11 @@ export default function App() {
   // ---- Radar dynamique basé sur les critères actifs du profil (poids > 0) ----
   const radarData = useMemo(() => {
     if (active.length < 2) return []
-    const maxCtx = maxes.maxCtx
-    const maxPP = Math.max(0.01, ...active.map(m => m.prompt_price || 0))
-    const maxCP = Math.max(0.01, ...active.map(m => m.completion_price || 0))
-    const maxCache = Math.max(0.01, ...active.map(m => m.cache_read_price || 0))
-
-    const criteriaDefinitions: { key: string; label: string; getValue: (m: ModelRecord) => number }[] = [
-      { key: 'intelligence', label: 'Intelligence', getValue: m => ((m.intelligence_index ?? 0) / maxes.maxIntel) * 100 },
-      { key: 'coding', label: 'Coding', getValue: m => ((m.coding_index ?? 0) / maxes.maxCoding) * 100 },
-      { key: 'agentic', label: 'Agentic', getValue: m => ((m.agentic_index ?? 0) / maxes.maxAgentic) * 100 },
-      { key: 'price_in', label: 'Prix↓input', getValue: m => maxPP > 0 ? (1 - (m.prompt_price || 0) / maxPP) * 100 : 100 },
-      { key: 'price_out', label: 'Prix↓output', getValue: m => maxCP > 0 ? (1 - (m.completion_price || 0) / maxCP) * 100 : 100 },
-      { key: 'cache_read', label: 'Prix↓cache', getValue: m => maxCache > 0 ? (1 - (m.cache_read_price || 0) / maxCache) * 100 : 100 },
-      { key: 'context', label: i18n.table.context, getValue: m => ((m.context_length || 0) / maxCtx) * 100 },
-      { key: 'tools', label: 'Tool Calls', getValue: m => (m.supported_parameters || []).includes('tools') ? 100 : 0 },
-      { key: 'has_vision', label: 'Vision', getValue: m => m.has_vision ? 100 : 0 },
-      { key: 'open_weights', label: 'Open weight', getValue: m => m.open_weights ? 100 : 0 },
-      { key: 'fits_64gb', label: 'VRAM ≤ 64G', getValue: m => m.gpu?.fits_64gb ? 100 : 0 },
-    ]
+    // Same normalisation as the score (core/scoring), so the radar and the
+    // ranking can never disagree.
+    const short = i18n.views.short
+    const criteriaDefinitions: { key: CriterionKey; label: string; getValue: (m: ModelRecord) => number }[] =
+      AVAILABLE_CRITERIA.map(c => ({ key: c.key, label: short[c.key], getValue: (m: ModelRecord) => (criterionValues(m, maxes)[c.key] ?? 0) * 100 }))
 
     const activeCriteria = criteriaDefinitions.filter(c => (currentProfile.weights[c.key] ?? 0) > 0)
     const finalCriteria = activeCriteria.length > 0 ? activeCriteria : criteriaDefinitions.slice(0, 5)
@@ -738,7 +738,7 @@ export default function App() {
       }
       return entry
     })
-  }, [active, maxes, currentProfile.weights])
+  }, [active, maxes, currentProfile.weights, i18n])
 
   const allLabels = active.map(m => m.label)
   const colorByLabel: Record<string, number> = {}
@@ -838,6 +838,33 @@ export default function App() {
                       </button>
                     </span>
                   </div>
+                  <div role="tablist" aria-label={i18n.views.label} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, color: 'var(--ui-text-tertiary)', marginRight: 4 }}>{i18n.views.label}</span>
+                    {SCORE_VIEWS.map(v => (
+                      <button key={v} role="tab" aria-selected={scoreView === v} onClick={() => setScoreView(v)} title={i18n.views.hint[v]}
+                        style={{
+                          padding: '3px 10px', borderRadius: 999, fontSize: 12, cursor: 'pointer',
+                          border: `1px solid ${scoreView === v ? 'var(--ui-accent)' : 'var(--ui-stroke-tertiary)'}`,
+                          background: scoreView === v ? 'color-mix(in srgb, var(--ui-accent) 12%, var(--ui-bg-editor))' : 'var(--ui-bg-editor)',
+                          color: scoreView === v ? 'var(--ui-text-primary)' : 'var(--ui-text-secondary)',
+                          fontWeight: scoreView === v ? 650 : 500,
+                        }}>
+                        {i18n.views.names[v]}
+                      </button>
+                    ))}
+                    <span style={{ fontSize: 11, color: 'var(--ui-text-quaternary)', marginLeft: 6 }}>{i18n.views.hint[scoreView]}</span>
+                  </div>
+                  {scoreView !== 'classic' ? (
+                    <ScoreView
+                      view={scoreView}
+                      models={scoredModels as any}
+                      weights={currentProfile.weights}
+                      maxes={maxes}
+                      criteria={AVAILABLE_CRITERIA.map(c => ({ key: c.key, icon: c.icon, label: i18n.views.short[c.key] }))}
+                      icon={providerIcon}
+                      t={i18n}
+                    />
+                  ) : (
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     {scoredModels.slice(0, 5).map((m: any) => (
                       <div
@@ -865,6 +892,7 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
 
 {/* ---- TABLEAU ---- */}
