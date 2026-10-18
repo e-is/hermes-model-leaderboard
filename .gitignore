@@ -11,3 +11,5 @@ backend/.venv/
 
 # Runtime state / caches — never versioned
 dashboard/data/_openrouter_cache.json
+dashboard/data/_hf_cache.json
+dashboard/data/_meta.json
