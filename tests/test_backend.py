@@ -262,6 +262,16 @@ def test_profiles_crud(tmp_path, monkeypatch):
 # Hermes profiles endpoint
 # ---------------------------------------------------------------------------
 
+def test_put_creates_a_profile_saved_for_the_first_time():
+    """The 'default' Hermes profile chip has no stored criteria until its first
+    save, which is a PUT: it must create the profile (it used to 404)."""
+    res = client.put(f"{PREFIX}/profiles/default", json={
+        "id": "default", "name": "default", "weights": {"intelligence": 5, "coding": 9, "tools": -1}})
+    assert res.status_code == 200, res.text
+    assert res.json()["profile"]["weights"] == {"intelligence": 5, "coding": 5, "tools": 0}
+    assert client.get(f"{PREFIX}/profiles").json()["profiles"]["default"]["name"] == "default"
+
+
 def test_hermes_profiles_fallback(client_nomonkey):
     # without the hermes package importable, the endpoint falls back to ['default']
     res = client_nomonkey.get(f"{PREFIX}/hermes-profiles")

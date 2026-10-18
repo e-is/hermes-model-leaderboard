@@ -535,7 +535,7 @@ export default function App() {
     api('/auto-fill', { method: 'POST', body: { profile_id: editingProfile.id, profile_name: editingProfile.name } })
       .then((d: any) => {
         const w = d && d.weights ? d.weights : {}
-        setEditingProfile((prev: any) => prev ? { ...prev, ...w } : prev)
+        setEditingProfile((prev: any) => prev ? { ...prev, weights: { ...prev.weights, ...w } } : prev)
         setAutoFillMsg(i18n.modal.autoFillDone)
       })
       .catch((err: any) => {

@@ -25982,7 +25982,7 @@ function App() {
     setAutoFillMsg(i18n.modal.autoFillRunning);
     api("/auto-fill", { method: "POST", body: { profile_id: editingProfile.id, profile_name: editingProfile.name } }).then((d) => {
       const w = d && d.weights ? d.weights : {};
-      setEditingProfile((prev) => prev ? { ...prev, ...w } : prev);
+      setEditingProfile((prev) => prev ? { ...prev, weights: { ...prev.weights, ...w } } : prev);
       setAutoFillMsg(i18n.modal.autoFillDone);
     }).catch((err) => {
       setAutoFillMsg(`${i18n.modal.autoFillFailed}: ${err && err.message ? err.message : err}`);

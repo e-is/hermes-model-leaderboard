@@ -832,22 +832,32 @@ def create_profile(p: ProfileIn):
     profiles[pid] = {
         "id": pid,
         "name": p.name.strip() or pid,
-        "weights": {k: int(v) for k, v in p.weights.items()}
+        "weights": _clean_weights(p.weights)
     }
     _save_profiles(profiles)
     return {"status": "ok", "profile": profiles[pid]}
 
 
+def _clean_weights(weights: dict) -> dict:
+    """Integer weights clamped to the 0..5 scale the UI edits."""
+    return {k: max(0, min(5, int(v))) for k, v in weights.items()}
+
+
 @router.put("/profiles/{profile_id}")
 def update_profile(profile_id: str, p: ProfileIn):
+    """Create-or-replace. A Hermes profile chip ('default', ...) shows default
+    weights until its criteria are first saved, so the first save of one is a
+    PUT on an id the store does not hold yet — that must create it, not 404."""
     profiles = _load_profiles()
     pid = profile_id.strip().lower()
-    if pid not in profiles:
-        raise HTTPException(404, f"Profil introuvable : {pid}")
-    profiles[pid]["name"] = p.name.strip() or profiles[pid]["name"]
-    profiles[pid]["weights"] = {k: int(v) for k, v in p.weights.items()}
+    if not pid:
+        raise HTTPException(400, "L'identifiant du profil est obligatoire")
+    current = profiles.get(pid) or {"id": pid, "name": pid}
+    current["name"] = p.name.strip() or current["name"]
+    current["weights"] = _clean_weights(p.weights)
+    profiles[pid] = current
     _save_profiles(profiles)
-    return {"status": "ok", "profile": profiles[pid]}
+    return {"status": "ok", "profile": current}
 
 
 @router.delete("/profiles/{profile_id}")
