@@ -232,7 +232,7 @@ def test_profiles_crud(tmp_path, monkeypatch):
     # defaults are seeded on first read
     res = client.get(f"{PREFIX}/profiles")
     assert res.status_code == 200
-    assert "architecte" in res.json()["profiles"]
+    assert "architect" in res.json()["profiles"]
 
     # create
     res = client.post(f"{PREFIX}/profiles", json={
@@ -270,6 +270,24 @@ def test_put_creates_a_profile_saved_for_the_first_time():
     assert res.status_code == 200, res.text
     assert res.json()["profile"]["weights"] == {"intelligence": 5, "coding": 5, "tools": 0}
     assert client.get(f"{PREFIX}/profiles").json()["profiles"]["default"]["name"] == "default"
+
+
+def test_legacy_architecte_key_is_renamed_to_the_hermes_profile(tmp_path, monkeypatch):
+    """The seed once called the architect profile 'architecte', which no Hermes
+    profile is named: the criteria stored under it must keep applying to the
+    'architect' chip instead of showing up as a dead extra profile."""
+    profiles_file = tmp_path / "profiles.json"
+    profiles_file.write_text(json.dumps({
+        "architecte": {"id": "architecte", "name": "Architecte",
+                       "weights": {"intelligence": 5, "coding": 4}}
+    }))
+    monkeypatch.setattr(main_mod, "PROFILES_FILE", profiles_file)
+
+    profiles = client.get(f"{PREFIX}/profiles").json()["profiles"]
+    assert "architecte" not in profiles
+    assert profiles["architect"]["weights"]["coding"] == 4
+    # the rename is persisted, so the next read does not migrate again
+    assert "architect" in json.loads(profiles_file.read_text())
 
 
 def test_hermes_profiles_fallback(client_nomonkey):

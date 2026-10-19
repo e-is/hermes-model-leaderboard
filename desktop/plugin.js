@@ -26980,8 +26980,8 @@ var AVAILABLE_CRITERIA = [
   { key: "fits_64gb", label: "Local VRAM ≤ 64GB", icon: "🖥️", desc: "Faisabilité d'exécution locale sur GPU standard (≤ 64GB)" }
 ];
 var DEFAULT_PROFILES = {
-  architecte: {
-    id: "architecte",
+  architect: {
+    id: "architect",
     name: "Architecte",
     weights: { intelligence: 5, coding: 4, context: 3, price_in: 2, price_out: 2, has_vision: 1 }
   },
@@ -27382,10 +27382,11 @@ function App() {
     setSavingProfile(true);
     const method = isNewProfile ? "POST" : "PUT";
     const url = isNewProfile ? "/profiles" : `/profiles/${encodeURIComponent(id)}`;
+    const createOn404 = (err) => !isNewProfile && /\b404\b/.test(String(err?.message || "")) ? api("/profiles", { method: "POST", body: editingProfile }) : Promise.reject(err);
     api(url, {
       method,
       body: editingProfile
-    }).then((d) => d).then((data) => {
+    }).catch(createOn404).then((data) => {
       if (data.profile) {
         setServerProfiles((prev) => ({ ...prev, [data.profile.id]: data.profile }));
         setSelectedProfileId(data.profile.id);
@@ -27401,7 +27402,8 @@ function App() {
     const pid = editingProfile.id;
     if (!confirm(i18n.modal.deleteConfirm(editingProfile.name))) return;
     setSavingProfile(true);
-    api(`/profiles/${encodeURIComponent(pid)}`, { method: "DELETE" }).then(() => {
+    const ignoreMissing = (err) => /\b404\b/.test(String(err?.message || "")) ? Promise.resolve() : Promise.reject(err);
+    api(`/profiles/${encodeURIComponent(pid)}`, { method: "DELETE" }).catch(ignoreMissing).then(() => {
       setServerProfiles((prev) => {
         const next = { ...prev };
         delete next[pid];

@@ -4,6 +4,23 @@ All notable changes to this plugin are documented here. The format loosely follo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-10-19
+
+Saving the criteria of a Hermes profile that had never been saved — the exact shape of
+"Profile introuvable: architect" in the criteria dialog.
+
+### Fixed
+
+- Saving the criteria dialog of a Hermes profile the store does not hold yet (`architect`,
+  `manager`, …) no longer fails when the gateway runs a plugin backend older than 1.0.1:
+  the PUT answers 404 there, and the page now falls back to the create route instead of
+  showing the error. The save is persisted either way.
+- Deleting the criteria of such a profile treats the same 404 as "nothing stored" rather
+  than as an error.
+- The seeded architect profile is keyed `architect` (its display name stays "Architecte"),
+  not `architecte`: the old id matched no Hermes profile, so it showed up as a dead extra
+  chip and never scored the architect. A store written under the old id is renamed on read.
+
 ## [1.0.1] — 2026-10-19
 
 Documentation, screenshots and release tooling. Nothing in the plugin's behaviour changes

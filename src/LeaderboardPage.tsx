@@ -121,9 +121,12 @@ export const AVAILABLE_CRITERIA = [
   { key: 'fits_64gb', label: 'Local VRAM ≤ 64GB', icon: '🖥️', desc: 'Faisabilité d\'exécution locale sur GPU standard (≤ 64GB)' },
 ] as const
 
+// The ids are the Hermes profile names the page lists as chips ('architect',
+// 'senior-coder', …): a seed under any other id shows up as a dead extra chip
+// and never scores the profile it is meant for.
 const DEFAULT_PROFILES: Record<string, ProfileConfig> = {
-  architecte: {
-    id: 'architecte',
+  architect: {
+    id: 'architect',
     name: 'Architecte',
     weights: { intelligence: 5, coding: 4, context: 3, price_in: 2, price_out: 2, has_vision: 1 }
   },
@@ -585,11 +588,20 @@ export default function App() {
     const method = isNewProfile ? 'POST' : 'PUT'
     const url = isNewProfile ? '/profiles' : `/profiles/${encodeURIComponent(id)}`
 
+    // A gateway whose plugin backend predates create-or-replace answers the
+    // first save of a Hermes profile (one the store does not hold yet) with 404.
+    // POST /profiles is the create route on every version, so fall back to it
+    // instead of failing the save on an older runtime.
+    const createOn404 = (err: any) =>
+      !isNewProfile && /\b404\b/.test(String(err?.message || ''))
+        ? api('/profiles', { method: 'POST', body: editingProfile })
+        : Promise.reject(err)
+
     api(url, {
       method,
       body: editingProfile,
     })
-      .then(d => d)
+      .catch(createOn404)
       .then(data => {
         if (data.profile) {
           setServerProfiles(prev => ({ ...prev, [data.profile.id]: data.profile }))
@@ -611,7 +623,13 @@ export default function App() {
 
     // Delete from backend
     setSavingProfile(true)
+    // A Hermes profile chip with no stored criteria has nothing to delete, and
+    // an older backend answers that with 404: that is the desired end state.
+    const ignoreMissing = (err: any) =>
+      /\b404\b/.test(String(err?.message || '')) ? Promise.resolve() : Promise.reject(err)
+
     api(`/profiles/${encodeURIComponent(pid)}`, { method: 'DELETE' })
+      .catch(ignoreMissing)
       .then(() => {
         setServerProfiles(prev => {
           const next = { ...prev }

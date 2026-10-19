@@ -1,6 +1,6 @@
 {
-  "architecte": {
-    "id": "architecte",
+  "architect": {
+    "id": "architect",
     "name": "Architecte",
     "weights": {
       "intelligence": 5,

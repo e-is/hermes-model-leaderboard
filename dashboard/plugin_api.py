@@ -713,7 +713,7 @@ class ProfileIn(BaseModel):
 # -----------------------------------------------------------------------------
 
 DEFAULT_PROFILES = {
-    "architecte": {"id": "architecte", "name": "Architecte", "weights": {
+    "architect": {"id": "architect", "name": "Architecte", "weights": {
         "intelligence": 5, "coding": 4, "context": 3, "price_in": 2, "price_out": 2,
         "has_vision": 1, "agentic": 0, "tools": 0, "open_weights": 0, "fits_64gb": 0, "cache_read": 0}},
     "senior-coder": {"id": "senior-coder", "name": "Senior Coder", "weights": {
@@ -741,6 +741,12 @@ def _load_profiles():
         if not data or not isinstance(data, dict):
             PROFILES_FILE.write_text(json.dumps(DEFAULT_PROFILES, indent=2, ensure_ascii=False))
             return json.loads(json.dumps(DEFAULT_PROFILES))
+        # The seed used to call the architect profile 'architecte', which no
+        # Hermes profile is named: a store written then keeps its weights under
+        # the name the chips actually use.
+        if "architecte" in data and "architect" not in data:
+            data["architect"] = {**data.pop("architecte"), "id": "architect"}
+            _save_profiles(data)
         return data
     except Exception:
         return json.loads(json.dumps(DEFAULT_PROFILES))
