@@ -541,6 +541,125 @@ async def scroll_pane(ui: Desktop, top: int):
     await asyncio.sleep(1.2)
 
 
+#: Tracking profiles created FOR THE CAPTURE and removed afterwards — the screenshots
+#: have to show what the scoring is for: the same models, ranked differently per profile.
+#: Weights are deliberately opposed (a designer needs vision, a reviewer needs context).
+DEMO_PROFILES = {
+    "front-designer": {"name": "Front-end designer",
+                       "weights": {"coding": 5, "has_vision": 5, "intelligence": 4,
+                                   "price_in": 4, "context": 3}},
+    "reviewer": {"name": "Reviewer",
+                 "weights": {"intelligence": 5, "context": 5, "coding": 4,
+                             "price_out": 2, "tools": 3}},
+    "backend": {"name": "Backend",
+                "weights": {"coding": 5, "agentic": 5, "context": 4,
+                            "tools": 4, "price_in": 3}},
+}
+PROFILES_API = "/api/plugins/model-leaderboard/profiles"
+
+
+async def api(ui: Desktop, method: str, path: str, body: dict | None = None):
+    """Call the plugin's own API through the desktop bridge, pinned to the local gateway.
+
+    The body must be a plain object: the bridge serializes it itself, and passing a
+    pre-stringified one is the 422 bug this plugin already paid for once.
+    """
+    payload = {"path": path, "method": method, "connectionId": "local"}
+    if body is not None:
+        payload["body"] = body
+    js = f"""(async () => {{
+      try {{ const r = await window.hermesDesktop.api({json.dumps(payload)});
+             return 'OK ' + JSON.stringify(r); }}
+      catch (e) {{ return 'ERR ' + String(e.message || e); }}
+    }})()"""
+    out = str(await ui.ev(js) or "")
+    if out.startswith("ERR"):
+        return None
+    return json.loads(out[3:]) if len(out) > 3 else {}
+
+
+async def list_profiles(ui: Desktop) -> dict:
+    data = await api(ui, "GET", PROFILES_API)
+    raw = (data or {}).get("profiles", {}) if isinstance(data, dict) else {}
+    if isinstance(raw, list):                       # tolerate the list shape
+        return {p.get("id"): p for p in raw if isinstance(p, dict)}
+    return raw if isinstance(raw, dict) else {}
+
+
+def _hermes(*args: str) -> tuple[int, str]:
+    """Run the hermes CLI.
+
+    The chip row the plugin renders comes from the INSTALLED Hermes profiles
+    (``/hermes-profiles`` reads them through ``hermes_cli.profiles``), not from the
+    plugin's own scoring store — so a demo profile has to be a real one.
+    """
+    exe = shutil.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
+    env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb"}
+    try:
+        p = subprocess.run([exe, *args], capture_output=True, text=True, timeout=240, env=env)
+        return p.returncode, (p.stdout + p.stderr).strip()
+    except Exception as exc:  # pragma: no cover — defensive
+        return 1, f"{type(exc).__name__}: {exc}"
+
+
+async def installed_profiles(ui: Desktop) -> list[str]:
+    data = await api(ui, "GET", "/api/plugins/model-leaderboard/hermes-profiles")
+    names = (data or {}).get("profiles", []) if isinstance(data, dict) else []
+    return [n for n in names if isinstance(n, str)]
+
+
+async def create_demo_profiles(ui: Desktop) -> list[str]:
+    """Create the demo Hermes profiles and give each a scoring profile.
+
+    Returns the names this run CREATED, so only those are removed at the end — a profile
+    the user already had is left alone.
+    """
+    existing = await installed_profiles(ui)
+    created: list[str] = []
+    for pid in DEMO_PROFILES:
+        if pid in existing:
+            continue
+        rc, out = _hermes("profile", "create", pid)
+        if rc == 0:
+            created.append(pid)
+        else:
+            print(f"  ! could not create the Hermes profile {pid}: {out[-160:]}")
+    for pid in created:                     # the weights are the plugin's own store
+        spec = DEMO_PROFILES[pid]
+        await api(ui, "POST", PROFILES_API, {"id": pid, "name": spec["name"],
+                                             "weights": spec["weights"]})
+    print(f"  profiles installed: {existing} -> created {created}")
+    return created
+
+
+async def delete_profiles(ui: Desktop, ids: list[str]) -> None:
+    for pid in ids:
+        await api(ui, "DELETE", f"{PROFILES_API}/{pid}")
+        rc, out = _hermes("profile", "delete", pid, "--yes")
+        if rc != 0:
+            print(f"  ! could not remove the Hermes profile {pid}: {out[-160:]}")
+    if ids:
+        print(f"  demo profiles removed: {ids}")
+
+
+async def select_scoring_profile(ui: Desktop, profile: str) -> bool:
+    """Click the profile chip (the scoring is per profile — that is the whole point)."""
+    want = DEMO_PROFILES.get(profile, {}).get("name", profile)
+    clicked = await ui.ev(f"""(() => {{
+      const wants = {json.dumps([profile, want])}.map(w => w.toLowerCase());
+      const chip = [...document.querySelectorAll('button')].find(b => {{
+        const t = b.textContent.trim().toLowerCase();
+        return wants.some(w => t === w || t === w + ' · ' + w);
+      }});
+      if (!chip) return 'no chip';
+      chip.click();
+      return chip.textContent.trim();
+    }})()""")
+    await asyncio.sleep(2.2)                        # the re-ranking has to land
+    print(f"  scoring profile: {clicked}")
+    return clicked not in ("no chip", None)
+
+
 async def select_profile(ui: Desktop, profile: str = "default"):
     """Make sure the scoring chip is on `default` — the profile every install has."""
     chip = await ui.ev("""(() => {
@@ -701,6 +820,13 @@ async def run_scenario(ui: Desktop, *, make_gif: bool):
     else:
         print("  ! « Edit scoring criteria » not found — skipping the dialog shots")
 
+    # Per-profile scoring — the point of the page: the SAME models, ranked for different
+    # jobs. Captured after the re-weighted ranking, so that story stays intact above.
+    for idx, pid in enumerate(("front-designer", "reviewer"), start=11):
+        if await select_scoring_profile(ui, pid):
+            await ui.shot(f"screenshot-en-{idx:02d}-profile-{pid}")
+    await select_scoring_profile(ui, "default")
+
     # The animation, LAST: Page.captureScreenshot returns no frame while a screencast
     # runs, so every still above has to be taken first. The pacing is deliberate: an
     # animation that clicks through the views faster than the eye reads them shows
@@ -731,6 +857,12 @@ async def run_scenario(ui: Desktop, *, make_gif: bool):
             await asyncio.sleep(2.2)
             await scroll_pane(ui, 0)
             await asyncio.sleep(1.2)
+        # The profiles: same models, three different rankings — the reason the page
+        # scores per profile at all. Slow, so the re-ranking is legible.
+        await scroll_pane(ui, 0)
+        for pid in ("front-designer", "reviewer", "default"):
+            if await select_scoring_profile(ui, pid):
+                await asyncio.sleep(2.0)
         await ui.stop_screencast()
         await asyncio.sleep(0.4)
 
@@ -823,6 +955,13 @@ async def main():
         await reset_view_state(ui)
         await open_plugin(ui)
         await select_profile(ui)
+        RESTORE["profiles"] = await create_demo_profiles(ui)
+        # the chip row is built when the page loads, so a reload is what makes the new
+        # profiles appear — then the page is opened again and the run carries on
+        await ui.call("Page.reload", {"ignoreCache": False})
+        await asyncio.sleep(10)
+        await open_plugin(ui)
+        await select_profile(ui)
         await pane_clip(ui)
         await run_scenario(ui, make_gif=not args.no_gif)
     finally:
@@ -839,6 +978,10 @@ async def main():
             await restore_profile(ui)
         except Exception as exc:
             print(f"  ! could not restore the profile weights: {exc}")
+        try:
+            await delete_profiles(ui, RESTORE.get("profiles") or [])
+        except Exception as exc:
+            print(f"  ! could not remove the demo profiles: {exc}")
         if not args.no_gif:
             try:
                 encode_animation()

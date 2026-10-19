@@ -184,8 +184,17 @@ expensive ones drop. The profile is handed back untouched at the end of the run.
 
 ![ranking after applying the criteria](assets/screenshot-en-10-ranking-after.png)
 
-Navigation scenario — score views, the tracked table, then the criteria dialog opened,
-edited and applied:
+**Scoring is per profile** — the chip row is the list of *installed Hermes profiles*, and
+each one keeps its own criteria. The capture run creates `front-designer`, `reviewer` and
+`backend` (real profiles, removed at the end of the run), gives them opposed weights, and
+photographs the same models ranked for two different jobs:
+
+| **Front-end designer** — coding 5, vision 5 | **Reviewer** — intelligence 5, context 5 |
+|:---:|:---:|
+| ![front-designer profile](assets/screenshot-en-11-profile-front-designer.png) | ![reviewer profile](assets/screenshot-en-12-profile-reviewer.png) |
+
+Navigation scenario — score views, the tracked table, the criteria dialog opened, edited
+and applied, then the profile chips re-ranking the page:
 
 ![navigation](assets/animations/model-leaderboard.gif)
 
