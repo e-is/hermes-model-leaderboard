@@ -45,10 +45,10 @@ WIDTH, HEIGHT = 1280, 640
 TITLE = "model<span class='dash'>-</span>leaderboard"
 TAGLINE = "Which model for <b>this</b> profile? Prices, indices, and a rank that answers"
 SPECS = [
-    "OpenRouter · 23 tracked models",
+    "track any OpenRouter model — add your own",
     "6 score views · Pareto frontier",
     "curated SWE-bench · LiveCodeBench",
-    "ctx.llm auto-fill · <span class='hl'>no API keys</span>",
+    "news panel · new models, price drops &amp; promos",
 ]
 
 # The podium's numbers come from a real capture run (assets/screenshot-en-01-models.png),
