@@ -47,6 +47,7 @@ that file to re-seed.
 
 - 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
 - ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 11 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
+- 📈 **Six score views** — Cards, Score bars (points earned per criterion), Histograms (grade × weight), Heatmap (grade 0–100, heaviest criteria first; click a cell to enter a real value), Duel (two models, criterion by criterion), and **Quality / cost**: a scatter with the weighted cost on a log axis, the quality on the other, and the **Pareto frontier** dashed through the best trade-offs. Each grade says where it came from — OpenRouter, an estimate fitted on the other models, or a value you typed.
 - 🤖 **Auto-fill** — a button in the criteria dialog asks Hermes' own LLM (`ctx.llm.complete_structured`, the model the user is already running — no subprocess, no API key in the plugin) to propose weights for that profile; the answer is validated against a JSON schema. Never automatic, always user-triggered.
 - 🧠 **Shipped skill** — `skill_view('model-leaderboard:refresh-benchmarks')` walks an agent through refreshing the hand-curated benchmark indices (SWE-bench Verified, LiveCodeBench) from the public leaderboards and writing them back. Read-only, loaded on demand.
 - 🔎 **Search** — filters the tracked table live *and* queries OpenRouter for untracked models (checkbox to opt out), with a one-click add.
@@ -80,7 +81,7 @@ src/                 TSX authoring sources (esbuild → desktop/plugin.js)
   components/        NewsPanel
   hooks/             useResizable
 tests/               pytest backend suite + node unit tests (scoring, path guards)
-assets/              screenshots
+assets/              screenshots + animations/ (scripts/shots.py output)
 ```
 
 ## Build & test
@@ -158,11 +159,35 @@ Why the benchmark columns are curated rather than synced — measured, not assum
 - [ ] Consumption tab → separate plugin ([llm-plugin-plan](../sumaris-agent/data/plans/llm-plugin-plan.md)): usage tracking with credits + analytics.
 - [ ] WebSocket push (`ctx.socket`) instead of polling, if multi-window use ever justifies it.
 
-## Reference screenshots
+## Screenshots
 
-| Models & radar | Profile config |
+Captured from the **real desktop** (light theme, English UI, `default` profile) by
+`scripts/shots.py` — it drives Hermes Desktop over CDP, walks the score views, and
+assembles the GIF below with ffmpeg. Every still is clipped to the plugin's own pane,
+so no shell chrome (and none of the user's private session list) can leak into a
+README image.
+
+| Tracked models | Score bars |
 |:---:|:---:|
-| ![models](assets/screenshot-models.png) | ![profile](assets/screenshot-profile-config.png) |
+| ![models](assets/screenshot-en-01-models.png) | ![score bars](assets/screenshot-en-03-score-bars.png) |
+| **Heatmap** (grades 0–100, provenance on click) | **Quality / cost** (Pareto frontier) |
+| ![heatmap](assets/screenshot-en-05-heatmap.png) | ![quality vs cost](assets/screenshot-en-06-quality-cost.png) |
+| **The table** (23 tracked models) | **Tracking profile** (weights + Auto-fill) |
+| ![table](assets/screenshot-en-02-models-table.png) | ![criteria](assets/screenshot-en-08-criteria.png) |
+
+Navigation scenario — score views, the tracked table, then the criteria dialog
+(GIF with the [MP4](assets/animations/model-leaderboard.mp4) alongside it):
+
+![navigation](assets/animations/model-leaderboard.gif)
+
+Regenerate them (the debug port is gated, hence the platform flag):
+
+```
+pkill -f 'release/linux-unpacked/Hermes'
+~/.hermes/hermes-agent/apps/desktop/release/linux-unpacked/Hermes \
+    --ozone-platform=wayland --remote-debugging-port=9222
+python3 scripts/shots.py          # --no-gif to skip the animation, --keep-open to leave the page up
+```
 
 ## License
 

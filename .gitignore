@@ -13,3 +13,6 @@ backend/.venv/
 dashboard/data/_openrouter_cache.json
 dashboard/data/_hf_cache.json
 dashboard/data/_meta.json
+
+# Screencast frames from scripts/shots.py (the GIF/MP4 in assets/animations/ is versioned)
+.agents/shot-frames/
