@@ -48,7 +48,8 @@ SPECS = [
     "track any OpenRouter model — add your own",
     "6 score views · Pareto frontier",
     "curated SWE-bench · LiveCodeBench",
-    "news panel · new models, price drops &amp; promos",
+    "models news and promos",
+    "<span class='hl'>no API key</span>",
 ]
 
 # The podium's numbers come from a real capture run (assets/screenshot-en-01-models.png),
@@ -119,7 +120,7 @@ def shell(body: str, *, extra_css: str = "") -> str:
   .tag b.hi {{ color:{BLUE}; font-weight:700; }}   /* the phrase the card is about */
   .specs {{ position:absolute; top:46px; right:56px; text-align:right; font-size:13px;
             color:{MUTED}; line-height:1.9; white-space:nowrap; }}
-  .specs .hl {{ color:{BLUE}; }}
+  .specs .hl {{ color:{BLUE}; font-weight:600; }}   /* same treatment as the gantt card */
   .ver {{ position:absolute; top:14px; right:56px; font-size:12px; color:#6e7681; letter-spacing:.5px; }}
   {extra_css}
 </style></head>
