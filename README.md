@@ -81,7 +81,7 @@ src/                 TSX authoring sources (esbuild → desktop/plugin.js)
   components/        NewsPanel
   hooks/             useResizable
 tests/               pytest backend suite + node unit tests (scoring, path guards)
-assets/              screenshots + animations/ (scripts/shots.py output)
+assets/              screenshots + animations/ + catalogue cards (scripts/shots.py, card.py)
 ```
 
 ## Build & test
@@ -162,21 +162,30 @@ Why the benchmark columns are curated rather than synced — measured, not assum
 ## Screenshots
 
 Captured from the **real desktop** (light theme, English UI, `default` profile) by
-`scripts/shots.py` — it drives Hermes Desktop over CDP, walks the score views, and
-assembles the GIF below with ffmpeg. Every still is clipped to the plugin's own pane,
-so no shell chrome (and none of the user's private session list) can leak into a
-README image.
+`scripts/shots.py` — it drives Hermes Desktop over CDP, walks the score views, edits the
+criteria for real, and assembles the GIF below with ffmpeg. Every still is clipped to the
+plugin's own pane, so no shell chrome (and none of the user's private session list) can
+leak into a README image.
 
 | Tracked models | Score bars |
 |:---:|:---:|
 | ![models](assets/screenshot-en-01-models.png) | ![score bars](assets/screenshot-en-03-score-bars.png) |
-| **Heatmap** (grades 0–100, provenance on click) | **Quality / cost** (Pareto frontier) |
-| ![heatmap](assets/screenshot-en-05-heatmap.png) | ![quality vs cost](assets/screenshot-en-06-quality-cost.png) |
-| **The table** (23 tracked models) | **Tracking profile** (weights + Auto-fill) |
-| ![table](assets/screenshot-en-02-models-table.png) | ![criteria](assets/screenshot-en-08-criteria.png) |
+| **Histograms** (grade × weight) | **Heatmap** (grades 0–100, provenance on click) |
+| ![histograms](assets/screenshot-en-04-histograms.png) | ![heatmap](assets/screenshot-en-05-heatmap.png) |
+| **Quality / cost** (Pareto frontier) | **The table** (23 tracked models) |
+| ![quality vs cost](assets/screenshot-en-06-quality-cost.png) | ![table](assets/screenshot-en-02-models-table.png) |
+| **Tracking profile** (weights + Auto-fill) | **…and the same profile, re-weighted** |
+| ![criteria](assets/screenshot-en-08-criteria.png) | ![criteria edited](assets/screenshot-en-09-criteria-edited.png) |
 
-Navigation scenario — score views, the tracked table, then the criteria dialog
-(GIF with the [MP4](assets/animations/model-leaderboard.mp4) alongside it):
+**Applying those criteria re-ranks the page** — the capture run moves Coding to 5, Agentic
+to 4, the price weights to 5/4 and the context window to 4, saves, and photographs the
+result: the cheap coding models climb (`deepseek-v4-flash-1.1`, `glm-5.3`) while the
+expensive ones drop. The profile is handed back untouched at the end of the run.
+
+![ranking after applying the criteria](assets/screenshot-en-10-ranking-after.png)
+
+Navigation scenario — score views, the tracked table, then the criteria dialog opened,
+edited and applied:
 
 ![navigation](assets/animations/model-leaderboard.gif)
 
@@ -187,6 +196,19 @@ pkill -f 'release/linux-unpacked/Hermes'
 ~/.hermes/hermes-agent/apps/desktop/release/linux-unpacked/Hermes \
     --ozone-platform=wayland --remote-debugging-port=9222
 python3 scripts/shots.py          # --no-gif to skip the animation, --keep-open to leave the page up
+```
+
+### Catalogue card
+
+![catalogue card](assets/card-podium.png)
+
+Drawn in HTML/CSS and rasterised with the Chromium Hermes ships (`scripts/card.py`), same
+as [hermes-kanban-gantt](https://github.com/e-is/hermes-kanban-gantt)'s card — no image
+model, no desktop, no CDP port:
+
+```
+python3 scripts/card.py --variant podium     # podium | podium-light | bars | scatter
+python3 scripts/card.py --all                # every alternative + assets/card-alternatives.html
 ```
 
 ## License

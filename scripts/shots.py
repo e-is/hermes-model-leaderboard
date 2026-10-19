@@ -60,6 +60,9 @@ FRAMES = REPO / ".agents" / "shot-frames"
 SIDEBAR_LABEL = "Model Leaderboard"
 PLUGIN = "model-leaderboard"
 SIDEBAR_W = 232          # px — what the shell's sidebar is dragged to for a capture
+MAX_FRAMES = 110         # frames kept for the animation (GIF length and weight)
+ANIM_FPS = 10            # playback rate of the assembled GIF/MP4
+ANIM_WIDTH = 1024         # GIF width (1280 made a 2.8 MB file GitHub renders slowly)
 RESTORE: dict = {}       # shell state the run must put back (mode, sidebar width)
 PANE: dict | None = None  # clip rect of the plugin's own scroll pane (see pane_clip)
 
@@ -85,6 +88,43 @@ _PANE_JS = """(() => {
     height: Math.round(Math.min(r.height, window.innerHeight - y)),
   });
 })()"""
+
+#: The criteria dialog is the only place with a range input, which makes it the
+#: reliable handle for "is it open" — queries built on its title text matched a
+#: wrapper with a nonsense rect (y = -420) and reported plenty of nothing.
+_MODAL_OPEN_JS = "(() => !!document.querySelector('input[type=range]'))()"
+
+#: Read every weight slider with the text of its row (criterion name + description).
+_MODAL_READ_JS = """(() => {
+  const rows = [...document.querySelectorAll('input[type=range]')].map(el => {
+    let row = el, text = '';
+    for (let i = 0; i < 4 && row; i++) {
+      row = row.parentElement;
+      if (row && row.textContent) { text = row.textContent.trim().replace(/\\s+/g, ' '); break; }
+    }
+    return { label: text.slice(0, 60), value: Number(el.value) };
+  });
+  return JSON.stringify(rows);
+})()"""
+
+#: Close the dialog by its own ✕ (Escape is not wired: it left the overlay up).
+_MODAL_CLOSE_JS = """(() => {
+  const r = document.querySelector('input[type=range]');
+  if (!r) return 'already closed';
+  let el = r;
+  while (el && getComputedStyle(el).position !== 'fixed') el = el.parentElement;
+  const btns = el ? [...el.querySelectorAll('button')] : [];
+  const x = btns.find(b => b.textContent.trim() === '\\u2715')
+         || btns.find(b => /^(cancel|annuler)$/i.test(b.textContent.trim()));
+  if (!x) return 'no close button: ' + btns.map(b => b.textContent.trim().slice(0, 12)).join('|');
+  x.click();
+  return 'clicked';
+})()"""
+
+#: Weights the scenario demonstrates with — a coding-heavy, price-aware profile, so
+#: the re-ranking is obvious (cheap coding models climb, pricey ones drop). Keys are
+#: regexes matched against the dialog row's text (criterion name + description).
+DEMO_WEIGHTS = {"Coding": 5, "Agentic": 4, "input tokens": 5, "output tokens": 4, "Context window": 4}
 
 # The score views, in the order the scenario walks them. Keys are the plugin's own
 # ScoreViewId values, labels are what the buttons read in English.
@@ -112,6 +152,8 @@ class Desktop:
         self.port = port
         self.ws = None
         self._id = 0
+        self._pending: dict[int, asyncio.Future] = {}
+        self._pump: asyncio.Task | None = None
         self.frames: list[bytes] = []
         self.screencasting = False
 
@@ -140,26 +182,58 @@ class Desktop:
     async def open(self):
         page = self.page_target(self.port)
         self.ws = await websockets.connect(page["webSocketDebuggerUrl"], max_size=128 * 1024 * 1024)
+        # One reader for the whole session: CDP screencast frames are EVENTS, and an
+        # inline read-on-call client only sees them while a command is in flight. The
+        # first animation attempt captured 0 frames that way — it slept between actions
+        # while Chrome sat waiting for the ack that never came.
+        self._pump = asyncio.create_task(self._read_loop())
         await self.call("Page.enable")
         await self.call("Runtime.enable")
         return page
 
-    async def call(self, method: str, params: dict | None = None) -> dict:
-        self._id += 1
-        mid = self._id
-        await self.ws.send(json.dumps({"id": mid, "method": method, "params": params or {}}))
+    async def _read_loop(self):
+        """Pump the socket: ack every screencast frame, resolve every pending call."""
         while True:
-            msg = json.loads(await self.ws.recv())
+            try:
+                msg = json.loads(await self.ws.recv())
+            except Exception:
+                return
             if msg.get("method") == "Page.screencastFrame":
                 self.frames.append(base64.b64decode(msg["params"]["data"]))
-                await self.ws.send(json.dumps({
-                    "id": self._id, "method": "Page.screencastFrameAck",
-                    "params": {"sessionId": msg["params"]["sessionId"]}}))
+                try:
+                    await self.ws.send(json.dumps({
+                        "id": 0, "method": "Page.screencastFrameAck",
+                        "params": {"sessionId": msg["params"]["sessionId"]}}))
+                except Exception:
+                    pass
                 continue
-            if msg.get("id") == mid:
+            fut = self._pending.pop(msg.get("id"), None)
+            if fut is not None and not fut.done():
                 if "error" in msg:
-                    raise Dead(f"{method}: {msg['error'].get('message')}")
-                return msg.get("result", {})
+                    fut.set_exception(Dead(f"{msg.get('method', 'call')}: {msg['error'].get('message')}"))
+                else:
+                    fut.set_result(msg.get("result", {}))
+
+    async def call(self, method: str, params: dict | None = None, *, timeout: float = 120.0) -> dict:
+        if self.ws is None:
+            raise Dead("CDP socket is not open")
+        self._id += 1
+        mid = self._id
+        fut: asyncio.Future = asyncio.get_running_loop().create_future()
+        self._pending[mid] = fut
+        await self.ws.send(json.dumps({"id": mid, "method": method, "params": params or {}}))
+        try:
+            return await asyncio.wait_for(fut, timeout=timeout)
+        except asyncio.TimeoutError:
+            self._pending.pop(mid, None)
+            raise Dead(f"{method}: no answer within {timeout:.0f}s")
+
+    async def close(self):
+        if self._pump is not None:
+            self._pump.cancel()
+            self._pump = None
+        if self.ws is not None:
+            await self.ws.close()
 
     async def ev(self, expression: str):
         res = await self.call("Runtime.evaluate",
@@ -216,14 +290,23 @@ class Desktop:
                         {"format": "jpeg", "quality": quality, "everyNthFrame": 1})
         self.screencasting = True
 
-    async def stop_screencast(self):
+    async def stop_screencast(self, keep_frames: int = MAX_FRAMES):
+        """Stop the cast and write the frames, subsampled to `keep_frames`.
+
+        The pump acks every frame, so Chrome streams at its own rate (2189 frames for a
+        30 s scenario on the first try — a 4-minute, 2.8 MB GIF that nobody watches).
+        Sampling here keeps the pacing deterministic whatever the compositor does;
+        `encode_animation` then plays the result back at ANIM_FPS.
+        """
         if not self.screencasting:
             return
         await self.call("Page.stopScreencast")
         self.screencasting = False
-        for i, data in enumerate(self.frames):
+        step = max(1, len(self.frames) // max(1, keep_frames))
+        kept = self.frames[::step]
+        for i, data in enumerate(kept):
             (FRAMES / f"frame-{i:05d}.jpg").write_bytes(data)
-        print(f"  {len(self.frames)} frames captured")
+        print(f"  {len(self.frames)} frames captured, {len(kept)} kept (every {step})")
 
 
 # ── pre-flight ──────────────────────────────────────────────────────────────
@@ -478,14 +561,103 @@ async def set_view(ui: Desktop, label: str) -> bool:
 
 
 async def open_criteria(ui: Desktop) -> bool:
+    """Open the tracking-profile dialog and wait until its weight sliders are up."""
     ok = await ui.click_text("Edit scoring criteria", scope="button,a")
-    await asyncio.sleep(2.0)
-    return ok
+    if not ok:
+        return False
+    for _ in range(10):
+        await asyncio.sleep(0.6)
+        if await ui.ev(_MODAL_OPEN_JS):
+            return True
+    return False
 
 
-async def close_overlay(ui: Desktop):
-    await ui.ev("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
-    await asyncio.sleep(0.8)
+async def close_criteria(ui: Desktop) -> bool:
+    """Close the dialog by its own ✕, and PROVE it closed.
+
+    Escape does nothing here — the dialog listens to nothing — and a run that assumed
+    it did left the overlay covering every later frame of the animation.
+    """
+    clicked = await ui.ev(_MODAL_CLOSE_JS)
+    for _ in range(8):
+        await asyncio.sleep(0.5)
+        if not await ui.ev(_MODAL_OPEN_JS):
+            return True
+    print(f"  ! the criteria dialog is still open (close click: {clicked})")
+    return False
+
+
+async def read_weights(ui: Desktop):
+    """`[{label, value}]` for the dialog's weight sliders, in the order shown."""
+    raw = await ui.ev(_MODAL_READ_JS)
+    return json.loads(raw) if raw and raw != "null" else []
+
+
+async def set_weights(ui: Desktop, wanted: dict) -> list:
+    """Move sliders by label, the React way (native setter + input event).
+
+    Setting `input.value` alone is invisible to React: the controlled component keeps
+    its own state and repaints the old value back. The native setter bypasses the
+    instance's property, and the bubbling events make React's onChange fire.
+    """
+    raw = await ui.ev("""(() => {
+      const wanted = %s;
+      const out = [];
+      const inputs = [...document.querySelectorAll('input[type=range]')];
+      for (const el of inputs) {
+        // the row's text (criterion name + description) is the only stable handle
+        let row = el, text = '';
+        for (let i = 0; i < 4 && row; i++) { row = row.parentElement; if (row && row.textContent) { text = row.textContent; break; } }
+        const key = Object.keys(wanted).find(k => new RegExp(k, 'i').test(text));
+        if (!key) continue;
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        setter.call(el, String(wanted[key]));
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        out.push([key, el.value]);
+      }
+      return JSON.stringify(out);
+    })()""" % json.dumps(wanted))
+    return json.loads(raw) if raw and raw != "null" else []
+
+
+async def set_weights_by_index(ui: Desktop, values: list) -> list:
+    """Set the sliders by position — how the run puts the profile back as it found it."""
+    raw = await ui.ev("""(() => {
+      const vals = %s;
+      const out = [];
+      [...document.querySelectorAll('input[type=range]')].forEach((el, i) => {
+        if (i >= vals.length) return;
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        setter.call(el, String(vals[i]));
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        out.push(el.value);
+      });
+      return JSON.stringify(out);
+    })()""" % json.dumps(values))
+    return json.loads(raw) if raw and raw != "null" else []
+
+
+async def save_criteria(ui: Desktop) -> bool:
+    """Press Save (the dialog's primary action) and wait for it to close."""
+    saved = await ui.ev("""(() => {
+      const r = document.querySelector('input[type=range]');
+      if (!r) return 'no dialog';
+      let el = r;
+      while (el && getComputedStyle(el).position !== 'fixed') el = el.parentElement;
+      const btns = el ? [...el.querySelectorAll('button')] : [];
+      const save = btns.find(b => /^(save|enregistrer)$/i.test(b.textContent.trim()));
+      if (!save) return 'no save button: ' + btns.map(b => b.textContent.trim().slice(0, 14)).join('|');
+      save.click();
+      return 'clicked';
+    })()""")
+    for _ in range(14):
+        await asyncio.sleep(0.6)
+        if not await ui.ev(_MODAL_OPEN_JS):
+            return True
+    print(f"  ! the dialog did not close after Save ({saved})")
+    return False
 
 
 # ── the scenario ────────────────────────────────────────────────────────────
@@ -509,29 +681,56 @@ async def run_scenario(ui: Desktop, *, make_gif: bool):
             continue
         await ui.shot(f"screenshot-en-{idx:02d}-{slug}")
 
-    # The tracking-profile dialog, left unsubmitted (what a user sees before saving).
+    # The tracking-profile dialog: shown as it is, then actually USED — a few weights
+    # move, Save re-ranks the page on the spot, and the run keeps the original values
+    # so it can hand the profile back untouched (see restore_profile).
     if await open_criteria(ui):
         await ui.shot("screenshot-en-08-criteria")
-        await close_overlay(ui)
+        original = await read_weights(ui)
+        RESTORE["weights"] = [w["value"] for w in original]
+        print("  weights before: " + ", ".join(f"{w['label'][:14]}={w['value']}" for w in original[:6]))
+        moved = await set_weights(ui, DEMO_WEIGHTS)
+        print(f"  weights moved: {moved}")
+        await asyncio.sleep(1.5)
+        await ui.shot("screenshot-en-09-criteria-edited")
+        if await save_criteria(ui):
+            await asyncio.sleep(2.5)
+            await scroll_pane(ui, 430)
+            await ui.shot("screenshot-en-10-ranking-after")
+            await scroll_pane(ui, 0)
     else:
-        print("  ! « Edit scoring criteria » not found — skipping the dialog shot")
+        print("  ! « Edit scoring criteria » not found — skipping the dialog shots")
 
     # The animation, LAST: Page.captureScreenshot returns no frame while a screencast
-    # runs, so every still above has to be taken first.
+    # runs, so every still above has to be taken first. The pacing is deliberate: an
+    # animation that clicks through the views faster than the eye reads them shows
+    # nothing, and the dialog step must be given time to open, move and close.
     if make_gif:
         await set_view(ui, "Cards")
         await ui.start_screencast()
+        await asyncio.sleep(1.6)
         for _view, label, _slug in VIEWS[1:]:
             await set_view(ui, label)
-            await asyncio.sleep(0.7)
+            await asyncio.sleep(1.8)
         await set_view(ui, "Cards")
-        await asyncio.sleep(0.6)
+        await asyncio.sleep(1.8)
         await scroll_pane(ui, 430)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.6)
         await scroll_pane(ui, 0)
+        await asyncio.sleep(1.2)
         if await open_criteria(ui):
+            await asyncio.sleep(1.8)
+            if RESTORE.get("weights"):
+                # back to the profile's own values: the sliders move, Save re-ranks
+                # live — and the profile ends up exactly as the run found it
+                await set_weights_by_index(ui, RESTORE["weights"])
+            await asyncio.sleep(2.4)
+            await save_criteria(ui)
+            await asyncio.sleep(1.8)
+            await scroll_pane(ui, 430)
+            await asyncio.sleep(2.2)
+            await scroll_pane(ui, 0)
             await asyncio.sleep(1.2)
-            await close_overlay(ui)
         await ui.stop_screencast()
         await asyncio.sleep(0.4)
 
@@ -573,21 +772,37 @@ def encode_animation():
     mp4 = ANIM / f"{PLUGIN}.mp4"
     palette = FRAMES / "palette.png"
     pattern = str(FRAMES / "frame-%05d.jpg")
-    scale = "scale=1280:-2:flags=lanczos"
+    scale = f"scale={ANIM_WIDTH}:-2:flags=lanczos"
     pre = f"{crop}," if crop else ""
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "8", "-i", pattern,
-                    "-vf", f"{pre}{scale},palettegen", str(palette)], check=True)
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "8", "-i", pattern,
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(ANIM_FPS), "-i", pattern,
+                    "-vf", f"{pre}{scale},palettegen=max_colors=128:stats_mode=diff", str(palette)], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(ANIM_FPS), "-i", pattern,
                     "-i", str(palette), "-lavfi", f"{pre}{scale}[x];[x][1:v]paletteuse", str(gif)], check=True)
-    print(f"  ✓ {gif.relative_to(REPO)}  ({gif.stat().st_size // 1024} kB, {len(frames)} frames)")
+    print(f"  ✓ {gif.relative_to(REPO)}  ({gif.stat().st_size // 1024} kB, {len(frames)} frames, {ANIM_FPS} fps)")
     # MP4 as well: easier to review than a GIF, and what a release page embeds.
     try:
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "8", "-i", pattern,
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(ANIM_FPS), "-i", pattern,
                         "-vf", f"{pre}scale=trunc(iw/2)*2:trunc(ih/2)*2", "-c:v", "libx264",
                         "-pix_fmt", "yuv420p", "-crf", "20", str(mp4)], check=True)
         print(f"  ✓ {mp4.relative_to(REPO)}  ({mp4.stat().st_size // 1024} kB)")
     except subprocess.CalledProcessError as exc:
         print(f"  (no MP4: {exc})")
+
+
+async def restore_profile(ui: Desktop):
+    """Put the tracking profile's weights back the way the run found them.
+
+    The scenario saves real changes (that is the point: the ranking has to move), so
+    the profile must be handed back untouched — same values, same order.
+    """
+    if not RESTORE.get("weights"):
+        return
+    if await open_criteria(ui):
+        await set_weights_by_index(ui, RESTORE["weights"])
+        await asyncio.sleep(1.0)
+        if await save_criteria(ui):
+            print("  profile weights restored")
+        await asyncio.sleep(1.0)
 
 
 async def main():
@@ -620,13 +835,17 @@ async def main():
                 await resize_sidebar(ui, int(RESTORE["sidebar"]))
         except Exception as exc:
             print(f"  ! could not restore the sidebar: {exc}")
+        try:
+            await restore_profile(ui)
+        except Exception as exc:
+            print(f"  ! could not restore the profile weights: {exc}")
         if not args.no_gif:
             try:
                 encode_animation()
             except Exception as exc:
                 print(f"  ! animation not encoded: {exc}")
-        if ui.ws and not args.keep_open:
-            await ui.ws.close()
+        if not args.keep_open:
+            await ui.close()
     print("done")
 
 
