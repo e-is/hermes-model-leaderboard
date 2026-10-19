@@ -242,11 +242,11 @@ def plot_body(*, left: int, right: int, bottom: int, height: int) -> str:
         f'stroke-width="1" opacity=".35"/>' for _n, x, y in dominated)
 
     def label(name: str, x: float, y: float, *, big: bool) -> str:
-        # frontier names sit above their dot (below it near the top edge, where "above"
-        # would leave the box); the filler names sit under theirs, pushed to the side that
-        # has room, so no two labels collide
+        # frontier names sit UNDER their dot: above it, the dashed line to the next point
+        # crosses the text (the line climbs to the right). The filler names go under theirs
+        # too, pushed to the side that has room, so no two labels collide.
         if big:
-            dy, anchor, dx = (-16, "middle", 0) if y > pad_t + 22 else (22, "middle", 0)
+            dy, anchor, dx = (26, "middle", 0)
             size, colour = 13.5, FG
         else:
             dy, size, colour = 20, 11.5, MUTED
