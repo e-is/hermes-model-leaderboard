@@ -43,7 +43,7 @@ MONO = 'ui-monospace, "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", mon
 WIDTH, HEIGHT = 1280, 640
 
 TITLE = "model<span class='dash'>-</span>leaderboard"
-TAGLINE = "Which model for <b>this</b> profile? Prices, indices, and a rank that answers"
+TAGLINE = "Which model for <b class='hi'>this profile</b>? Prices, indices, and a rank that answers"
 SPECS = [
     "track any OpenRouter model — add your own",
     "6 score views · Pareto frontier",
@@ -116,6 +116,7 @@ def shell(body: str, *, extra_css: str = "") -> str:
   h1 .dash {{ color:{BLUE}; }}
   .tag {{ margin-top:9px; font-size:18px; color:{MUTED}; }}
   .tag b {{ color:{FG}; font-weight:600; }}
+  .tag b.hi {{ color:{BLUE}; font-weight:700; }}   /* the phrase the card is about */
   .specs {{ position:absolute; top:46px; right:56px; text-align:right; font-size:13px;
             color:{MUTED}; line-height:1.9; white-space:nowrap; }}
   .specs .hl {{ color:{BLUE}; }}
