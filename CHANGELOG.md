@@ -4,6 +4,38 @@ All notable changes to this plugin are documented here. The format loosely follo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-10-19
+
+Documentation, screenshots and release tooling. Nothing in the plugin's behaviour changes
+between 1.0.0 and this release.
+
+### Added
+
+- `scripts/shots.py` — drives the real desktop over CDP and regenerates every README
+  screenshot, the navigation GIF and the MP4 in one run. It clips each capture to the
+  plugin's own pane (the sidebar holds private sessions), creates throwaway Hermes
+  profiles so the per-profile scoring is visible, edits the criteria dialog and
+  photographs the ranking it produces, then puts everything back.
+- `scripts/card.py` — the catalogue card: a 2:1 PNG drawn in HTML/CSS (plus inline SVG
+  for the Pareto picture) and rasterised with the Chromium Hermes already ships. Four
+  variants, `--all` renders each one and a comparison page.
+- `scripts/catalog.py` — generates and validates `plugin-catalog/model-leaderboard.yaml`
+  from `plugin.yaml`, the git remote and the released commit: exact 40-hex sha, version
+  quoting, 2:1 banner, up-to-6 screenshots pinned to that sha, PyYAML *and* ruamel
+  round-trips, and the catalog's own validator when a hermes-agent checkout is around.
+
+### Changed
+
+- README: thirteen screenshots and an animated scenario, all re-captured; the per-profile
+  story (chips, criteria, the re-ranked table) is now shown rather than described.
+
+### Fixed
+
+- The criteria dialog in the capture run was never closed — Escape is not wired in it —
+  so the overlay covered the whole scenario and the animation showed nothing.
+- The screencast captured zero frames: CDP screencast frames are events, and the
+  read-on-call client never saw them while it slept between actions.
+
 ## [1.0.0] — 2026-10-16
 
 First stable release: the `docker/llm-dashboard` web app (FastAPI + React on :3004)
