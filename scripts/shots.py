@@ -189,7 +189,32 @@ class Desktop:
         self._pump = asyncio.create_task(self._read_loop())
         await self.call("Page.enable")
         await self.call("Runtime.enable")
+        # Pre-flight: a run that dies mid-screencast leaves Chrome with the Page domain
+        # mute — captureScreenshot never answers again (Runtime still does) until the app
+        # is restarted. One line here beats a two-minute hang followed by a confusing
+        # "no answer within 120s" in the middle of a capture run.
+        try:
+            probe = await asyncio.wait_for(
+                self.call("Page.captureScreenshot", {"format": "png"}), timeout=20)
+        except Exception:
+            probe = None
+        if not probe:
+            await self.abort_screencast()
+            raise SystemExit(
+                "STOP: the Page domain is mute (no screenshot came back in 20 s).\n"
+                "      An earlier run left a screencast running — restart the desktop app\n"
+                "      (pkill -f remote-debugging-port=9222, then relaunch) and re-run.")
         return page
+
+    async def abort_screencast(self):
+        """Stop a cast left behind by a failed run. Safe to call at any time."""
+        if not self.screencasting:
+            return
+        try:
+            await asyncio.wait_for(self.call("Page.stopScreencast"), timeout=10)
+        except Exception:
+            pass
+        self.screencasting = False
 
     async def _read_loop(self):
         """Pump the socket: ack every screencast frame, resolve every pending call."""
@@ -974,6 +999,8 @@ async def main():
                 await resize_sidebar(ui, int(RESTORE["sidebar"]))
         except Exception as exc:
             print(f"  ! could not restore the sidebar: {exc}")
+        # a cast still running when the process dies is what poisons the NEXT run
+        await ui.abort_screencast()
         try:
             await restore_profile(ui)
         except Exception as exc:

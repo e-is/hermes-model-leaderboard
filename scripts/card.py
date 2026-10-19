@@ -70,15 +70,21 @@ BARS = [
     ("glm-5.3", 86, "$0.08 / $1.40", ""),
 ]
 
-#: The plot: FOUR models only — a catalogue card is a poster, and four points read at a
-#: glance where eight turn into confetti. (name, cost %, quality %) — all four sit on the
-#: frontier, so the dashed line is the whole story: nothing cheaper is better.
-POINTS = [
-    ("glm-5.3", 12, 70),
-    ("deepseek-v4-flash-1.1", 22, 78),
-    ("gemini-3.8-flash", 48, 86),
-    ("gemini-4-orion", 72, 94),
+#: The plot is ZOOMED on purpose: the frontier models all live in the top band, and a
+#: 0–100 quality axis spent half the box on empty space below the dashed line.
+POINTS = [  # (name, cost %, quality %, on the frontier)
+    ("glm-5.3", 10, 71, True),
+    ("gemini-3.8-flash", 46, 86, True),
+    ("gemini-4-orion", 74, 95, True),
+    # Deliberate filler BELOW the line — without dominated models a "frontier" is just a
+    # line through every dot, and the picture says nothing.
+    ("kimi-k3", 8, 58, False),
+    ("deepseek-v4-flash-1.1", 20, 63, False),
+    ("mistral-large-3", 54, 77, False),
+    ("claude-opus-5", 96, 85, False),
 ]
+Y_MIN, Y_MAX = 50, 100      # the quality window the card shows (zoom)
+X_MIN, X_MAX = 0, 100       # the cost window
 
 
 def version() -> str:
@@ -161,8 +167,11 @@ PODIUM_CSS = f"""
             background:linear-gradient(180deg, {BLUE}, #2b5fd0); }}
   .ribbon::before {{ left:0; transform:skewX(-14deg); }}
   .ribbon::after {{ right:0; transform:skewX(14deg); }}
-  .podium-note {{ position:absolute; left:0; bottom:352px; font-size:12.5px; color:{MUTED}; }}
+  .podium-note {{ position:absolute; left:56px; bottom:352px; font-size:12.5px; color:{MUTED}; }}
 """
+# NOTE: `.podium-note` is a SIBLING of `.podium`, so its containing block is the card's
+# padding box — `left:0` put it flush against the trimmed edge (the first letter was cut).
+# 56px is the card margin the headline and the install line use.
 
 
 def podium_body() -> str:
@@ -203,34 +212,57 @@ def plot_body(*, left: int, right: int, bottom: int, height: int) -> str:
 
     SVG rather than absolutely-positioned divs: the frontier is a sloped dashed line, and
     a dashed border on a rotated div stretches its dashes with the box. Here the geometry
-    is computed in pixels from the box size the caller asked for.
+    is computed in pixels from the box size the caller asked for, over the zoomed
+    Y_MIN..Y_MAX / X_MIN..X_MAX window.
     """
     width = WIDTH - left - right
-    pad_l, pad_r, pad_t, pad_b = 46, 20, 36, 30
+    pad_l, pad_r, pad_t, pad_b = 56, 22, 34, 32
     inner_w, inner_h = width - pad_l - pad_r, height - pad_t - pad_b
 
-    def px(xp: float, yp: float) -> tuple[float, float]:
-        return (pad_l + xp / 100 * inner_w, height - pad_b - yp / 100 * inner_h)
+    def px(cost: float, qual: float) -> tuple[float, float]:
+        return (pad_l + (cost - X_MIN) / (X_MAX - X_MIN) * inner_w,
+                height - pad_b - (qual - Y_MIN) / (Y_MAX - Y_MIN) * inner_h)
 
-    pts = [(name, *px(x, y)) for name, x, y in POINTS]
+    frontier = sorted(((n, *px(c, q)) for n, c, q, on in POINTS if on), key=lambda t: t[1])
+    dominated = [(n, *px(c, q)) for n, c, q, on in POINTS if not on]
+
     grid = "".join(
-        f'<line x1="{pad_l}" y1="{height - pad_b - i * inner_h / 4:.1f}" x2="{width - pad_r}" '
-        f'y2="{height - pad_b - i * inner_h / 4:.1f}" stroke="{BORDER}" stroke-width="1" '
-        f'stroke-dasharray="2 6" opacity=".5"/>' for i in range(1, 4))
-    line = " ".join(f"{x:.1f},{y:.1f}" for _n, x, y in pts)
+        f'<line x1="{pad_l}" y1="{height - pad_b - i * inner_h / 3:.1f}" x2="{width - pad_r}" '
+        f'y2="{height - pad_b - i * inner_h / 3:.1f}" stroke="{BORDER}" stroke-width="1" '
+        f'stroke-dasharray="2 6" opacity=".5"/>' for i in range(1, 3))
+    line = " ".join(f"{x:.1f},{y:.1f}" for _n, x, y in frontier)
+
     dots = "".join(
-        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="8" fill="{GOLD}" opacity=".16"/>'
-        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4.5" fill="{GOLD}"/>' for _n, x, y in pts)
-    labels = "".join(
-        f'<text x="{x:.1f}" y="{y - 14:.1f}" fill="{FG}" font-size="11.5" font-family="{MONO}" '
-        f'text-anchor="middle">{_html.escape(name)}</text>' for name, x, y in pts)
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="10" fill="{GOLD}" opacity=".14"/>'
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{GOLD}"/>' for _n, x, y in frontier)
+    dots += "".join(
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{MUTED}" opacity=".85"/>'
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="8" fill="none" stroke="{MUTED}" '
+        f'stroke-width="1" opacity=".35"/>' for _n, x, y in dominated)
+
+    def label(name: str, x: float, y: float, *, big: bool) -> str:
+        # frontier names sit above their dot (below it near the top edge, where "above"
+        # would leave the box); the filler names sit under theirs, pushed to the side that
+        # has room, so no two labels collide
+        if big:
+            dy, anchor, dx = (-16, "middle", 0) if y > pad_t + 22 else (22, "middle", 0)
+            size, colour = 13.5, FG
+        else:
+            dy, size, colour = 20, 11.5, MUTED
+            anchor, dx = ("end", -10) if x > width / 2 else ("start", 10)
+        return (f'<text x="{x + dx:.1f}" y="{y + dy:.1f}" fill="{colour}" font-size="{size}" '
+                f'font-family="{MONO}" text-anchor="{anchor}">{_html.escape(name)}</text>')
+
+    labels = "".join(label(n, x, y, big=True) for n, x, y in frontier)
+    labels += "".join(label(n, x, y, big=False) for n, x, y in dominated)
+
     return f"""<div class="plot" style="left:{left}px;right:{right}px;bottom:{bottom}px;height:{height}px">
-    <div class="legend">◆ <b>best trade-offs</b> — dashed (Pareto)</div>
-    <div class="axis" style="left:12px; top:8px">quality (0–100)</div>
-    <div class="axis" style="right:12px; bottom:6px">weighted cost ($/M tk, log)</div>
+    <div class="legend">◆ <b>frontier (Pareto)</b> · ◇ dominated</div>
+    <div class="axis" style="left:12px; top:8px">quality ({Y_MIN}–{Y_MAX})</div>
+    <div class="axis" style="right:12px; bottom:6px">weighted cost ($/M tokens, log)</div>
     <svg width="{width}" height="{height}">
       {grid}
-      <polyline points="{line}" fill="none" stroke="{GOLD}" stroke-width="2" stroke-dasharray="7 5"/>
+      <polyline points="{line}" fill="none" stroke="{GOLD}" stroke-width="2.5" stroke-dasharray="8 6"/>
       {dots}
       {labels}
     </svg>
