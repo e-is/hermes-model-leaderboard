@@ -18,8 +18,10 @@ Saving the criteria of a Hermes profile that had never been saved — the exact 
 - Deleting the criteria of such a profile treats the same 404 as "nothing stored" rather
   than as an error.
 - The seeded architect profile is keyed `architect` (its display name stays "Architecte"),
-  not `architecte`: the old id matched no Hermes profile, so it showed up as a dead extra
-  chip and never scored the architect. A store written under the old id is renamed on read.
+  not `architecte`. The chips themselves come from the gateway's own profile list, so the
+  old key was never shown — it was an orphan entry that could not score anything, and
+  `architect` fell back to the generic weights. A store written under the old id is renamed
+  on read, so weights entered then still apply.
 
 ## [1.0.1] — 2026-10-19
 
