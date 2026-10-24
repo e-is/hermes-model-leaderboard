@@ -1,6 +1,6 @@
 name: model-leaderboard
 repo: https://github.com/e-is/hermes-model-leaderboard
-sha: f9646f9a7d5294a1231fe3e7852d543ee349ca32
+sha: 404e0926726d756570f0009753dfba9513d83d6e
 description: 'Model leaderboard for Hermes Desktop: a full /model-leaderboard page that ranks any OpenRouter
   model for a chosen Hermes profile — context window, prices, Artificial Analysis indices and curated
   SWE-bench Verified / LiveCodeBench — with per-profile criteria, six score views (cards, table, score
@@ -18,15 +18,15 @@ tier: community
 category: models
 requires_hermes: '>=0.21'
 docs_url: https://github.com/e-is/hermes-model-leaderboard#readme
-version: "1.0.1"
-image: https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/card-podium.png
+version: "1.1.0"
+image: https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/card-podium.png
 screenshots:
-- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/screenshot-en-01-models.png
-- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/screenshot-en-03-score-bars.png
-- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/screenshot-en-05-heatmap.png
-- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/screenshot-en-06-quality-cost.png
-- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/screenshot-en-08-criteria.png
-- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/f9646f9a7d5294a1231fe3e7852d543ee349ca32/assets/screenshot-en-11-profile-front-designer.png
+- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/screenshot-en-01-models.png
+- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/screenshot-en-03-score-bars.png
+- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/screenshot-en-05-heatmap.png
+- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/screenshot-en-06-quality-cost.png
+- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/screenshot-en-08-criteria.png
+- https://raw.githubusercontent.com/e-is/hermes-model-leaderboard/404e0926726d756570f0009753dfba9513d83d6e/assets/screenshot-en-11-profile-front-designer.png
 platforms: []
 capabilities:
   provides_tools: []
