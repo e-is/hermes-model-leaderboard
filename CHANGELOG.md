@@ -23,6 +23,31 @@ Saving the criteria of a Hermes profile that had never been saved — the exact 
   `architect` fell back to the generic weights. A store written under the old id is renamed
   on read, so weights entered then still apply.
 
+## [1.1.0] — 2026-10-24
+
+No visible change to the page: the charts are drawn by hand instead of by Recharts, and
+saving a profile that was never saved no longer 404s.
+
+### Changed
+
+- `src/components/charts.tsx` — bars (vertical and horizontal), a radar and the
+  quality/cost scatter with its log axis, sized by a `ResizeObserver` that replaces
+  `ResponsiveContainer`. Plain SVG, theme tokens, no dependency.
+- The desktop bundle drops from 1,072,563 to 143,187 bytes: Recharts, d3 and lodash are
+  no longer in it, and `package.json` has no runtime dependency left.
+
+### Fixed
+
+- Saving the criteria of a profile the plugin had no entry for answered
+  `404 Profil introuvable` instead of creating it (`PUT /profiles/<id>` now upserts).
+- `plugin.yaml` and `dashboard/manifest.json` disagreed on the version (1.0.2 vs 1.0.1);
+  both say 1.1.0 now.
+
+### Removed
+
+- the `recharts` dependency, whose bundled internals matched the plugin catalog's
+  textual "prototype patching" rule (50 hits) and blocked the catalog submission.
+
 ## [1.0.1] — 2026-10-19
 
 Documentation, screenshots and release tooling. Nothing in the plugin's behaviour changes
