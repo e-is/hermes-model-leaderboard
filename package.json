@@ -9,9 +9,6 @@
     "check": "node --check desktop/plugin.js",
     "test": "node --experimental-strip-types --test tests/unit/*.test.ts && python3 -m pytest -q tests"
   },
-  "dependencies": {
-    "recharts": "^2.15.0"
-  },
   "devDependencies": {
     "esbuild": "^0.27.2"
   }

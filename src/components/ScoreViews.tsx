@@ -13,9 +13,7 @@
  * width and themable through the desktop CSS variables.
  */
 import { useMemo, useState, type ReactNode } from 'react'
-import {
-  CartesianGrid, LabelList, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis,
-} from 'recharts'
+import { ScatterLog } from './charts'
 import { computeGenericScore, paretoFrontier, scoreBreakdown, type CriterionBreakdown, type CriterionKey } from '../core/scoring'
 
 export type ScoreViewId = 'classic' | 'stacked' | 'columns' | 'heatmap' | 'duel' | 'value'
@@ -394,7 +392,6 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
   })
   const frontier = paretoFrontier(points) // cost order = left to right
   const onFrontier = new Set(frontier.map(p => p.id))
-  const others = points.filter(p => !onFrontier.has(p.id))
 
   const costs = points.map(p => p.cost)
   const lo = Math.max(COST_FLOOR, ...COST_TICKS.filter(v => v <= Math.min(...costs)))
@@ -404,11 +401,9 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
   const qualityLabel = `${t.views.axisQuality} — ${qualityKeys.map(k => `${metaOf(k).label} ×${qualityW[k]}`).join(', ')}`
   const costLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k, w]) => `${metaOf(k as CriterionKey).label} ×${w}`).join(', ')}`
 
-  const TooltipBox = ({ active, payload }: any) => {
-    const p: ValuePoint | undefined = active && payload?.[0]?.payload
-    if (!p) return null
+  const pointTitle = (p: ValuePoint) => {
     return (
-      <div style={{ ...box, padding: '6px 10px', fontSize: 12, boxShadow: 'var(--shadow-sm)' }}>
+      <div style={{ padding: '2px 4px', fontSize: 12, minWidth: 150 }}>
         <b>{medal(p.rank)} {p.label}</b>
         <div>{t.views.axisQuality} : {r0(p.quality)}/100</div>
         <div>{t.views.axisCost} : {fmtCost(p.rawCost)}/M tk</div>
@@ -417,7 +412,14 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
       </div>
     )
   }
-  const axisTick = { fontSize: 11, fill: 'var(--ui-text-tertiary)' }
+  const scatterPoints = points.map(p => ({
+    id: p.id,
+    label: p.label,
+    x: p.cost,
+    y: p.quality,
+    frontier: onFrontier.has(p.id),
+    title: pointTitle(p),
+  }))
 
   return (
     <div style={box}>
@@ -426,23 +428,16 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
         <span>↑ {qualityLabel}</span>
         <span>→ {costLabel}</span>
       </div>
-      <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 28, right: 56, bottom: 28, left: 12 }}>
-          <CartesianGrid stroke="var(--ui-stroke-tertiary)" strokeDasharray="3 3" />
-          <XAxis type="number" dataKey="cost" scale="log" domain={[lo, hi]} ticks={ticks} tickFormatter={fmtCost}
-            tick={axisTick} stroke="var(--ui-stroke-secondary)"
-            label={{ value: t.views.axisCostShort, position: 'insideBottom', offset: -16, fontSize: 11, fill: 'var(--ui-text-secondary)' }} />
-          <YAxis type="number" dataKey="quality" domain={[0, 100]} tick={axisTick} stroke="var(--ui-stroke-secondary)" width={44}
-            label={{ value: t.views.axisQualityShort, angle: -90, position: 'insideLeft', offset: 4, fontSize: 11, fill: 'var(--ui-text-secondary)', style: { textAnchor: 'middle' } }} />
-          <Tooltip content={<TooltipBox />} cursor={{ strokeDasharray: '3 3' }} />
-          <Scatter name={t.views.others} data={others} fill="var(--ui-text-quaternary)" isAnimationActive={false}>
-            <LabelList dataKey="label" position="top" fontSize={10} fill="var(--ui-text-tertiary)" />
-          </Scatter>
-          <Scatter name={t.views.frontier} data={frontier} fill="var(--ui-orange)" line={{ stroke: 'var(--ui-orange)', strokeDasharray: '4 3' }} lineType="joint" isAnimationActive={false}>
-            <LabelList dataKey="label" position="top" fontSize={11} fontWeight={700} fill="var(--ui-text-primary)" />
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
+      <ScatterLog
+        points={scatterPoints}
+        lo={lo}
+        hi={hi}
+        ticks={ticks}
+        formatX={fmtCost}
+        xLabel={t.views.axisCostShort}
+        yLabel={t.views.axisQualityShort}
+        height={400}
+      />
       <div style={{ fontSize: 12, marginTop: 4 }}>
         <b style={{ color: 'var(--ui-orange)' }}>★ {t.views.frontier}</b>
         <span style={{ color: 'var(--ui-text-tertiary)' }}> — {t.views.frontierHint}</span>

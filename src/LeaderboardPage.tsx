@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-} from 'recharts'
+import { BarsVertical, BarsHorizontal, RadarChart } from './components/charts'
 import { NewsPanel } from './components/NewsPanel'
 import { ConfirmDialog } from '@hermes/plugin-sdk'
 import { api } from './doors'
@@ -1106,15 +1103,11 @@ export default function App() {
                     <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                       <div style={{ flex: 1, minWidth: 360 }}>
                         <h3 style={{ fontSize: 14, color: 'var(--ui-text-tertiary)' }}>Input (moins cher d'abord)</h3>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={byPriceIn}><XAxis dataKey="label" fontSize={11} /><Tooltip formatter={(v: any) => fmtPrice(v)} /><Bar dataKey="prompt_price" fill="var(--ui-purple)" name="$ / M tokens" isAnimationActive={false} /></BarChart>
-                        </ResponsiveContainer>
+                        <BarsVertical data={byPriceIn} valueKey="prompt_price" color="var(--ui-purple)" format={fmtPrice} formatTick={v => '$' + v.toFixed(2)} />
                       </div>
                       <div style={{ flex: 1, minWidth: 360 }}>
                         <h3 style={{ fontSize: 14, color: 'var(--ui-text-tertiary)' }}>Output (moins cher d'abord)</h3>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={byPriceOut}><XAxis dataKey="label" fontSize={11} /><Tooltip formatter={(v: any) => fmtPrice(v)} /><Bar dataKey="completion_price" fill="#82ca9d" name="$ / M tokens" isAnimationActive={false} /></BarChart>
-                        </ResponsiveContainer>
+                        <BarsVertical data={byPriceOut} valueKey="completion_price" color="#82ca9d" format={fmtPrice} formatTick={v => '$' + v.toFixed(2)} />
                       </div>
                     </div>
 
@@ -1129,34 +1122,25 @@ export default function App() {
                         return (
                           <div key={bm.k} style={{ flex: 1, minWidth: 260 }}>
                             <h3 style={{ fontSize: 14, color: 'var(--ui-text-tertiary)' }}>{bm.label}</h3>
-                            <ResponsiveContainer width="100%" height={250}>
-                              <BarChart data={sorted}><XAxis dataKey="label" fontSize={11} /><Tooltip /><Bar dataKey={bm.k} fill={bm.color} name={bm.label} isAnimationActive={false} /></BarChart>
-                            </ResponsiveContainer>
+                            <BarsVertical data={sorted} valueKey={bm.k} color={bm.color} />
                           </div>
                         )
                       })}
                     </div>
 
                     <h2 style={{ marginTop: 32, color: 'var(--ui-text-primary)' }}>Contexte (tokens)</h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={byCtx} layout="vertical">
-                        <XAxis type="number" fontSize={11} tickFormatter={v => (v / 1000).toFixed(0) + 'k'} />
-                        <YAxis type="category" dataKey="label" fontSize={11} width={130} />
-                        <Tooltip formatter={(v: any) => v.toLocaleString() + ' tokens'} />
-                        <Bar dataKey="context_length" fill="#ffc658" name="Contexte" isAnimationActive={false} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <BarsHorizontal data={byCtx} valueKey="context_length" color="#ffc658" height={300}
+                      format={v => (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : String(v))} />
 
                     <h2 style={{ marginTop: 32, color: 'var(--ui-text-primary)' }}>Radar comparatif ({currentProfile.name}) (0–100)</h2>
-                    <ResponsiveContainer width="100%" height={450}>
-                      <RadarChart data={radarData}>
-                        <PolarGrid /><PolarAngleAxis dataKey="label" fontSize={11} /><PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                        {activeLabels.map(label => {
-                          const ci = colorByLabel[label] ?? 0
-                          return <Radar key={label} dataKey={label} stroke={colors[ci % colors.length]} fill={colors[ci % colors.length]} fillOpacity={0.12} isAnimationActive={false} />
-                        })}
-                      </RadarChart>
-                    </ResponsiveContainer>
+                    <RadarChart
+                      axes={radarData.map(d => String(d.label))}
+                      series={activeLabels.map(label => ({
+                        label,
+                        color: colors[(colorByLabel[label] ?? 0) % colors.length],
+                        values: radarData.map(d => Number(d[label]) || 0),
+                      }))}
+                    />
                     <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
                       {allLabels.map(label => {
                         const ci2 = colorByLabel[label] ?? 0
