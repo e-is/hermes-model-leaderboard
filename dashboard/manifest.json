@@ -1,8 +1,8 @@
 {
   "name": "model-leaderboard",
   "label": "Model Leaderboard",
-  "description": "Comparatif LLM (contexte, prix, benchmarks), scoring par profil avec radar, veille OpenRouter. Le renderer du desktop est le plugin ; ce fichier décrit l'API backend.",
+  "description": "LLM comparison for Hermes Desktop: context, prices and published indices, per-profile scoring (radar, six score views, Pareto frontier) and an OpenRouter news feed. The Desktop renderer is the plugin; this file describes the backend API.",
   "icon": "Graph",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "api": "plugin_api.py"
 }

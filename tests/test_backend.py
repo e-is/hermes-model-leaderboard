@@ -29,7 +29,7 @@ def _isolate_data_dir(tmp_path, monkeypatch):
 
     Without this, a test that reaches a writer (``_save_models``,
     ``_record_price_history``, profile persistence) mutates the REAL
-    ``dashboard/data/*.json`` — which silently rewrote the tracked-model list
+    ``dashboard/data/*.json`` (the shipped seeds) — which silently rewrote the tracked-model list
     in the repo once. Tests must never touch shipped data.
     """
     monkeypatch.setattr(main_mod, "DATA_DIR", tmp_path, raising=False)
@@ -43,9 +43,11 @@ def _isolate_data_dir(tmp_path, monkeypatch):
 
 @pytest.fixture()
 def client_nomonkey(monkeypatch):
-    """TestClient whose /hermes-profiles cannot import hermes_cli."""
+    """TestClient whose /hermes-profiles cannot reach the Hermes home seam."""
     import sys
-    monkeypatch.setitem(sys.modules, "hermes_cli", None)  # forces ImportError
+    # the profile scan goes through hermes_constants now (hermes_cli is a private
+    # import a catalog plugin must not make), so that is the seam to block
+    monkeypatch.setitem(sys.modules, "hermes_constants", None)  # forces ImportError
     return client
 
 

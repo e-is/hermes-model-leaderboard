@@ -70,11 +70,13 @@ DESCRIPTION = (
     "criteria, six score views (cards, table, score bars, histograms, heatmap, "
     "quality-vs-cost Pareto frontier), an OpenRouter news feed (new models, price changes, "
     "promos) and a documented REST surface under /api/plugins/model-leaderboard/. "
-    "Disclosure — outbound HTTPS to OpenRouter's public model API (catalogue and pricing; "
-    "no key required) on a 60 s poll and a forced refresh every 10 minutes while the page "
-    "is visible; writes its own JSON store under the plugin directory (model cache, price "
-    "history, per-profile criteria, benchmarks), and LLM_DASH_DATA / LLM_DASH_CACHE_TTL "
-    "only move or tune that store; the optional \"Auto-fill criteria\" action runs on the "
+    "Disclosure — outbound HTTPS to OpenRouter's public model API (catalogue and pricing) "
+    "on a 60 s poll and a forced refresh every 10 minutes while the page is visible, and "
+    "to Hugging Face's public model API (safetensors metadata, for parameter counts) on "
+    "demand and cached; reads the installed Hermes profiles' own config.yaml files once, "
+    "to seed the tracked list from the models those profiles declare; keeps its state in "
+    "<hermes home>/plugin-data/model-leaderboard/ (seeded from the JSON shipped with the "
+    "plugin), which LLM_DASH_DATA / LLM_DASH_CACHE_TTL can move or tune; the optional \"Auto-fill criteria\" action runs on the "
     "host LLM facade (ctx.llm.complete_structured), so it spends the user's configured "
     "model tokens; ships one read-only skill (model-leaderboard:refresh-benchmarks) whose "
     "only write is a POST to its own /benchmarks route; no API keys of its own, no writes "
@@ -147,13 +149,21 @@ def http(url: str, method: str = "GET", token: str = "") -> tuple[int, bytes]:
 
 
 def token() -> str:
-    """The GitHub token, if one is around — only used for the API probes' rate limits."""
-    env = Path.home() / ".hermes" / ".env"
-    if env.exists():
-        m = re.search(r'GITHUB_TOKEN\s*=\s*"?([^"\n]+)"?', env.read_text(encoding="utf-8"))
-        if m:
-            return m.group(1)
-    return os.environ.get("GITHUB_TOKEN", "")
+    """The GitHub token for the API probes' rate limits — from the environment, or `gh`.
+
+    Never from Hermes's own `.env`: a listed plugin has no business reading the
+    host's credentials, and this file ships inside the installed tree.
+    """
+    tok = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if tok:
+        return tok.strip()
+    try:
+        p = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=15)
+        if p.returncode == 0:
+            return p.stdout.strip()
+    except Exception:
+        pass
+    return ""
 
 
 # ── the entry ────────────────────────────────────────────────────────────────

@@ -345,14 +345,11 @@ def lighten(page: str) -> str:
 
 def find_chrome() -> str:
     """Hermes ships a Chromium; fall back to the system's."""
+    # Env vars and the well-known locations only: importing hermes_cli for this would
+    # be a private core import (catalog rule 9) for a build-time convenience.
     cands: list[str] = [os.environ.get("HERMES_CHROME", ""), os.environ.get("CHROME_PATH", "")]
-    try:
-        sys.path.insert(0, str(Path.home() / ".hermes" / "hermes-agent"))
-        from hermes_cli.browser_runtime import chromium_executable  # type: ignore
-        cands.append(chromium_executable(allow_override=False) or "")
-    except Exception:
-        pass
     cands += sorted(glob.glob(str(Path.home() / ".hermes" / "tools" / "chromium-*" / "chrome-linux64" / "chrome")))
+    cands += sorted(glob.glob("/usr/lib/chromium*/chrome"))
     cands += ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"]
     for c in cands:
         if c and os.access(c, os.X_OK):

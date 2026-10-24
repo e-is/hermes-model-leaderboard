@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import time
 from pathlib import Path
 from typing import Any
@@ -18,8 +19,51 @@ import httpx
 from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
 
-DATA_DIR = Path(os.environ.get("LLM_DASH_DATA", Path(__file__).parent / "data"))
-# (plugin layout: plugin_api.py lives in dashboard/, so data/ is dashboard/data)
+#: Where the JSON shipped in the repo used to be the live store. It cannot be: the
+#: install tree is replaced by ``hermes plugins update`` and deleted by ``remove``,
+#: so users lost their tracked models, criteria and price history on every update.
+LEGACY_DATA_DIR = Path(__file__).parent / "data"
+
+
+def _migrate_legacy_data(target: Path) -> None:
+    """Seed the durable store from the JSON shipped in the install, once.
+
+    Covers both first runs (the catalogue files become the starting state) and an
+    upgrade from a version that kept its state in the install tree."""
+    if target == LEGACY_DATA_DIR or not LEGACY_DATA_DIR.is_dir():
+        return
+    for src in sorted(LEGACY_DATA_DIR.glob("*.json")):
+        dst = target / src.name
+        if not dst.exists():
+            try:
+                shutil.copyfile(src, dst)
+            except OSError:
+                pass
+
+
+def _resolve_data_dir() -> Path:
+    """``<hermes home>/plugin-data/model-leaderboard/`` — the documented per-plugin
+    store (``plugins/plugin_storage.py``), resolved through the sanctioned seams only.
+    ``LLM_DASH_DATA`` still overrides it, which is what the test suite uses to keep
+    every path in a throwaway directory."""
+    override = os.environ.get("LLM_DASH_DATA")
+    if override:
+        return Path(override)
+    try:
+        from plugins.plugin_storage import plugin_data_dir
+        target = plugin_data_dir("model-leaderboard")
+    except Exception:
+        try:
+            from hermes_constants import get_hermes_home
+            target = get_hermes_home() / "plugin-data" / "model-leaderboard"
+            target.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            return LEGACY_DATA_DIR
+    _migrate_legacy_data(target)
+    return target
+
+
+DATA_DIR = _resolve_data_dir()
 MODELS_FILE = DATA_DIR / "models.json"
 BENCHMARKS_FILE = DATA_DIR / "benchmarks.json"
 PRICE_HISTORY_FILE = DATA_DIR / "price_history.json"
@@ -39,32 +83,43 @@ logger = logging.getLogger("hermes-model-leaderboard")
 def _profile_config_files():
     """(profile_name, config.yaml path) for every installed Hermes profile.
 
-    Returns [] when ``hermes_cli`` is not importable (unit tests) — seeding is a
-    production-only nicety, never a reason to touch the network in a test."""
+    Scanned from the Hermes home rather than imported from ``hermes_cli.profiles``:
+    a catalog plugin may only touch the documented seams (``hermes_constants``,
+    ``plugins.plugin_storage``). Returns [] when that seam is unavailable (unit
+    tests) — seeding is a production-only nicety, never a reason to touch the
+    network in a test."""
     try:
-        from hermes_cli import profiles as profiles_mod
-        infos = list(profiles_mod.list_profiles())
+        from hermes_constants import get_hermes_home
+        home = Path(get_hermes_home())
     except Exception:
         return []
-    out = []
-    for info in infos:
-        name = getattr(info, "name", None)
-        path = getattr(info, "path", None)
-        if name and path:
-            out.append((name, Path(path) / "config.yaml"))
-    out.sort(key=lambda kv: (kv[0] != "default", kv[0]))
-    return out
+    found: dict[str, Path] = {}
+    root_cfg = home / "config.yaml"
+    if root_cfg.is_file():
+        found["default"] = root_cfg
+    for directory in sorted((home / "profiles").glob("*")):
+        cfg = directory / "config.yaml"
+        if directory.is_dir() and cfg.is_file():
+            found.setdefault(directory.name, cfg)
+    return sorted(found.items(), key=lambda kv: (kv[0] != "default", kv[0]))
 
 
 def _model_from_config(cfg_path):
     """The main model slug declared by a profile, or None."""
-    try:
-        import yaml
-    except Exception:
-        return None
-    try:
-        data = yaml.safe_load(cfg_path.read_text()) or {}
-    except Exception:
+    # Hermes ships `hermes_yaml` (PyYAML may not be installed at all, which used to
+    # make this fail silently and leave the tracked list unseeded on a stock install).
+    data = None
+    for module in ("hermes_yaml", "yaml"):
+        try:
+            reader = __import__(module)
+        except Exception:
+            continue
+        try:
+            data = reader.safe_load(cfg_path.read_text()) or {}
+        except Exception:
+            return None
+        break
+    if data is None:
         return None
     model = data.get("model")
     if isinstance(model, str) and model.strip():
@@ -349,7 +404,7 @@ def add_model(m: ModelIn):
     models = _load_models()
     mid = m.id.strip()
     if any(x["id"] == mid for x in models):
-        raise HTTPException(400, f"Modele deja present: {mid}")
+        raise HTTPException(400, f"Model already tracked: {mid}")
     entry = {"id": mid, "label": m.label or mid.split("/")[-1], "added_at": time.time()}
     or_data = _fetch_openrouter([mid])
     if mid in or_data:
@@ -369,7 +424,7 @@ def delete_model(model_id: str):
     before = len(models)
     models = [m for m in models if m["id"] != model_id]
     if len(models) == before:
-        raise HTTPException(404, f"Modele introuvable: {model_id}")
+        raise HTTPException(404, f"Unknown model: {model_id}")
     _save_models(models)
     return {"deleted": model_id}
 
@@ -410,7 +465,7 @@ def _get_cached_or_fetch(force=False):
         if cached:
             logger.warning(f"OpenRouter unavailable ({e}); serving the stale cache")
             return cached["data"]
-        raise HTTPException(502, f"OpenRouter inaccessible: {e}")
+        raise HTTPException(502, f"OpenRouter unreachable: {e}")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     CACHE_FILE.write_text(json.dumps({"ts": time.time(), "data": data}))
     return data
@@ -614,12 +669,12 @@ def get_news():
     
     # 3. Promotions : curated or detected from description/discounted models enriched with model details
     promo_defs = [
-        {"id": "google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "discount_text": "-75%", "details": "Promotion OpenRouter limitée à $0.375 / $1.875 par M tk", "ends_at": "2026-09-30"},
-        {"id": "upstage/solar-pro4", "name": "Solar Pro 4", "discount_text": "-90%", "details": "$0.03 in / $0.12 out par M tk (524K ctx)", "ends_at": "2026-10-15"},
-        {"id": "inclusionai/ling-3.0-flash", "name": "Ling-3.0-flash", "discount_text": "-65%", "details": "$0.021 in / $0.063 out par M tk (124B MoE)", "ends_at": "2026-10-01"},
-        {"id": "bytedance/seedance-2.0-mini", "name": "Seedance 2.0 Mini", "discount_text": "-60%", "details": "Génération vidéo ByteDance à $0.01345/s", "ends_at": "2026-09-20"},
-        {"id": "poolside/laguna-s-2.1", "name": "Laguna S 2.1", "discount_text": "-10%", "details": "Modèle agentic coding Poolside à $0.09 in / $0.18 out", "ends_at": "2026-10-31"},
-        {"id": "openai/gpt-5.6-sol", "name": "GPT-5.6 Sol", "discount_text": "-50%", "details": "$2 in / $10 out par M tk", "ends_at": "2026-09-25"},
+        {"id": "google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "discount_text": "-75%", "details": "Limited OpenRouter promotion: $0.375 / $1.875 per M tk", "ends_at": "2026-09-30"},
+        {"id": "upstage/solar-pro4", "name": "Solar Pro 4", "discount_text": "-90%", "details": "$0.03 in / $0.12 out per M tk (524K ctx)", "ends_at": "2026-10-15"},
+        {"id": "inclusionai/ling-3.0-flash", "name": "Ling-3.0-flash", "discount_text": "-65%", "details": "$0.021 in / $0.063 out per M tk (124B MoE)", "ends_at": "2026-10-01"},
+        {"id": "bytedance/seedance-2.0-mini", "name": "Seedance 2.0 Mini", "discount_text": "-60%", "details": "ByteDance video generation at $0.01345/s", "ends_at": "2026-09-20"},
+        {"id": "poolside/laguna-s-2.1", "name": "Laguna S 2.1", "discount_text": "-10%", "details": "Poolside agentic coding model at $0.09 in / $0.18 out", "ends_at": "2026-10-31"},
+        {"id": "openai/gpt-5.6-sol", "name": "GPT-5.6 Sol", "discount_text": "-50%", "details": "$2 in / $10 out per M tk", "ends_at": "2026-09-25"},
     ]
     _now_ts = time.time()
     promo_defs = [p for p in promo_defs
@@ -804,14 +859,10 @@ def compute_generic_score(model: dict, weights: dict, maxes: dict) -> float:
 def hermes_profiles():
     """List the Hermes profiles installed on this instance ('default' first).
 
-    Reuses the same source as the gateway's /api/profiles (hermes_cli.profiles);
-    falls back to ['default'] when the hermes package is not importable (tests)."""
-    try:
-        from hermes_cli import profiles as profiles_mod
-        infos = [(info.name, getattr(info, "path", None)) for info in profiles_mod.list_profiles()]
-        names = [n for n, _ in infos if n]
-    except Exception:
-        names = []
+    Same scan as the seeding path (`_profile_config_files`), so the chips and the
+    seeding can never disagree; falls back to ['default'] when the Hermes home is
+    not reachable (unit tests)."""
+    names = [name for name, _cfg in _profile_config_files()]
     if "default" in names:
         names.remove("default")
     return {"profiles": ["default"] + sorted(names)}
@@ -920,7 +971,7 @@ def auto_fill(payload: dict = Body(default={})):
     if llm is None:
         raise HTTPException(
             status_code=503,
-            detail="LLM Hermes indisponible : le contexte du plugin n'est pas accessible",
+            detail="Hermes LLM unavailable: the plugin context is not reachable",
         )
 
     criteria_lines = "\n".join(f"- {k}: {v}" for k, v in _CRITERIA_DOC.items())
@@ -953,7 +1004,7 @@ def auto_fill(payload: dict = Body(default={})):
         )
     except Exception as exc:
         logger.warning("auto-fill: LLM call failed: %s", exc)
-        raise HTTPException(status_code=503, detail=f"LLM Hermes indisponible : {exc}")
+        raise HTTPException(status_code=503, detail=f"Hermes LLM unavailable: {exc}")
 
     # The schema-validated object when the host parsed it, else a tolerant scan of
     # the raw answer (models sometimes wrap JSON in prose or markdown fences).
@@ -983,9 +1034,9 @@ def create_profile(p: ProfileIn):
     profiles = _load_profiles()
     pid = p.id.strip().lower()
     if not pid:
-        raise HTTPException(400, "L'identifiant du profil est obligatoire")
+        raise HTTPException(400, "A profile id is required")
     if pid in profiles:
-        raise HTTPException(400, f"Le profil {pid} existe deja")
+        raise HTTPException(400, f"Profile {pid} already exists")
     profiles[pid] = {
         "id": pid,
         "name": p.name.strip() or pid,
@@ -1008,7 +1059,7 @@ def update_profile(profile_id: str, p: ProfileIn):
     profiles = _load_profiles()
     pid = profile_id.strip().lower()
     if not pid:
-        raise HTTPException(400, "L'identifiant du profil est obligatoire")
+        raise HTTPException(400, "A profile id is required")
     current = profiles.get(pid) or {"id": pid, "name": pid}
     current["name"] = p.name.strip() or current["name"]
     current["weights"] = _clean_weights(p.weights)
@@ -1022,7 +1073,7 @@ def delete_profile(profile_id: str):
     profiles = _load_profiles()
     pid = profile_id.strip().lower()
     if pid not in profiles:
-        raise HTTPException(404, f"Profil introuvable : {pid}")
+        raise HTTPException(404, f"Unknown profile: {pid}")
     del profiles[pid]
     _save_profiles(profiles)
     return {"status": "ok", "deleted": pid}

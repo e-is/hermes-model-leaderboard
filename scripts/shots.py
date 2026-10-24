@@ -615,7 +615,7 @@ def _hermes(*args: str) -> tuple[int, str]:
     """Run the hermes CLI.
 
     The chip row the plugin renders comes from the INSTALLED Hermes profiles
-    (``/hermes-profiles`` reads them through ``hermes_cli.profiles``), not from the
+    (``/hermes-profiles`` scans the Hermes home), not from the
     plugin's own scoring store — so a demo profile has to be a real one.
     """
     exe = shutil.which("hermes") or str(Path.home() / ".local" / "bin" / "hermes")
