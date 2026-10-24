@@ -1,4 +1,4 @@
-### Screenshots
+## Screenshots / Logs
 
 Captured from the real desktop (English UI, `default` profile) by `scripts/shots.py`; every
 still is clipped to the plugin's own pane. All of them are pinned to this entry's commit
