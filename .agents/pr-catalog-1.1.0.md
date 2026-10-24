@@ -49,8 +49,35 @@ git worktree remove /tmp/model-leaderboard-pin --force
 
 Result:
 
-- structural: `validate_plugin_catalog.py` → see the run above
-- pinned-source: `hermes plugins validate` at the pinned sha → see the run above
+- **structural — green.** `python3 scripts/validate_plugin_catalog.py plugin-catalog/` on
+  the whole directory → `OK: 802 file(s) valid` (the new entry is the only file this PR
+  touches).
+- **pinned-source — green.** In a detached worktree at the pinned sha, with no package
+  install:
+
+```
+✓ manifest · ✓ manifest fields · ✓ requires_hermes · ✓ loadable (__init__.py, desktop/plugin.js)
+✓ capability probe (register() ran in isolation) · ✓ declared tools/hooks/middleware
+✓ security scan — safe · ✓ no core override
+✓ desktop surface — stays inside the plugin SDK surface
+Validation passed.
+```
+
+One warning remains, and it predates this pin:
+
+```
+⚠ private core imports (catalog rule 9: public surfaces only): dashboard/plugin_api.py:45
+  and :810 hermes_cli.profiles; scripts/card.py:351 hermes_cli.browser_runtime.chromium_executable
+```
+
+Those two read the installed Hermes profiles (the "Applies to" chips) and locate a Chromium
+for the capture tooling. They are on the list for a follow-up; say the word and I will
+either route them through a public surface or drop them, in a re-pin PR of their own.
+
+For reference, the previous pin could not pass this job: `desktop/plugin.js` carried a
+bundled charting stack (Recharts → d3 → lodash, 1,072,563 bytes) whose library-internal
+prototype assignments matched the surface lint's prototype-patching rule 50 times. The
+charts are now drawn by hand in SVG, the bundle is 143,187 bytes and that check is clean.
 
 ## Checklist
 
