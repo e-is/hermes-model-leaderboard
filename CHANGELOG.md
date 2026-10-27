@@ -1,4 +1,10 @@
-## [Unreleased] — 1.2.1
+# Changelog
+
+All notable changes to this plugin are documented here. The format loosely follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
+[SemVer](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.0] — 2026-10-27 — the page speaks the 16 desktop languages
 
 ### Changed
 
@@ -21,12 +27,6 @@
   ja, ko, pt, ru, tr, uk, zh, zh-hant), at key parity with the English bundle, plus a
   parity test (`tests/unit/i18n-parity.test.ts`) that fails on any missing/extra key,
   value-kind or function-arity drift, and on empty strings.
-
-# Changelog
-
-All notable changes to this plugin are documented here. The format loosely follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
-[SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.2] — 2026-10-19
 

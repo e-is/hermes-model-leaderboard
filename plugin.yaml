@@ -1,5 +1,5 @@
 name: model-leaderboard
-version: "1.2.0"
+version: "1.3.0"
 description: "LLM model leaderboard for Hermes Desktop — model comparison (context, prices, Artificial Analysis indices, curated SWE-bench Verified / LiveCodeBench), per-profile scoring (radar, score views, Pareto frontier) and an OpenRouter news feed. Ported from the sumaris-agent llm-dashboard web app."
 author: e-is
 kind: standalone
