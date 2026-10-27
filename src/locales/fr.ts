@@ -168,7 +168,6 @@ export const fr = {
       agentic: 'Capacités agentiques',
       price_in: 'Prix↓input',
       price_out: 'Prix↓output',
-      price_cache: 'Prix↓cache',
       cache_read: 'Prix↓cache',
       context: 'Contexte',
       tools: 'Support Tool Calls',

@@ -17,6 +17,10 @@
 - **Chinese (`zh`) bundle**, at parity with `en`/`fr` (the desktop bundles en, zh,
   zh-hant, ja, ar, ru, fr, de, es, so a bundle for any of those is selectable).
   The three catalogues are key-for-key identical.
+- **i18n bundles for the 16 Hermes desktop locales** (af, ar, de, es, fr, ga, hu, it,
+  ja, ko, pt, ru, tr, uk, zh, zh-hant), at key parity with the English bundle, plus a
+  parity test (`tests/unit/i18n-parity.test.ts`) that fails on any missing/extra key,
+  value-kind or function-arity drift, and on empty strings.
 
 # Changelog
 
