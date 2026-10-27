@@ -467,6 +467,11 @@ def test_news_excludes_expired_promos(client_nomonkey, monkeypatch):
     assert res.status_code == 200
     promos = res.json()["promotions"]
     assert all(p.get("ends_at") for p in promos)  # every shipped promo carries an end date
+    # The API ships figures + a code, never a finished sentence: the wording comes from
+    # the renderer's i18n catalogue, so it follows the UI language (en/fr/zh).
+    assert all(isinstance(p.get("discount_pct"), int) for p in promos)
+    assert all(isinstance(p.get("detail"), dict) and p["detail"].get("code") for p in promos)
+    assert all("details" not in p and "discount_text" not in p for p in promos)
 
 
 def test_news_rolling_price_variations(client_nomonkey, monkeypatch):

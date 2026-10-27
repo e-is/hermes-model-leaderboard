@@ -82,8 +82,8 @@ type PriceChangeItem = {
 type PromotionItem = {
   id: string
   name: string
-  discount_text: string
-  details: string
+  discount_pct?: number
+  detail?: { code: string; price_in?: number; price_out?: number; vendor?: string; moe_params?: string; context_tokens?: number; rate_per_second?: number }
   context_length?: number
   prompt_price?: number | null
   completion_price?: number | null
@@ -105,17 +105,17 @@ type NewsData = {
 
 // Available criteria list for weighting
 export const AVAILABLE_CRITERIA = [
-  { key: 'intelligence', label: 'Intelligence globale', icon: '🧠', desc: 'Indice Artificial Analysis intelligence (raisonnement & logique)' },
-  { key: 'coding', label: 'Génération de code', icon: '💻', desc: 'Indice Artificial Analysis coding (syntaxe & algo)' },
-  { key: 'agentic', label: 'Capacités agentiques', icon: '🤖', desc: 'Indice Artificial Analysis agentic (autonomie & multi-tâches)' },
-  { key: 'price_in', label: 'Price ↓ input', icon: '📥', desc: 'Pondère favorablement les modèles économiques en entrée' },
-  { key: 'price_out', label: 'Price ↓ output', icon: '📤', desc: 'Pondère favorablement les modèles économiques en génération' },
-  { key: 'cache_read', label: 'Price ↓ cache', icon: '⚡', desc: 'Pondère favorablement la lecture de cache à tarif réduit' },
-  { key: 'context', label: 'Context window', icon: '📚', desc: 'Fenêtre de contexte maximale (jusqu\'à 1M+ tokens)' },
-  { key: 'tools', label: 'Support Tool Calls', icon: '🛠️', desc: 'Appel natif de fonctions et outils externes (API, Bash, etc.)' },
-  { key: 'has_vision', label: 'Support Vision (Multimodal)', icon: '👁️', desc: 'Capacité à traiter les images, captures d\'écran et diagrammes' },
-  { key: 'open_weights', label: 'Open-weights (Poids ouverts)', icon: '🔓', desc: 'Modèles open-weights téléchargeables (Hugging Face)' },
-  { key: 'fits_64gb', label: 'Local VRAM ≤ 64GB', icon: '🖥️', desc: 'Faisabilité d\'exécution locale sur GPU standard (≤ 64GB)' },
+  { key: 'intelligence', icon: '🧠' },
+  { key: 'coding', icon: '💻' },
+  { key: 'agentic', icon: '🤖' },
+  { key: 'price_in', icon: '📥' },
+  { key: 'price_out', icon: '📤' },
+  { key: 'cache_read', icon: '⚡' },
+  { key: 'context', icon: '📚' },
+  { key: 'tools', icon: '🛠️' },
+  { key: 'has_vision', icon: '👁️' },
+  { key: 'open_weights', icon: '🔓' },
+  { key: 'fits_64gb', icon: '🖥️' },
 ] as const
 
 // The ids are the Hermes profile names the page lists as chips ('architect',
@@ -855,7 +855,7 @@ export default function App() {
                     cursor: 'pointer',
                   }}
                 >
-                  📰 Actualités ▶
+                  {`📰 ${i18n.news.open} ▶`}
                 </button>
               )}
             </div>
@@ -1271,12 +1271,12 @@ export default function App() {
                 </div>
                 <div style={{ flex: 1.5 }}>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--ui-text-secondary)', marginBottom: 4 }}>
-                    Nom affiché :
+                    {i18n.modal.displayName}
                   </label>
                   <input
                     type="text"
                     value={editingProfile.name}
-                    placeholder="ex: DevOps Specialist"
+                    placeholder={i18n.modal.displayNamePlaceholder}
                     onChange={e => setEditingProfile({ ...editingProfile, name: e.target.value })}
                     style={{
                       width: '100%',
@@ -1295,7 +1295,7 @@ export default function App() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ui-text-primary)' }}>{i18n.criteriaWeights}</span>
                   <span style={{ fontSize: 11, color: 'var(--ui-text-tertiary)' }}>
-                    Total poids : <b>{Object.values(editingProfile.weights).reduce((a, b) => a + (b || 0), 0)}</b>
+                    {i18n.totalWeights} <b>{Object.values(editingProfile.weights).reduce((a, b) => a + (b || 0), 0)}</b>
                   </span>
                 </div>
 
@@ -1322,7 +1322,7 @@ export default function App() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontWeight: currentWeight > 0 ? 700 : 500, fontSize: 13, color: currentWeight > 0 ? 'var(--ui-text-primary)' : 'var(--ui-text-tertiary)' }}>
-                              {(i18n.criteria as any)[crit.key] || crit.label}
+                              {(i18n.criteria as any)[crit.key]}
                             </span>
                             <span style={{
                               fontWeight: 800,
@@ -1336,7 +1336,7 @@ export default function App() {
                             </span>
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 2, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                            {(i18n.criteria as any)['d_' + crit.key] || crit.desc}
+                            {(i18n.criteria as any)['d_' + crit.key]}
                           </div>
                           <input
                             type="range"

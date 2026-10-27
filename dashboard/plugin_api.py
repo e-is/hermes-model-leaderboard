@@ -668,13 +668,24 @@ def get_news():
     price_changes.sort(key=lambda x: x.get("changed_at") or 0, reverse=True)
     
     # 3. Promotions : curated or detected from description/discounted models enriched with model details
+    #
+    # The wording is NOT rendered here. Each entry carries machine-readable values and a
+    # `code` the renderer turns into a sentence through its i18n catalogue, so an
+    # English UI is not served French prose and vice versa (nor Chinese). `discount_pct`
+    # is a number for the same reason: "-90 %", "-90%" and "-90%" are not the same string.
     promo_defs = [
-        {"id": "google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "discount_text": "-75%", "details": "Limited OpenRouter promotion: $0.375 / $1.875 per M tk", "ends_at": "2026-09-30"},
-        {"id": "upstage/solar-pro4", "name": "Solar Pro 4", "discount_text": "-90%", "details": "$0.03 in / $0.12 out per M tk (524K ctx)", "ends_at": "2026-10-15"},
-        {"id": "inclusionai/ling-3.0-flash", "name": "Ling-3.0-flash", "discount_text": "-65%", "details": "$0.021 in / $0.063 out per M tk (124B MoE)", "ends_at": "2026-10-01"},
-        {"id": "bytedance/seedance-2.0-mini", "name": "Seedance 2.0 Mini", "discount_text": "-60%", "details": "ByteDance video generation at $0.01345/s", "ends_at": "2026-09-20"},
-        {"id": "poolside/laguna-s-2.1", "name": "Laguna S 2.1", "discount_text": "-10%", "details": "Poolside agentic coding model at $0.09 in / $0.18 out", "ends_at": "2026-10-31"},
-        {"id": "openai/gpt-5.6-sol", "name": "GPT-5.6 Sol", "discount_text": "-50%", "details": "$2 in / $10 out per M tk", "ends_at": "2026-09-25"},
+        {"id": "google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "discount_pct": 75, "ends_at": "2026-09-30",
+         "detail": {"code": "limited_promo", "price_in": 0.375, "price_out": 1.875}},
+        {"id": "upstage/solar-pro4", "name": "Solar Pro 4", "discount_pct": 90, "ends_at": "2026-10-15",
+         "detail": {"code": "price_with_context", "price_in": 0.03, "price_out": 0.12, "context_tokens": 524000}},
+        {"id": "inclusionai/ling-3.0-flash", "name": "Ling-3.0-flash", "discount_pct": 65, "ends_at": "2026-10-01",
+         "detail": {"code": "price_with_params", "price_in": 0.021, "price_out": 0.063, "moe_params": "124B"}},
+        {"id": "bytedance/seedance-2.0-mini", "name": "Seedance 2.0 Mini", "discount_pct": 60, "ends_at": "2026-09-20",
+         "detail": {"code": "video_rate", "vendor": "ByteDance", "rate_per_second": 0.01345}},
+        {"id": "poolside/laguna-s-2.1", "name": "Laguna S 2.1", "discount_pct": 10, "ends_at": "2026-10-31",
+         "detail": {"code": "agentic_model", "vendor": "Poolside", "price_in": 0.09, "price_out": 0.18}},
+        {"id": "openai/gpt-5.6-sol", "name": "GPT-5.6 Sol", "discount_pct": 50, "ends_at": "2026-09-25",
+         "detail": {"code": "price", "price_in": 2, "price_out": 10}},
     ]
     _now_ts = time.time()
     promo_defs = [p for p in promo_defs
@@ -694,8 +705,8 @@ def get_news():
         promotions.append({
             "id": p["id"],
             "name": p["name"],
-            "discount_text": p["discount_text"],
-            "details": p["details"],
+            "discount_pct": p.get("discount_pct"),
+            "detail": p.get("detail") or {},
             "ends_at": p.get("ends_at"),
             "context_length": raw.get("context_length"),
             "prompt_price": _pr_promo("prompt"),

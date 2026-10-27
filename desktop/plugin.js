@@ -287,6 +287,33 @@ function useResizable(opts) {
 
 // src/components/NewsPanel.tsx
 import { Fragment, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+var money = (v) => typeof v === "number" ? "$" + String(+v.toFixed(5)) : "";
+function promoLine(t, d) {
+  if (!d || typeof d !== "object") return "";
+  const inPrice = money(d.price_in), outPrice = money(d.price_out);
+  switch (d.code) {
+    case "limited_promo":
+      return t.news.promo.limited(inPrice, outPrice);
+    case "price_with_context":
+      return t.news.promo.priceWithContext(inPrice, outPrice, fmtShortCtx(d.context_tokens));
+    case "price_with_params":
+      return t.news.promo.priceWithParams(inPrice, outPrice, d.moe_params || "");
+    case "video_rate":
+      return t.news.promo.videoRate(d.vendor || "", money(d.rate_per_second));
+    case "agentic_model":
+      return t.news.promo.agenticModel(d.vendor || "", inPrice, outPrice);
+    case "price":
+      return t.news.promo.price(inPrice, outPrice);
+    default:
+      return inPrice && outPrice ? t.news.promo.price(inPrice, outPrice) : "";
+  }
+}
+function fmtShortCtx(n) {
+  if (typeof n !== "number" || !n) return "";
+  if (n >= 1e6) return `${Math.round(n / 1e6)}M`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)}K`;
+  return String(n);
+}
 function NewsPanel(props) {
   const {
     news,
@@ -398,7 +425,7 @@ function NewsPanel(props) {
                     /* @__PURE__ */ jsx2("b", { children: p.name }),
                     /* @__PURE__ */ jsxs2("span", { style: { background: "var(--ui-red)", color: "var(--ui-bg-editor)", padding: "1px 5px", borderRadius: 3, fontWeight: 700, fontSize: 10 }, children: [
                       "🔻 ",
-                      p.discount_text
+                      p.discount_pct != null ? t.news.promo.discount(p.discount_pct) : "🔻"
                     ] })
                   ] }),
                   /* @__PURE__ */ jsxs2("div", { style: { textAlign: "right" }, children: [
@@ -406,7 +433,7 @@ function NewsPanel(props) {
                     p._isChallenger && /* @__PURE__ */ jsx2("div", { style: { fontSize: 9, background: "var(--ui-orange)", color: "var(--ui-bg-editor)", padding: "1px 4px", borderRadius: 3, fontWeight: 700, marginTop: 1 }, children: t.news.top3 })
                   ] })
                 ] }),
-                /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4 }, children: p.details }),
+                promoLine(t, p.detail) ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4 }, children: promoLine(t, p.detail) }) : null,
                 p.ends_at ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: t.news.until(p.ends_at) }) : null,
                 /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }, children: [
                   /* @__PURE__ */ jsxs2(
@@ -718,6 +745,7 @@ var LOCALES = {
     clickToShow: "Click to show",
     clickToHide: "Click to hide",
     criteriaWeights: "Criteria weights:",
+    totalWeights: "Total weights:",
     resetAllTitle: "Reset every profile and criterion to its default value",
     resetDefaults: "🔄 Reset defaults",
     cancel: "Cancel",
@@ -823,7 +851,17 @@ var LOCALES = {
       sortBy: "Sort by:",
       sortDate: "📅 Date",
       sortScore: "⭐ Score",
-      noNewModels: "No new model in this period."
+      noNewModels: "No new model in this period.",
+      open: "News",
+      promo: {
+        discount: (pct) => `-${pct}%`,
+        limited: (i, o) => `Limited OpenRouter promotion: ${i} / ${o} per M tk`,
+        price: (i, o) => `${i} in / ${o} out per M tk`,
+        priceWithContext: (i, o, c) => `${i} in / ${o} out per M tk (${c} ctx)`,
+        priceWithParams: (i, o, p) => `${i} in / ${o} out per M tk (${p} MoE)`,
+        videoRate: (v, r) => `${v} video generation at ${r}/s`,
+        agenticModel: (v, i, o) => `${v} agentic coding model at ${i} in / ${o} out`
+      }
     },
     modal: {
       configTitle: (name) => `⚙️ Tracking profile: ${name}`,
@@ -839,6 +877,8 @@ var LOCALES = {
       deleteConfirm: (name) => `Delete the '${name}' tracking profile?`,
       reset: "Reset all profiles and criteria to default values?",
       needId: "Please provide an identifier for the profile",
+      displayName: "Display name:",
+      displayNamePlaceholder: "e.g. DevOps Specialist",
       saveError: "Error while saving the profile",
       close: "Close"
     },
@@ -893,6 +933,7 @@ var LOCALES = {
     clickToShow: "Cliquer pour afficher",
     clickToHide: "Cliquer pour masquer",
     criteriaWeights: "Pondération des critères :",
+    totalWeights: "Poids total :",
     resetAllTitle: "Réinitialise tous les profils et critères aux valeurs d'origine par défaut",
     resetDefaults: "🔄 Réinitialiser défauts",
     cancel: "Annuler",
@@ -998,7 +1039,17 @@ var LOCALES = {
       sortBy: "Trier par :",
       sortDate: "📅 Date",
       sortScore: "⭐ Score",
-      noNewModels: "Aucune nouveauté sur cette période."
+      noNewModels: "Aucune nouveauté sur cette période.",
+      open: "Actualités",
+      promo: {
+        discount: (pct) => `-${pct} %`,
+        limited: (i, o) => `Promotion OpenRouter limitée : ${i} / ${o} par M tk`,
+        price: (i, o) => `${i} in / ${o} out par M tk`,
+        priceWithContext: (i, o, c) => `${i} in / ${o} out par M tk (${c} ctx)`,
+        priceWithParams: (i, o, p) => `${i} in / ${o} out par M tk (${p} MoE)`,
+        videoRate: (v, r) => `Génération vidéo ${v} à ${r}/s`,
+        agenticModel: (v, i, o) => `Modèle agentic coding ${v} à ${i} in / ${o} out`
+      }
     },
     modal: {
       configTitle: (name) => `⚙️ Profil de suivi : ${name}`,
@@ -1015,6 +1066,8 @@ var LOCALES = {
       reset: "Réinitialiser tous les profils et critères aux valeurs par défaut ?",
       needId: "Veuillez renseigner un identifiant pour le profil",
       saveError: "Erreur lors de la sauvegarde du profil",
+      displayName: "Nom affiché :",
+      displayNamePlaceholder: "ex : spécialiste DevOps",
       close: "Fermer"
     },
     criteria: {
@@ -1041,6 +1094,194 @@ var LOCALES = {
       d_has_vision: "Capacité à traiter les images, captures d’écran et diagrammes",
       d_open_weights: "Poids ouverts, auto-hébergeable",
       d_fits_64gb: "Faisabilité d’exécution locale sur GPU standard (≤ 64GB)"
+    }
+  },
+  zh: {
+    title: "LLM 模型排行榜",
+    subtitle: "OpenRouter 数据 — 价格、基准与资讯",
+    refresh: "刷新",
+    nVisible: (n, extra) => `${n} 个可见${extra}`,
+    nHidden: (n) => `（另隐藏 ${n} 个）`,
+    appliesTo: "适用于",
+    editCriteria: "编辑评分标准",
+    trackingProfile: "跟踪配置",
+    loading: "加载中…",
+    loadError: "无法加载已跟踪的模型",
+    retry: "重试",
+    searchPlaceholder: "搜索模型…",
+    search: "搜索",
+    searchUntracked: "搜索未跟踪的模型",
+    tableTitle: "已跟踪的模型",
+    results: (n) => `结果（${n}）`,
+    alreadyTracked: "已跟踪",
+    add: "添加",
+    show: "显示",
+    hide: "隐藏",
+    removeModel: "移除模型",
+    suppressShort: "删",
+    clickToShow: "点击显示",
+    clickToHide: "点击隐藏",
+    criteriaWeights: "评分标准权重：",
+    totalWeights: "权重合计：",
+    resetAllTitle: "将所有配置和评分标准恢复为默认值",
+    resetDefaults: "🔄 恢复默认",
+    cancel: "取消",
+    confirmDeleteTitle: "移除此模型？",
+    confirmDeleteBody: (name) => `“${name}” 将从已跟踪模型中移除。OpenRouter 上的数据不受影响。`,
+    confirmDeleteOk: "移除",
+    updatedAgo: (m) => m < 1 ? "刚刚更新" : `${m} 分钟前更新`,
+    ranking: (name) => `🏆 排名 — ${name}`,
+    customCriteria: "自定义标准",
+    table: {
+      model: "模型",
+      context: "上下文",
+      priceIn: "输入 $/百万",
+      priceOut: "输出 $/百万",
+      priceCache: "缓存读取",
+      intel: "智能",
+      coding: "编程",
+      agentic: "智能体",
+      swe: "SWE",
+      vision: "视觉",
+      open: "开放",
+      size: "规模",
+      gpuOk: "GPU 可用",
+      tools: "工具",
+      score: "得分"
+    },
+    views: {
+      label: "视图：",
+      names: { classic: "卡片", stacked: "得分条", columns: "直方图", heatmap: "热力图", duel: "两两对比", value: "质量 / 成本" },
+      hint: {
+        classic: "前 5 名及其价格与上下文。",
+        stacked: "每段 = 该项标准获得的分数（权重 × 评分）。",
+        columns: "每项标准一根柱：高度 = 评分，宽度 = 权重。",
+        heatmap: "每项标准的 0–100 分，权重最高的在前。点击列可排序。",
+        duel: "选择两个模型，逐项标准进行比较。",
+        value: "质量（非价格标准）与加权成本；虚线连接最佳折中点。"
+      },
+      short: {
+        intelligence: "智能",
+        coding: "编程",
+        agentic: "智能体",
+        price_in: "输入价格",
+        price_out: "输出价格",
+        cache_read: "缓存价格",
+        context: "上下文",
+        tools: "工具",
+        has_vision: "视觉",
+        open_weights: "开放权重",
+        fits_64gb: "显存 ≤ 64G"
+      },
+      model: "模型",
+      score: "得分",
+      weight: "权重",
+      grade: "评分",
+      points: "分",
+      na: "无",
+      noCriteria: "该配置未设置任何标准权重 — 请编辑评分标准。",
+      needTwo: "至少跟踪两个可用模型才能比较。",
+      showAll: (n) => `显示全部（${n}）`,
+      showLess: "收起",
+      strength: "优势",
+      weakness: "劣势",
+      missingData: "缺少数据按 0 计",
+      winsOn: (n) => `在 ${n} 项标准上领先`,
+      versus: "对比",
+      axisQuality: "质量",
+      axisCost: "成本 $/百万",
+      axisCostShort: "加权成本（$/百万，对数刻度）",
+      axisQualityShort: "质量（0–100）",
+      free: "免费",
+      frontier: "最佳折中",
+      frontierHint: "没有其他模型在更便宜的同时又更好（帕累托前沿）。",
+      others: "被支配",
+      valueRead: "左上方最佳：成本低、质量高。",
+      fieldName: { intelligence_index: "智能", coding_index: "编程", agentic_index: "智能体" },
+      estimatedHint: (from, r2, n) => `由 ${from} 估算 — 基于 ${n} 个 OpenRouter 模型的线性拟合（R² ${r2}）。点击热力图单元格可填入真实值。`,
+      manualHint: "手动输入的值（优先于 OpenRouter）。",
+      naHint: "无数据：未公布，也没有其他可用来估算的指数。",
+      editHint: "点击输入数值（留空则回到 OpenRouter / 估算值）。",
+      rawIndex: "原始指数",
+      hasEstimates: "部分评分为估算值（~）",
+      noQuality: "该配置只对价格加权 — 请添加一项质量类标准（智能、编程…）才能画出质量与成本的关系。"
+    },
+    news: {
+      title: "📰 资讯与更新",
+      hidePanel: "隐藏面板",
+      loading: "正在加载资讯…",
+      none: "暂无资讯。",
+      promos: "进行中的优惠",
+      priceChanges: "价格变动",
+      newModels: "新模型",
+      newModelsHeading: (p) => `🚀 新模型（${p}）`,
+      nModels: (n) => `${n} 个模型`,
+      details: "详情",
+      follow: "跟踪",
+      tracked: "已跟踪",
+      top3: "🔥 前三！",
+      until: (d) => `⏳ 截止 ${d}`,
+      threshold: "阈值 ≥",
+      thresholdUnit: "/ 1 天或 7 天",
+      windowLabel: "时间范围：",
+      windowOpts: { "1m": "1 个月（默认）", "2m": "2 个月", "3m": "3 个月", "6m": "6 个月", "1y": "1 年", "all": "全部" },
+      sortBy: "排序：",
+      sortDate: "📅 日期",
+      sortScore: "⭐ 得分",
+      noNewModels: "该时间段内没有新模型。",
+      open: "资讯",
+      promo: {
+        discount: (pct) => `-${pct}%`,
+        limited: (i, o) => `OpenRouter 限时优惠：每百万 token ${i} / ${o}`,
+        price: (i, o) => `每百万 token ${i} 输入 / ${o} 输出`,
+        priceWithContext: (i, o, c) => `每百万 token ${i} 输入 / ${o} 输出（上下文 ${c}）`,
+        priceWithParams: (i, o, p) => `每百万 token ${i} 输入 / ${o} 输出（${p} MoE）`,
+        videoRate: (v, r) => `${v} 视频生成 ${r}/秒`,
+        agenticModel: (v, i, o) => `${v} 智能体编码模型 ${i} 输入 / ${o} 输出`
+      }
+    },
+    modal: {
+      configTitle: (name) => `⚙️ 跟踪配置：${name}`,
+      autoFill: "✨ 自动填充",
+      autoFillHint: "让 Hermes 默认模型为该配置推荐权重",
+      autoFillRunning: "正在询问模型…",
+      autoFillDone: "模型已推荐标准 — 请检查后保存。",
+      autoFillFailed: "自动填充失败",
+      save: "保存",
+      saving: "保存中…",
+      cancel: "取消",
+      delete: "删除配置",
+      deleteConfirm: (name) => `删除“${name}”跟踪配置？`,
+      reset: "将所有配置和评分标准恢复为默认值？",
+      needId: "请为该配置提供一个标识符",
+      displayName: "显示名称：",
+      displayNamePlaceholder: "例如：DevOps 专家",
+      saveError: "保存配置时出错",
+      close: "关闭"
+    },
+    criteria: {
+      intelligence: "智能",
+      coding: "编程",
+      agentic: "智能体",
+      price_in: "价格 ↓ 输入",
+      price_out: "价格 ↓ 输出",
+      cache_read: "价格 ↓ 缓存",
+      context: "上下文窗口",
+      tools: "工具调用",
+      has_vision: "视觉",
+      open_weights: "开放权重",
+      fits_64gb: "本地显存 ≤ 64GB",
+      d_intelligence: "整体推理与知识深度",
+      d_coding: "代码生成质量",
+      d_agentic: "智能体能力（多步自主）",
+      d_price_in: "低输入 token 价格的重要性",
+      d_price_out: "低输出 token 价格的重要性",
+      d_cache_read: "低缓存读取价格的重要性",
+      d_context: "处理超长上下文的能力（接近 1M+ token）",
+      d_tools: "原生函数/工具调用（API、Bash 等）",
+      d_has_vision: "处理图像、截图的能力",
+      d_open_weights: "开放权重，可自托管",
+      d_fits_64gb: "在普通 GPU（≤ 64GB）上本地运行的可行性"
     }
   }
 };
@@ -1586,17 +1827,17 @@ function ScoreView({ view, models, weights, maxes, criteria, icon, t, onSetIndex
 // src/LeaderboardPage.tsx
 import { Fragment as Fragment3, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
 var AVAILABLE_CRITERIA = [
-  { key: "intelligence", label: "Intelligence globale", icon: "🧠", desc: "Indice Artificial Analysis intelligence (raisonnement & logique)" },
-  { key: "coding", label: "Génération de code", icon: "💻", desc: "Indice Artificial Analysis coding (syntaxe & algo)" },
-  { key: "agentic", label: "Capacités agentiques", icon: "🤖", desc: "Indice Artificial Analysis agentic (autonomie & multi-tâches)" },
-  { key: "price_in", label: "Price ↓ input", icon: "📥", desc: "Pondère favorablement les modèles économiques en entrée" },
-  { key: "price_out", label: "Price ↓ output", icon: "📤", desc: "Pondère favorablement les modèles économiques en génération" },
-  { key: "cache_read", label: "Price ↓ cache", icon: "⚡", desc: "Pondère favorablement la lecture de cache à tarif réduit" },
-  { key: "context", label: "Context window", icon: "📚", desc: "Fenêtre de contexte maximale (jusqu'à 1M+ tokens)" },
-  { key: "tools", label: "Support Tool Calls", icon: "🛠️", desc: "Appel natif de fonctions et outils externes (API, Bash, etc.)" },
-  { key: "has_vision", label: "Support Vision (Multimodal)", icon: "👁️", desc: "Capacité à traiter les images, captures d'écran et diagrammes" },
-  { key: "open_weights", label: "Open-weights (Poids ouverts)", icon: "🔓", desc: "Modèles open-weights téléchargeables (Hugging Face)" },
-  { key: "fits_64gb", label: "Local VRAM ≤ 64GB", icon: "🖥️", desc: "Faisabilité d'exécution locale sur GPU standard (≤ 64GB)" }
+  { key: "intelligence", icon: "🧠" },
+  { key: "coding", icon: "💻" },
+  { key: "agentic", icon: "🤖" },
+  { key: "price_in", icon: "📥" },
+  { key: "price_out", icon: "📤" },
+  { key: "cache_read", icon: "⚡" },
+  { key: "context", icon: "📚" },
+  { key: "tools", icon: "🛠️" },
+  { key: "has_vision", icon: "👁️" },
+  { key: "open_weights", icon: "🔓" },
+  { key: "fits_64gb", icon: "🖥️" }
 ];
 var DEFAULT_PROFILES = {
   architect: {
@@ -2207,7 +2448,7 @@ function App() {
               fontSize: 12,
               cursor: "pointer"
             },
-            children: "📰 Actualités ▶"
+            children: `📰 ${i18n.news.open} ▶`
           }
         ) }),
         loadError && /* @__PURE__ */ jsxs4("div", { role: "alert", style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid var(--ui-red)", background: "color-mix(in srgb, var(--ui-red) 8%, transparent)", fontSize: 12 }, children: [
@@ -2674,13 +2915,13 @@ function App() {
             )
           ] }),
           /* @__PURE__ */ jsxs4("div", { style: { flex: 1.5 }, children: [
-            /* @__PURE__ */ jsx4("label", { style: { display: "block", fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)", marginBottom: 4 }, children: "Nom affiché :" }),
+            /* @__PURE__ */ jsx4("label", { style: { display: "block", fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)", marginBottom: 4 }, children: i18n.modal.displayName }),
             /* @__PURE__ */ jsx4(
               "input",
               {
                 type: "text",
                 value: editingProfile.name,
-                placeholder: "ex: DevOps Specialist",
+                placeholder: i18n.modal.displayNamePlaceholder,
                 onChange: (e) => setEditingProfile({ ...editingProfile, name: e.target.value }),
                 style: {
                   width: "100%",
@@ -2698,7 +2939,8 @@ function App() {
           /* @__PURE__ */ jsxs4("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
             /* @__PURE__ */ jsx4("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.criteriaWeights }),
             /* @__PURE__ */ jsxs4("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
-              "Total poids : ",
+              i18n.totalWeights,
+              " ",
               /* @__PURE__ */ jsx4("b", { children: Object.values(editingProfile.weights).reduce((a, b) => a + (b || 0), 0) })
             ] })
           ] }),
@@ -2721,7 +2963,7 @@ function App() {
                   /* @__PURE__ */ jsx4("div", { style: { width: 28, fontSize: 18, textAlign: "center" }, children: crit.icon }),
                   /* @__PURE__ */ jsxs4("div", { style: { flex: 1, minWidth: 0 }, children: [
                     /* @__PURE__ */ jsxs4("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
-                      /* @__PURE__ */ jsx4("span", { style: { fontWeight: currentWeight > 0 ? 700 : 500, fontSize: 13, color: currentWeight > 0 ? "var(--ui-text-primary)" : "var(--ui-text-tertiary)" }, children: i18n.criteria[crit.key] || crit.label }),
+                      /* @__PURE__ */ jsx4("span", { style: { fontWeight: currentWeight > 0 ? 700 : 500, fontSize: 13, color: currentWeight > 0 ? "var(--ui-text-primary)" : "var(--ui-text-tertiary)" }, children: i18n.criteria[crit.key] }),
                       /* @__PURE__ */ jsxs4("span", { style: {
                         fontWeight: 800,
                         fontSize: 12,
@@ -2734,7 +2976,7 @@ function App() {
                         " / 5"
                       ] })
                     ] }),
-                    /* @__PURE__ */ jsx4("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 2, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }, children: i18n.criteria["d_" + crit.key] || crit.desc }),
+                    /* @__PURE__ */ jsx4("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 2, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }, children: i18n.criteria["d_" + crit.key] }),
                     /* @__PURE__ */ jsx4(
                       "input",
                       {

@@ -1,6 +1,37 @@
 import { useState } from 'react'
 import { useResizable } from '../hooks/useResizable'
 
+/** '$0.375' / '$2' — the unit ("per M tk", "per second") belongs to the sentence. */
+const money = (v: any): string => (typeof v === 'number' ? '$' + String(+v.toFixed(5)) : '')
+
+/**
+ * The backend sends a promotion's figures plus a `code`, never a finished sentence
+ * (see dashboard/plugin_api.py): the wording comes from the i18n catalogue, so it
+ * follows the UI language. `news.promo.*` holds one formatter per code; an unknown
+ * code still renders as a plain price line instead of leaking raw JSON.
+ */
+function promoLine(t: any, d: any): string {
+  if (!d || typeof d !== 'object') return ''
+  const inPrice = money(d.price_in), outPrice = money(d.price_out)
+  switch (d.code) {
+    case 'limited_promo': return t.news.promo.limited(inPrice, outPrice)
+    case 'price_with_context': return t.news.promo.priceWithContext(inPrice, outPrice, fmtShortCtx(d.context_tokens))
+    case 'price_with_params': return t.news.promo.priceWithParams(inPrice, outPrice, d.moe_params || '')
+    case 'video_rate': return t.news.promo.videoRate(d.vendor || '', money(d.rate_per_second))
+    case 'agentic_model': return t.news.promo.agenticModel(d.vendor || '', inPrice, outPrice)
+    case 'price': return t.news.promo.price(inPrice, outPrice)
+    default: return inPrice && outPrice ? t.news.promo.price(inPrice, outPrice) : ''
+  }
+}
+
+/** '524000' → '524K' (the catalogue says "ctx"; the number stays language-neutral). */
+function fmtShortCtx(n: any): string {
+  if (typeof n !== 'number' || !n) return ''
+  if (n >= 1_000_000) return `${Math.round(n / 1_000_000)}M`
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`
+  return String(n)
+}
+
 // ---- Types (shared with App) ----------------------------------
 type NewsData = {
   new_models: any[]
@@ -158,7 +189,7 @@ export function NewsPanel(props: NewsPanelProps) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <b>{p.name}</b>
                           <span style={{ background: 'var(--ui-red)', color: 'var(--ui-bg-editor)', padding: '1px 5px', borderRadius: 3, fontWeight: 700, fontSize: 10 }}>
-                            🔻 {p.discount_text}
+                            🔻 {p.discount_pct != null ? t.news.promo.discount(p.discount_pct) : '🔻'}
                           </span>
                         </div>
                         <div style={{ textAlign: 'right' }}>
@@ -172,7 +203,9 @@ export function NewsPanel(props: NewsPanelProps) {
                           )}
                         </div>
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4 }}>{p.details}</div>
+                      {promoLine(t, p.detail) ? (
+                        <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4 }}>{promoLine(t, p.detail)}</div>
+                      ) : null}
                       {p.ends_at ? (
                         <div style={{ fontSize: 10, color: p._isChallenger ? 'var(--ui-orange)' : 'var(--ui-text-tertiary)', marginTop: 2 }}>
                            {t.news.until(p.ends_at)}

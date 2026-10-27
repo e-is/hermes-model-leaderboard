@@ -1,3 +1,23 @@
+## [Unreleased] — 1.2.1
+
+### Changed
+
+- **The news API no longer ships finished sentences.** Promotions used to carry
+  `details` / `discount_text` prose written in one language; they now carry the figures
+  and a `code` (`limited_promo`, `price_with_context`, `price_with_params`, `video_rate`,
+  `agentic_model`, `price`) plus `discount_pct` as a number. The renderer composes the
+  sentence from its i18n catalogue, so a promotion reads in the UI's language — an
+  unknown `code` still renders as a plain price line instead of leaking raw JSON.
+- Criteria labels and descriptions, the display-name label/placeholder, the news button
+  and the total-weights readout were still hardcoded in the renderer (some of it French):
+  they now resolve through the catalogue, and `AVAILABLE_CRITERIA` keeps only key + icon.
+
+### Added
+
+- **Chinese (`zh`) bundle**, at parity with `en`/`fr` (the desktop bundles en, zh,
+  zh-hant, ja, ar, ru, fr, de, es, so a bundle for any of those is selectable).
+  The three catalogues are key-for-key identical.
+
 # Changelog
 
 All notable changes to this plugin are documented here. The format loosely follows
