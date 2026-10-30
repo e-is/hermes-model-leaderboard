@@ -4,6 +4,19 @@ All notable changes to this plugin are documented here. The format loosely follo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-10-30 — the French bundle stops reading like English
+
+Twenty-three of the 182 keys in `fr` were byte-identical to `en`: not a parity
+failure, so the test had nothing to say about them, and a French reader saw
+`Coding`, `Tools`, `Heatmap`, `Score` and `Local VRAM ≤ 64GB` in an otherwise
+French page. Ten of them are translated here — the title, the table's
+`Coding`/`Agentic`/`Open`/`Tools`/`Score` columns, the heatmap view name, the
+score label, the news sort chip and the local-VRAM criterion.
+
+The thirteen that stay identical are correct as they are: `SWE`, `GPU`, `Intel.`,
+`VRAM ≤ 64G`, `pts`, `vs`, `📅 Date`, and the four keys whose French word is the
+English one — `Vision`, `Duel`, `Intelligence`.
+
 ## [1.3.0] — 2026-10-27 — the page speaks the 16 desktop languages
 
 ### Changed

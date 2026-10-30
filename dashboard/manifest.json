@@ -3,6 +3,6 @@
   "label": "Model Leaderboard",
   "description": "LLM comparison for Hermes Desktop: context, prices and published indices, per-profile scoring (radar, six score views, Pareto frontier) and an OpenRouter news feed. The Desktop renderer is the plugin; this file describes the backend API.",
   "icon": "Graph",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "api": "plugin_api.py"
 }

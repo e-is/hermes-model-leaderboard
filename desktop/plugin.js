@@ -910,7 +910,7 @@ var en = {
 
 // src/locales/fr.ts
 var fr = {
-  title: "LLM Model Leaderboard",
+  title: "Classement des modèles LLM",
   subtitle: "Données OpenRouter — prix, benchmarks et actualités",
   refresh: "Rafraîchir",
   nVisible: (n, extra) => `${n} visibles${extra}`,
@@ -952,19 +952,19 @@ var fr = {
     priceOut: "Prix Output ($/M tk)",
     priceCache: "Prix Cache Read",
     intel: "Intel.",
-    coding: "Coding",
-    agentic: "Agentic",
+    coding: "Code",
+    agentic: "Agentique",
     swe: "SWE",
     vision: "Vision",
-    open: "Open",
+    open: "Ouvert",
     size: "Taille",
     gpuOk: "GPU OK",
-    tools: "Tools",
-    score: "Score"
+    tools: "Outils",
+    score: "Note"
   },
   views: {
     label: "Affichage :",
-    names: { classic: "Cartes", stacked: "Barres de score", columns: "Histogrammes", heatmap: "Heatmap", duel: "Duel", value: "Qualité / coût" },
+    names: { classic: "Cartes", stacked: "Barres de score", columns: "Histogrammes", heatmap: "Carte de chaleur", duel: "Duel", value: "Qualité / coût" },
     hint: {
       classic: "Top 5 avec prix et contexte.",
       stacked: "Chaque segment = points gagnés sur un critère (poids × note).",
@@ -987,7 +987,7 @@ var fr = {
       fits_64gb: "VRAM ≤ 64G"
     },
     model: "Modèle",
-    score: "Score",
+    score: "Note",
     weight: "poids",
     grade: "note",
     points: "pts",
@@ -1040,7 +1040,7 @@ var fr = {
     windowOpts: { "1m": "1 mois (défaut)", "2m": "2 mois", "3m": "3 mois", "6m": "6 mois", "1y": "1 an", "all": "Tout" },
     sortBy: "Trier par :",
     sortDate: "📅 Date",
-    sortScore: "⭐ Score",
+    sortScore: "⭐ Note",
     noNewModels: "Aucune nouveauté sur cette période.",
     open: "Actualités",
     promo: {
@@ -1083,7 +1083,7 @@ var fr = {
     tools: "Support Tool Calls",
     has_vision: "Support Vision (Multimodal)",
     open_weights: "Open-weights (Poids ouverts)",
-    fits_64gb: "Local VRAM ≤ 64GB",
+    fits_64gb: "VRAM locale ≤ 64 Go",
     d_intelligence: "Intelligence globale",
     d_coding: "Génération de code",
     d_agentic: "Capacités agentiques",
