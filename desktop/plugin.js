@@ -4702,9 +4702,9 @@ function App() {
   const [radarHidden, setRadarHidden] = useState5(/* @__PURE__ */ new Set());
   const [loading, setLoading] = useState5(true);
   const [q, setQ] = useState5("");
+  const [dq, setDq] = useState5("");
   const [searchRes, setSearchRes] = useState5([]);
   const [adding, setAdding] = useState5(false);
-  const [searchUntracked, setSearchUntracked] = useState5(true);
   const [pendingDelete, setPendingDelete] = useState5(null);
   const [sortCol, setSortCol] = useState5(null);
   const [sortAsc, setSortAsc] = useState5(true);
@@ -4863,13 +4863,26 @@ function App() {
     fetchModels();
     fetchNews();
   };
-  const search = () => {
-    if (!searchUntracked || !q.trim()) {
+  useEffect3(() => {
+    const id = setTimeout(() => setDq(q), 300);
+    return () => clearTimeout(id);
+  }, [q]);
+  useEffect3(() => {
+    const term = dq.trim();
+    if (term.length < 2) {
       setSearchRes([]);
       return;
     }
-    api(`/openrouter/search?q=${encodeURIComponent(q)}`).then((d) => setSearchRes(d.results || []));
-  };
+    let cancelled = false;
+    api(`/openrouter/search?q=${encodeURIComponent(term)}`).then((d) => {
+      if (!cancelled) setSearchRes(d.results || []);
+    }).catch(() => {
+      if (!cancelled) setSearchRes([]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dq]);
   const openEditModal = () => {
     setEditingProfile(JSON.parse(JSON.stringify(currentProfile)));
     setIsNewProfile(false);
@@ -5149,40 +5162,72 @@ function App() {
               /* @__PURE__ */ jsx4("h3", { style: { margin: 0, color: "var(--ui-text-primary)" }, children: i18n.ranking(currentProfile.name) }),
               /* @__PURE__ */ jsxs4("span", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
                 /* @__PURE__ */ jsx4("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)" }, children: i18n.customCriteria }),
-                /* @__PURE__ */ jsx4(
+                /* @__PURE__ */ jsxs4(
                   "button",
                   {
                     onClick: openEditModal,
-                    style: { border: "none", background: "transparent", color: "var(--ui-accent)", cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 },
-                    children: i18n.editCriteria
+                    style: {
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "6px 12px",
+                      borderRadius: 6,
+                      border: "none",
+                      // --theme-primary is the desktop's own primary (the blue used by its
+                      // buttons); white on it holds in both dark and light themes.
+                      background: "var(--theme-primary)",
+                      color: "#fff",
+                      fontSize: 12,
+                      fontWeight: 650,
+                      cursor: "pointer",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.18)"
+                    },
+                    children: [
+                      "✎ ",
+                      i18n.editCriteria
+                    ]
                   }
                 )
               ] })
             ] }),
-            /* @__PURE__ */ jsxs4("div", { role: "tablist", "aria-label": i18n.views.label, style: { display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginBottom: 10 }, children: [
-              /* @__PURE__ */ jsx4("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)", marginRight: 4 }, children: i18n.views.label }),
-              SCORE_VIEWS.map((v) => /* @__PURE__ */ jsx4(
-                "button",
+            /* @__PURE__ */ jsxs4("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsx4("span", { style: { fontSize: 12, color: "var(--ui-text-tertiary)" }, children: i18n.views.label }),
+              /* @__PURE__ */ jsx4(
+                "div",
                 {
-                  role: "tab",
-                  "aria-selected": scoreView === v,
-                  onClick: () => setScoreView(v),
-                  title: i18n.views.hint[v],
-                  style: {
-                    padding: "3px 10px",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    border: `1px solid ${scoreView === v ? "var(--ui-accent)" : "var(--ui-stroke-tertiary)"}`,
-                    background: scoreView === v ? "color-mix(in srgb, var(--ui-accent) 12%, var(--ui-bg-editor))" : "var(--ui-bg-editor)",
-                    color: scoreView === v ? "var(--ui-text-primary)" : "var(--ui-text-secondary)",
-                    fontWeight: scoreView === v ? 650 : 500
-                  },
-                  children: i18n.views.names[v]
-                },
-                v
-              )),
-              /* @__PURE__ */ jsx4("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)", marginLeft: 6 }, children: i18n.views.hint[scoreView] })
+                  role: "group",
+                  "aria-label": i18n.views.label,
+                  style: { display: "inline-grid", gridAutoFlow: "column", gap: 2, padding: 2, borderRadius: 5, background: "var(--ui-bg-tertiary)", width: "fit-content" },
+                  children: SCORE_VIEWS.map((v) => {
+                    const on = scoreView === v;
+                    return /* @__PURE__ */ jsx4(
+                      "button",
+                      {
+                        type: "button",
+                        "aria-pressed": on,
+                        onClick: () => setScoreView(v),
+                        title: i18n.views.hint[v],
+                        style: {
+                          padding: "2px 10px",
+                          borderRadius: 3,
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: 11,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                          transition: "background .15s, color .15s",
+                          background: on ? "var(--ui-bg-editor)" : "transparent",
+                          color: on ? "var(--ui-text-primary)" : "var(--ui-text-secondary)",
+                          boxShadow: on ? "0 1px 2px rgba(0,0,0,0.15)" : "none"
+                        },
+                        children: i18n.views.names[v]
+                      },
+                      v
+                    );
+                  })
+                }
+              ),
+              /* @__PURE__ */ jsx4("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)" }, children: i18n.views.hint[scoreView] })
             ] }),
             scoreView !== "classic" ? /* @__PURE__ */ jsx4(
               ScoreView,
@@ -5248,33 +5293,9 @@ function App() {
                 placeholder: i18n.searchPlaceholder,
                 value: q,
                 onChange: (e) => setQ(e.target.value),
-                onKeyDown: (e) => e.key === "Enter" && search(),
                 style: { width: 220, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", fontSize: 13 }
               }
             ),
-            /* @__PURE__ */ jsx4(
-              "button",
-              {
-                onClick: search,
-                disabled: adding,
-                style: { padding: "6px 12px", borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer", fontWeight: 600 },
-                children: i18n.search
-              }
-            ),
-            /* @__PURE__ */ jsxs4("label", { style: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--ui-text-secondary)", cursor: "pointer" }, children: [
-              /* @__PURE__ */ jsx4(
-                "input",
-                {
-                  type: "checkbox",
-                  checked: searchUntracked,
-                  onChange: (e) => {
-                    setSearchUntracked(e.target.checked);
-                    if (!e.target.checked) setSearchRes([]);
-                  }
-                }
-              ),
-              i18n.searchUntracked
-            ] }),
             /* @__PURE__ */ jsx4("span", { style: { color: "var(--ui-text-tertiary)", fontSize: 13 }, children: i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : "") }),
             /* @__PURE__ */ jsx4(
               "button",
@@ -5287,7 +5308,7 @@ function App() {
             ),
             lastRefresh ? /* @__PURE__ */ jsx4("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)" }, children: i18n.updatedAgo(Math.max(0, Math.round((Date.now() / 1e3 - lastRefresh) / 60))) }) : null
           ] }) }),
-          searchUntracked && searchRes.length > 0 && /* @__PURE__ */ jsxs4("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
+          searchRes.length > 0 && /* @__PURE__ */ jsxs4("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
             /* @__PURE__ */ jsx4("div", { style: { marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).length) }),
             searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).map((s, i) => /* @__PURE__ */ jsxs4("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
               /* @__PURE__ */ jsxs4("div", { children: [
@@ -5361,7 +5382,7 @@ function App() {
               /* @__PURE__ */ jsx4("th", { style: S.th })
             ] }) }),
             /* @__PURE__ */ jsx4("tbody", { children: sortedModels.filter((m) => {
-              const qL = q.trim().toLowerCase();
+              const qL = dq.trim().toLowerCase();
               return !qL || (m.label + " " + m.id).toLowerCase().includes(qL);
             }).map((m, i) => {
               const sc = scoreMap[m.id];

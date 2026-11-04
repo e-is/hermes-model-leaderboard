@@ -310,9 +310,9 @@ export default function App() {
   const [radarHidden, setRadarHidden] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
+  const [dq, setDq] = useState('')   // debounced `q`: what the filter and the fetch actually use
   const [searchRes, setSearchRes] = useState<SearchHit[]>([])
   const [adding, setAdding] = useState(false)
-  const [searchUntracked, setSearchUntracked] = useState(true)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
@@ -511,11 +511,25 @@ export default function App() {
     fetchNews()
   }
 
-  const search = () => {
-    if (!searchUntracked || !q.trim()) { setSearchRes([]); return }
-    api(`/openrouter/search?q=${encodeURIComponent(q)}`)
-      .then(d => setSearchRes(d.results || []))
-  }
+  // Typing is the trigger: the UI waits 300 ms after the last keystroke before acting, so a
+  // five-letter query costs one request instead of five — and the table is not re-filtered on
+  // every keystroke either (both read `dq`).
+  useEffect(() => {
+    const id = setTimeout(() => setDq(q), 300)
+    return () => clearTimeout(id)
+  }, [q])
+
+  // Untracked models show up as you type, without the search button. A late answer for an
+  // older term is dropped, so it cannot overwrite the results of the newer one.
+  useEffect(() => {
+    const term = dq.trim()
+    if (term.length < 2) { setSearchRes([]); return }
+    let cancelled = false
+    api(`/openrouter/search?q=${encodeURIComponent(term)}`)
+      .then((d: any) => { if (!cancelled) setSearchRes(d.results || []) })
+      .catch(() => { if (!cancelled) setSearchRes([]) })
+    return () => { cancelled = true }
+  }, [dq])
 
   // ---- Profile Management Handlers ----
   const openEditModal = () => {
@@ -876,27 +890,45 @@ export default function App() {
                       <span style={{ fontSize: 12, color: 'var(--ui-text-tertiary)' }}>{i18n.customCriteria}</span>
                       <button
                         onClick={openEditModal}
-                        style={{ border: 'none', background: 'transparent', color: 'var(--ui-accent)', cursor: 'pointer', fontSize: 12, textDecoration: 'underline', padding: 0 }}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '6px 12px', borderRadius: 6, border: 'none',
+                          // --theme-primary is the desktop's own primary (the blue used by its
+                          // buttons); white on it holds in both dark and light themes.
+                          background: 'var(--theme-primary)', color: '#fff',
+                          fontSize: 12, fontWeight: 650, cursor: 'pointer',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.18)',
+                        }}
                       >
-                        {i18n.editCriteria}
+                        ✎ {i18n.editCriteria}
                       </button>
                     </span>
                   </div>
-                  <div role="tablist" aria-label={i18n.views.label} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, color: 'var(--ui-text-tertiary)', marginRight: 4 }}>{i18n.views.label}</span>
-                    {SCORE_VIEWS.map(v => (
-                      <button key={v} role="tab" aria-selected={scoreView === v} onClick={() => setScoreView(v)} title={i18n.views.hint[v]}
-                        style={{
-                          padding: '3px 10px', borderRadius: 999, fontSize: 12, cursor: 'pointer',
-                          border: `1px solid ${scoreView === v ? 'var(--ui-accent)' : 'var(--ui-stroke-tertiary)'}`,
-                          background: scoreView === v ? 'color-mix(in srgb, var(--ui-accent) 12%, var(--ui-bg-editor))' : 'var(--ui-bg-editor)',
-                          color: scoreView === v ? 'var(--ui-text-primary)' : 'var(--ui-text-secondary)',
-                          fontWeight: scoreView === v ? 650 : 500,
-                        }}>
-                        {i18n.views.names[v]}
-                      </button>
-                    ))}
-                    <span style={{ fontSize: 11, color: 'var(--ui-text-quaternary)', marginLeft: 6 }}>{i18n.views.hint[scoreView]}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, color: 'var(--ui-text-tertiary)' }}>{i18n.views.label}</span>
+                    {/* Same chrome as the desktop's SegmentedControl (see the gantt plugin): a
+                        --ui-bg-tertiary track with the active option raised on --ui-bg-editor, so it
+                        follows the theme in dark and light mode instead of inventing colours. */}
+                    <div role="group" aria-label={i18n.views.label}
+                      style={{ display: 'inline-grid', gridAutoFlow: 'column', gap: 2, padding: 2, borderRadius: 5, background: 'var(--ui-bg-tertiary)', width: 'fit-content' }}>
+                      {SCORE_VIEWS.map(v => {
+                        const on = scoreView === v
+                        return (
+                          <button key={v} type="button" aria-pressed={on} onClick={() => setScoreView(v)} title={i18n.views.hint[v]}
+                            style={{
+                              padding: '2px 10px', borderRadius: 3, border: 'none', cursor: 'pointer',
+                              fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap',
+                              transition: 'background .15s, color .15s',
+                              background: on ? 'var(--ui-bg-editor)' : 'transparent',
+                              color: on ? 'var(--ui-text-primary)' : 'var(--ui-text-secondary)',
+                              boxShadow: on ? '0 1px 2px rgba(0,0,0,0.15)' : 'none',
+                            }}>
+                            {i18n.views.names[v]}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--ui-text-quaternary)' }}>{i18n.views.hint[scoreView]}</span>
                   </div>
                   {scoreView !== 'classic' ? (
                     <ScoreView
@@ -948,24 +980,8 @@ export default function App() {
                   placeholder={i18n.searchPlaceholder}
                   value={q}
                   onChange={e => setQ(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && search()}
                   style={{ width: 220, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', fontSize: 13 }}
                 />
-                <button
-                  onClick={search}
-                  disabled={adding}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer', fontWeight: 600 }}
-                >
-                  {i18n.search}
-                </button>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--ui-text-secondary)', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={searchUntracked}
-                      onChange={e => { setSearchUntracked(e.target.checked); if (!e.target.checked) setSearchRes([]) }}
-                    />
-                    {i18n.searchUntracked}
-                  </label>
                   <span style={{ color: 'var(--ui-text-tertiary)', fontSize: 13 }}>
                     {i18n.nVisible(visible.length, hidden.length > 0 ? i18n.nHidden(hidden.length) : '')}
                   </span>
@@ -985,7 +1001,7 @@ export default function App() {
                 </div>
 
                 {/* ---- RÉSULTATS (modèles non suivis) ---- */}
-                {searchUntracked && searchRes.length > 0 && (
+                {searchRes.length > 0 && (
                   <div style={{ background: 'var(--ui-row-hover-background)', borderRadius: 8, padding: 12, marginBottom: 12, border: '1px solid var(--ui-stroke-tertiary)' }}>
                     <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 700, color: 'var(--ui-text-secondary)' }}>{i18n.results(searchRes.filter((sr: any) => !models.some(m => m.id === sr.id)).length)}</div>
                     {searchRes.filter((sr: any) => !models.some(m => m.id === sr.id)).map((s, i) => (
@@ -1033,7 +1049,7 @@ export default function App() {
                     </thead>
                     <tbody>
                       {sortedModels.filter(m => {
-                        const qL = q.trim().toLowerCase()
+                        const qL = dq.trim().toLowerCase()
                         return !qL || (m.label + ' ' + m.id).toLowerCase().includes(qL)
                       }).map((m, i) => {
                         const sc = scoreMap[m.id]

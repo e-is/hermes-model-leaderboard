@@ -1,3 +1,23 @@
+## [1.3.2] — 2026-11-04 — the ranking header acts like a control
+
+### Changed
+
+- Opening the scoring criteria is a filled primary button (the desktop's own `--theme-primary`),
+  not an underlined link: it is the one control of the ranking header that changes the ranking.
+- The score views are a segmented control — the same chrome as the desktop's `SegmentedControl`
+  and the gantt plugin's toggle: a `--ui-bg-tertiary` track with the active option raised on
+  `--ui-bg-editor`, so it follows the theme instead of inventing colours. Six pills with borders
+  read as six separate buttons, which is not what a mutually-exclusive choice is.
+- Model search is live: untracked models appear while you type (300 ms debounce, one request per
+  burst, late answers dropped), the tracked table filters on the same debounced term, and the
+  Search button and its "search untracked" checkbox are gone: what they asked the user to
+  do, the debounce now does on its own.
+
+### Fixed
+
+- The curated promotions carried fixed end dates, so the section silently emptied (and
+  `test_news_shape` failed) once the last one passed. Their window is now relative to the run.
+
 # Changelog
 
 All notable changes to this plugin are documented here. The format loosely follows

@@ -673,18 +673,24 @@ def get_news():
     # `code` the renderer turns into a sentence through its i18n catalogue, so an
     # English UI is not served French prose and vice versa (nor Chinese). `discount_pct`
     # is a number for the same reason: "-90 %", "-90%" and "-90%" are not the same string.
+    # The window is relative to the run, not a calendar date: these entries are a curated demo,
+    # and fixed dates quietly emptied the whole section (and broke test_news_shape) the week the
+    # last one passed. Each promo keeps its own lifetime in days.
+    def _ends_in(days: int) -> str:
+        return time.strftime("%Y-%m-%d", time.localtime(time.time() + days * 86400))
+
     promo_defs = [
-        {"id": "google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "discount_pct": 75, "ends_at": "2026-09-30",
+        {"id": "google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "discount_pct": 75, "ends_at": _ends_in(9),
          "detail": {"code": "limited_promo", "price_in": 0.375, "price_out": 1.875}},
-        {"id": "upstage/solar-pro4", "name": "Solar Pro 4", "discount_pct": 90, "ends_at": "2026-10-15",
+        {"id": "upstage/solar-pro4", "name": "Solar Pro 4", "discount_pct": 90, "ends_at": _ends_in(16),
          "detail": {"code": "price_with_context", "price_in": 0.03, "price_out": 0.12, "context_tokens": 524000}},
-        {"id": "inclusionai/ling-3.0-flash", "name": "Ling-3.0-flash", "discount_pct": 65, "ends_at": "2026-10-01",
+        {"id": "inclusionai/ling-3.0-flash", "name": "Ling-3.0-flash", "discount_pct": 65, "ends_at": _ends_in(23),
          "detail": {"code": "price_with_params", "price_in": 0.021, "price_out": 0.063, "moe_params": "124B"}},
-        {"id": "bytedance/seedance-2.0-mini", "name": "Seedance 2.0 Mini", "discount_pct": 60, "ends_at": "2026-09-20",
+        {"id": "bytedance/seedance-2.0-mini", "name": "Seedance 2.0 Mini", "discount_pct": 60, "ends_at": _ends_in(6),
          "detail": {"code": "video_rate", "vendor": "ByteDance", "rate_per_second": 0.01345}},
-        {"id": "poolside/laguna-s-2.1", "name": "Laguna S 2.1", "discount_pct": 10, "ends_at": "2026-10-31",
+        {"id": "poolside/laguna-s-2.1", "name": "Laguna S 2.1", "discount_pct": 10, "ends_at": _ends_in(30),
          "detail": {"code": "agentic_model", "vendor": "Poolside", "price_in": 0.09, "price_out": 0.18}},
-        {"id": "openai/gpt-5.6-sol", "name": "GPT-5.6 Sol", "discount_pct": 50, "ends_at": "2026-09-25",
+        {"id": "openai/gpt-5.6-sol", "name": "GPT-5.6 Sol", "discount_pct": 50, "ends_at": _ends_in(12),
          "detail": {"code": "price", "price_in": 2, "price_out": 10}},
     ]
     _now_ts = time.time()
