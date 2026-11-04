@@ -1,3 +1,4 @@
+from pathlib import Path
 """Unit tests for the hermes-model-leaderboard backend (dashboard/plugin_api.py).
 
 Ported from the llm-dashboard reference suite, minus the auth and
@@ -804,3 +805,36 @@ def test_estimate_is_clamped_to_the_observed_range():
     est = main_mod._index_estimators(_catalog())  # coding observed in [10, 68.5]
     m = main_mod._complete_indices({"intelligence_index": 80.0}, {}, est)
     assert m["coding_index"] == 68.5
+
+
+def test_manifest_declares_the_harvester_key_as_an_optional_secret():
+    """The key saved in Desktop → Settings → Plugins must be the one the script reads.
+
+    Hermes names the `.env` variable from `env:` (else `<PLUGIN>_<KEY>` upper-snaked), so a
+    typo here would silently store the key under a name the harvester never looks at.
+    """
+    text = (Path(__file__).resolve().parents[1] / "plugin.yaml").read_text()
+    try:
+        import yaml as _yaml
+    except ModuleNotFoundError:          # CI without PyYAML: check the declared block in place
+        block = text.split("config_schema:", 1)[1]
+        assert "ARTIFICIAL_ANALYSIS_API_KEY:" in block
+        assert "type: secret" in block
+        assert f"env: {harvest.API_KEY_ENV}" in block
+        assert "required: false" in block
+        return
+    spec = (_yaml.safe_load(text).get("config_schema") or {}).get(harvest.API_KEY_ENV)
+    assert spec is not None, "plugin.yaml must declare the harvester key"
+    assert spec["type"] == "secret"
+    assert spec["env"] == harvest.API_KEY_ENV
+    assert spec["required"] is False
+    assert spec.get("label") and spec.get("description")
+
+
+import importlib.util as _ilu
+
+_spec = _ilu.spec_from_file_location(
+    "harvest_aa", Path(__file__).resolve().parents[1] / "scripts" / "harvest_aa.py")
+assert _spec and _spec.loader
+harvest = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(harvest)

@@ -1,7 +1,23 @@
 name: model-leaderboard
-version: "1.5.0"
+version: "1.6.0"
 description: "LLM model leaderboard for Hermes Desktop — model comparison (context, prices, Artificial Analysis indices, curated SWE-bench Verified / LiveCodeBench), per-profile scoring (radar, score views, Pareto frontier) and an OpenRouter news feed. Ported from the sumaris-agent llm-dashboard web app."
 author: e-is
 kind: standalone
 requires_hermes: ">=0.21"
 platforms: []
+
+# Optional, not required: without a key the plugin works as before (indices from OpenRouter,
+# estimates and inheritance). With one, the intelligence index can be harvested for the models
+# OpenRouter does not relay. `env:` fixes the variable name — Hermes stores the value in its own
+# .env through the Desktop credential route and never hands it back to the UI; the plugin reads
+# it from the environment only, and stores nothing itself.
+config_schema:
+  ARTIFICIAL_ANALYSIS_API_KEY:
+    type: secret
+    env: ARTIFICIAL_ANALYSIS_API_KEY
+    required: false
+    label: "Artificial Analysis API key (optional)"
+    description: >-
+      Free key from artificialanalysis.ai (create an account, then API keys). Used by
+      scripts/harvest_aa.py to fill the intelligence index of models OpenRouter does not
+      relay. Leave empty to rely on inheritance and estimates.

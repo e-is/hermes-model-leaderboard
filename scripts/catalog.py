@@ -90,8 +90,10 @@ DESCRIPTION = (
     "artificialanalysis.ai required) or, without a key, reads their public leaderboard "
     "page once, and writes the result into the plugin's own benchmarks.json under the "
     "user's data directory — fetched values are never committed to the repository and "
-    "never redistributed; the plugin itself makes no Artificial Analysis request, holds no "
-    "API key of its own, and writes nothing outside its data directory."
+    "never redistributed; the plugin itself makes no Artificial Analysis request and writes "
+    "nothing outside its data directory; it declares an OPTIONAL ARTIFICIAL_ANALYSIS_API_KEY "
+    "secret setting (required: false) whose value Hermes stores in its own .env — the plugin "
+    "only reads it from the environment and never stores, echoes back or logs it."
 )
 
 CATEGORY = "models"          # the shelf it sits on at /docs/plugins

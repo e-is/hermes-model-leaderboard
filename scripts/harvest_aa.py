@@ -48,6 +48,9 @@ from pathlib import Path
 #: generation you read — one request per run either way). Preferred over the page: JSON,
 #: stable field names, and `model_creator` to disambiguate two models with one name.
 API_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
+#: The env var the key is read from — the same name plugin.yaml declares as a `secret`
+#: setting, so a key saved in Desktop → Settings → Plugins is the one this script uses.
+API_KEY_ENV = "ARTIFICIAL_ANALYSIS_API_KEY"
 INTEL_FIELD = "artificial_analysis_intelligence_index"
 #: Fallback when no key is configured: the public leaderboard embeds the same values.
 PAGE_URL = "https://artificialanalysis.ai/leaderboards/models"
@@ -247,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true",
                         help="show what would change and write nothing (the default)")
     parser.add_argument("--url", default=PAGE_URL, help="page to read when no API key is set")
-    parser.add_argument("--api-key", default=os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY"),
+    parser.add_argument("--api-key", default=os.environ.get(API_KEY_ENV),
                         help="free AA API key (default: $ARTIFICIAL_ANALYSIS_API_KEY); "
                              "without one, the public page is parsed instead")
     args = parser.parse_args(argv)
