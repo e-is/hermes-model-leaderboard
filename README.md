@@ -232,6 +232,13 @@ leak into a README image.
 | **Tracking profile** (weights + Auto-fill) | **…and the same profile, re-weighted** |
 | ![criteria](assets/screenshot-en-08-criteria.png) | ![criteria edited](assets/screenshot-en-09-criteria-edited.png) |
 
+**Prices follow the prompt size each profile declares.** The same dialog carries *Typical prompt
+size* — `auto` by default, read from the profile's Hermes compaction settings; a fixed 32k…1M
+otherwise. The table then prices every model at that volume, with a `×N` badge where a context
+tier applies:
+
+![typical prompt size](assets/screenshot-en-07-context-size.png)
+
 **Applying those criteria re-ranks the page** — the capture run moves Coding to 5, Agentic
 to 4, the price weights to 5/4 and the context window to 4, saves, and photographs the
 result: the cheap coding models climb (`deepseek-v4-flash-1.1`, `glm-5.3`) while the

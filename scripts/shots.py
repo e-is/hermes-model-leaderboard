@@ -706,7 +706,11 @@ async def set_view(ui: Desktop, label: str) -> bool:
 
 async def open_criteria(ui: Desktop) -> bool:
     """Open the tracking-profile dialog and wait until its weight sliders are up."""
+    # the button carries a "✎ " glyph, so an exact match misses it: fall back to a
+    # substring match before giving up
     ok = await ui.click_text("Edit scoring criteria", scope="button,a")
+    if not ok:
+        ok = await ui.click_text("Edit scoring criteria", exact=False, scope="button,a")
     if not ok:
         return False
     for _ in range(10):
@@ -830,6 +834,29 @@ async def run_scenario(ui: Desktop, *, make_gif: bool):
     # so it can hand the profile back untouched (see restore_profile).
     if await open_criteria(ui):
         await ui.shot("screenshot-en-08-criteria")
+        # The context-size scenario lives at the bottom of the same dialog: scroll it
+        # into view for its own still, then back to the top for the weight edits.
+        scrolled = await ui.ev("""(() => {
+          const want = "Criteria weights";
+          const nodes = [...document.querySelectorAll("div")]
+            .filter(e => e.scrollHeight > e.clientHeight + 40 && (e.innerText || "").includes(want));
+          const box = nodes[nodes.length - 1];
+          if (!box) return false;
+          box.scrollTop = box.scrollHeight;
+          return true;
+        })()""")
+        if scrolled:
+            await asyncio.sleep(1.2)
+            await ui.shot("screenshot-en-07-context-size")
+            await ui.ev("""(() => {
+              const want = "Criteria weights";
+              const nodes = [...document.querySelectorAll("div")]
+                .filter(e => e.scrollHeight > e.clientHeight + 40 && (e.innerText || "").includes(want));
+              const box = nodes[nodes.length - 1];
+              if (box) box.scrollTop = 0;
+              return true;
+            })()""")
+            await asyncio.sleep(0.8)
         original = await read_weights(ui)
         RESTORE["weights"] = [w["value"] for w in original]
         print("  weights before: " + ", ".join(f"{w['label'][:14]}={w['value']}" for w in original[:6]))
