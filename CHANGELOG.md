@@ -1,3 +1,22 @@
+## [1.6.1] — 2026-11-04 — captures refreshed against the 1.6.0 UI
+
+### Documentation
+
+- Every screenshot, the navigation animation and the four catalogue cards were re-captured
+  against 1.6.0 (30 tracked models), so the images show the real UI: `$ in (auto)` in the
+  table, the `×N` tier badges, and the new *Typical prompt size* selector in the criteria
+  dialog.
+- New still `screenshot-en-07-context-size.png`; the catalogue lists the table (which shows
+  the tier badges) and that selector among its six screenshots.
+- `scripts/shots.py`: the criteria dialog is now opened with a substring match — its button
+  carries a "✎ " glyph, which the previous exact match missed, so the three dialog stills
+  were silently skipped.
+
+### Notes
+
+- No behaviour change: the plugin code is identical to 1.6.0. The release exists so that the
+  tag, the pinned commit and the screenshots are the same sha.
+
 ## [1.6.0] — 2026-11-04 — prices at the context size each profile really sends
 
 ### Added
