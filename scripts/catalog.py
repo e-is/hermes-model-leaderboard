@@ -53,10 +53,9 @@ GITHUB_HOSTS = ("raw.githubusercontent.com", "github.com", "githubusercontent.co
 CARD = "assets/card-podium.png"
 SCREENSHOTS = [
     "assets/screenshot-en-01-models.png",
-    "assets/screenshot-en-03-score-bars.png",
+    "assets/screenshot-en-02-models-table.png",
     "assets/screenshot-en-05-heatmap.png",
     "assets/screenshot-en-06-quality-cost.png",
-    "assets/screenshot-en-08-criteria.png",
     "assets/screenshot-en-07-context-size.png",
     "assets/screenshot-en-11-profile-front-designer.png",
 ]
