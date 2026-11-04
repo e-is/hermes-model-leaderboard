@@ -14,6 +14,7 @@
  */
 import { useMemo, useState, type ReactNode } from 'react'
 import { ScatterLog } from './charts'
+import { linearTicks, logTicks, type AxisScale } from '../core/axis'
 import { computeGenericScore, paretoFrontier, scoreBreakdown, type CriterionBreakdown, type CriterionKey } from '../core/scoring'
 
 export type ScoreViewId = 'classic' | 'stacked' | 'columns' | 'heatmap' | 'duel' | 'value'
@@ -368,6 +369,16 @@ const COST_TICKS = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100]
 type ValuePoint = { id: string; label: string; quality: number; cost: number; rawCost: number; score: number; rank: number }
 
 function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: Record<string, number>; maxes: Record<string, number> }) {
+  // Persisted per viewer, like the view itself: someone who reads costs linearly does not
+  // want to re-pick it on every visit.
+  const [axisScale, setAxisScale] = useState<AxisScale>(() => {
+    try { return localStorage.getItem('llm-dash-axis-scale') === 'linear' ? 'linear' : 'log' } catch { return 'log' }
+  })
+  const pickScale = (s: AxisScale) => {
+    setAxisScale(s)
+    try { localStorage.setItem('llm-dash-axis-scale', s) } catch { /* private mode */ }
+  }
+
   // Cost blend follows the profile's price weights; a profile that ignores
   // price still gets a meaningful axis (input and output at equal weight).
   const priceW: Record<string, number> = {}
@@ -396,7 +407,9 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
   const costs = points.map(p => p.cost)
   const lo = Math.max(COST_FLOOR, ...COST_TICKS.filter(v => v <= Math.min(...costs)))
   const hi = Math.min(...COST_TICKS.filter(v => v >= Math.max(...costs)), COST_TICKS[COST_TICKS.length - 1])
-  const ticks = COST_TICKS.filter(v => v >= lo && v <= hi)
+  // Log by default — prices span two decades — and linear on request. Linear gets its own
+  // round ticks: the 1-3-10 ladder bunches most of its labels in the first pixels there.
+  const ticks = axisScale === 'log' ? logTicks(COST_TICKS, lo, hi) : linearTicks(lo, hi)
   const fmtCost = (v: number) => (v <= COST_FLOOR ? t.views.free : `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}`)
   const qualityLabel = `${t.views.axisQuality} — ${qualityKeys.map(k => `${metaOf(k).label} ×${qualityW[k]}`).join(', ')}`
   const costLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k, w]) => `${metaOf(k as CriterionKey).label} ×${w}`).join(', ')}`
@@ -423,8 +436,30 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
 
   return (
     <div style={box}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+        <span style={{ fontSize: 11, color: 'var(--ui-text-tertiary)' }}>↖ {t.views.valueRead}</span>
+        {/* Same chrome as the score-view switch: a --ui-bg-tertiary track, raised active chip. */}
+        <div role="group" aria-label={t.views.axisCostShort}
+          style={{ display: 'inline-grid', gridAutoFlow: 'column', gap: 2, padding: 2, borderRadius: 5, background: 'var(--ui-bg-tertiary)', width: 'fit-content' }}>
+          {(['log', 'linear'] as AxisScale[]).map(s => {
+            const on = axisScale === s
+            return (
+              <button key={s} type="button" aria-pressed={on} onClick={() => pickScale(s)}
+                title={s === 'log' ? t.views.axisLog : t.views.axisLinear}
+                style={{
+                  padding: '2px 8px', borderRadius: 3, border: 'none', cursor: 'pointer',
+                  fontSize: 10, fontWeight: 500, whiteSpace: 'nowrap',
+                  background: on ? 'var(--ui-bg-editor)' : 'transparent',
+                  color: on ? 'var(--ui-text-primary)' : 'var(--ui-text-secondary)',
+                  boxShadow: on ? '0 1px 2px rgba(0,0,0,0.15)' : 'none',
+                }}>
+                {s === 'log' ? t.views.axisLog : t.views.axisLinear}
+              </button>
+            )
+          })}
+        </div>
+      </div>
       <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginBottom: 6, display: 'grid', gap: 2 }}>
-        <span>↖ {t.views.valueRead}</span>
         <span>↑ {qualityLabel}</span>
         <span>→ {costLabel}</span>
       </div>
@@ -433,6 +468,7 @@ function ValueView({ models, weights, maxes, metaOf, t }: ViewArgs & { weights: 
         lo={lo}
         hi={hi}
         ticks={ticks}
+        scale={axisScale}
         formatX={fmtCost}
         xLabel={t.views.axisCostShort}
         yLabel={t.views.axisQualityShort}

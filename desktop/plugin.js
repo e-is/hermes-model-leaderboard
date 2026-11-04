@@ -16,6 +16,36 @@ import { useEffect as useEffect3, useMemo as useMemo3, useState as useState5 } f
 
 // src/components/charts.tsx
 import { useEffect, useRef, useState } from "react";
+
+// src/core/axis.ts
+var FLOOR = 1e-9;
+function positionOnAxis(value, lo, hi, scale) {
+  if (!(hi > lo)) return 0;
+  const clamped = Math.min(hi, Math.max(lo, value));
+  if (scale === "linear") return (clamped - lo) / (hi - lo);
+  const l0 = Math.log10(Math.max(lo, FLOOR));
+  const l1 = Math.log10(Math.max(hi, lo * 1.0001));
+  return (Math.log10(Math.max(clamped, FLOOR)) - l0) / (l1 - l0);
+}
+function logTicks(ladder, lo, hi) {
+  return ladder.filter((v) => v >= lo && v <= hi);
+}
+function linearTicks(lo, hi, target = 5) {
+  if (!(hi > lo)) return [lo];
+  const rough = (hi - lo) / target;
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalised = rough / magnitude;
+  const stepFactor = normalised >= 5 ? 10 : normalised >= 2 ? 5 : normalised >= 1 ? 2 : 1;
+  const step = stepFactor * magnitude;
+  const out = [];
+  const first = Math.ceil(lo / step - 1e-9) * step;
+  for (let v = first; v <= hi + step * 1e-9; v += step) {
+    out.push(Number(v.toPrecision(12)));
+  }
+  return out.length ? out : [lo, hi];
+}
+
+// src/components/charts.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
 function useMeasure() {
   const ref = useRef(null);
@@ -137,15 +167,13 @@ function RadarChart({ axes, series, size = 450 }) {
     ))
   ] }) });
 }
-function ScatterLog({ points, lo, hi, ticks, formatX, xLabel, yLabel, height = 400 }) {
+function ScatterLog({ points, lo, hi, ticks, formatX, xLabel, yLabel, height = 400, scale = "log" }) {
   const [ref, width] = useMeasure();
   const [hover, setHover] = useState(null);
   const pad = { l: 52, r: 24, t: 26, b: 44 };
   const iw = Math.max(0, width - pad.l - pad.r);
   const ih = Math.max(0, height - pad.t - pad.b);
-  const l0 = Math.log10(Math.max(lo, 1e-9));
-  const l1 = Math.log10(Math.max(hi, lo * 1.0001));
-  const px = (v) => pad.l + (Math.log10(Math.max(v, lo)) - l0) / (l1 - l0) * iw;
+  const px = (v) => pad.l + positionOnAxis(v, lo, hi, scale) * iw;
   const py = (v) => pad.t + ih - Math.max(0, Math.min(100, v)) / 100 * ih;
   const front = points.filter((p) => p.frontier).sort((a, b) => a.x - b.x);
   return /* @__PURE__ */ jsxs("div", { ref, style: { width: "100%", height, position: "relative" }, children: [
@@ -832,7 +860,9 @@ var en = {
     versus: "vs",
     axisQuality: "Quality",
     axisCost: "Cost $/M tk",
-    axisCostShort: "Weighted cost ($/M tk, log scale)",
+    axisCostShort: "Weighted cost ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Linear",
     axisQualityShort: "Quality (0–100)",
     free: "free",
     frontier: "Best trade-offs",
@@ -1022,7 +1052,9 @@ var fr = {
     versus: "vs",
     axisQuality: "Qualité",
     axisCost: "Coût $/M tk",
-    axisCostShort: "Coût pondéré ($/M tk, échelle log)",
+    axisCostShort: "Coût pondéré ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Linéaire",
     axisQualityShort: "Qualité (0–100)",
     free: "gratuit",
     frontier: "Meilleurs compromis",
@@ -1212,7 +1244,9 @@ var zh = {
     versus: "对比",
     axisQuality: "质量",
     axisCost: "成本 $/百万",
-    axisCostShort: "加权成本（$/百万，对数刻度）",
+    axisCostShort: "加权成本（$/百万）",
+    axisLog: "对数",
+    axisLinear: "线性",
     axisQualityShort: "质量（0–100）",
     free: "免费",
     frontier: "最佳折中",
@@ -1402,7 +1436,9 @@ var zhHant = {
     versus: "對比",
     axisQuality: "品質",
     axisCost: "成本 $/M tk",
-    axisCostShort: "加權成本（$/M tk，對數刻度）",
+    axisCostShort: "加權成本（$/M tk）",
+    axisLog: "對數",
+    axisLinear: "線性",
     axisQualityShort: "品質（0–100）",
     free: "免費",
     frontier: "最佳折衷",
@@ -1592,7 +1628,9 @@ var af = {
     versus: "vs",
     axisQuality: "Kwaliteit",
     axisCost: "Koste $/M tk",
-    axisCostShort: "Geweegde koste ($/M tk, logskaal)",
+    axisCostShort: "Geweegde koste ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Lineêr",
     axisQualityShort: "Kwaliteit (0–100)",
     free: "gratis",
     frontier: "Beste kompromieë",
@@ -1782,7 +1820,9 @@ var ar = {
     versus: "مقابل",
     axisQuality: "الجودة",
     axisCost: "التكلفة $/M tk",
-    axisCostShort: "التكلفة الموزونة ($/M tk، مقياس لوغاريتمي)",
+    axisCostShort: "التكلفة الموزونة ($/M tk)",
+    axisLog: "لوغاريتمي",
+    axisLinear: "خطي",
     axisQualityShort: "الجودة (0–100)",
     free: "مجاني",
     frontier: "أفضل المقايضات",
@@ -1972,7 +2012,9 @@ var de = {
     versus: "vs",
     axisQuality: "Qualität",
     axisCost: "Kosten $/M tk",
-    axisCostShort: "Gewichtete Kosten ($/M tk, log. Skala)",
+    axisCostShort: "Gewichtete Kosten ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Linear",
     axisQualityShort: "Qualität (0–100)",
     free: "kostenlos",
     frontier: "Beste Kompromisse",
@@ -2162,7 +2204,9 @@ var es = {
     versus: "vs",
     axisQuality: "Calidad",
     axisCost: "Coste $/M tk",
-    axisCostShort: "Coste ponderado ($/M tk, escala logarítmica)",
+    axisCostShort: "Coste ponderado ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Lineal",
     axisQualityShort: "Calidad (0–100)",
     free: "gratis",
     frontier: "Mejores relaciones",
@@ -2352,7 +2396,9 @@ var ga = {
     versus: "vs",
     axisQuality: "Cáilíocht",
     axisCost: "Costas $/M tk",
-    axisCostShort: "Costas ualaithe ($/M tk, scála log)",
+    axisCostShort: "Costas ualaithe ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Líneach",
     axisQualityShort: "Cáilíocht (0–100)",
     free: "saor in aisce",
     frontier: "Na comhréitigh is fearr",
@@ -2542,7 +2588,9 @@ var hu = {
     versus: "vs",
     axisQuality: "Minőség",
     axisCost: "Költség $/M tk",
-    axisCostShort: "Súlyozott költség ($/M tk, logaritmikus skála)",
+    axisCostShort: "Súlyozott költség ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Lineáris",
     axisQualityShort: "Minőség (0–100)",
     free: "ingyenes",
     frontier: "Legjobb kompromisszumok",
@@ -2732,7 +2780,9 @@ var it = {
     versus: "vs",
     axisQuality: "Qualità",
     axisCost: "Costo $/M tk",
-    axisCostShort: "Costo ponderato ($/M tk, scala log)",
+    axisCostShort: "Costo ponderato ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Lineare",
     axisQualityShort: "Qualità (0–100)",
     free: "gratuito",
     frontier: "Migliori compromessi",
@@ -2922,7 +2972,9 @@ var ja = {
     versus: "vs",
     axisQuality: "品質",
     axisCost: "コスト $/M tk",
-    axisCostShort: "加重コスト（$/M tk、対数スケール）",
+    axisCostShort: "加重コスト（$/M tk）",
+    axisLog: "対数",
+    axisLinear: "線形",
     axisQualityShort: "品質 (0–100)",
     free: "無料",
     frontier: "最良のトレードオフ",
@@ -3112,7 +3164,9 @@ var ko = {
     versus: "대",
     axisQuality: "품질",
     axisCost: "비용 $/M tk",
-    axisCostShort: "가중 비용($/M tk, 로그 스케일)",
+    axisCostShort: "가중 비용($/M tk)",
+    axisLog: "로그",
+    axisLinear: "선형",
     axisQualityShort: "품질(0–100)",
     free: "무료",
     frontier: "최적의 절충",
@@ -3302,7 +3356,9 @@ var pt = {
     versus: "vs",
     axisQuality: "Qualidade",
     axisCost: "Custo $/M tk",
-    axisCostShort: "Custo ponderado ($/M tk, escala logarítmica)",
+    axisCostShort: "Custo ponderado ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Linear",
     axisQualityShort: "Qualidade (0–100)",
     free: "grátis",
     frontier: "Melhores relações",
@@ -3492,7 +3548,9 @@ var ru = {
     versus: "против",
     axisQuality: "Качество",
     axisCost: "Стоимость $/M tk",
-    axisCostShort: "Взвешенная стоимость ($/M tk, лог. шкала)",
+    axisCostShort: "Взвешенная стоимость ($/M tk)",
+    axisLog: "Лог.",
+    axisLinear: "Линейная",
     axisQualityShort: "Качество (0–100)",
     free: "бесплатно",
     frontier: "Лучшие компромиссы",
@@ -3682,7 +3740,9 @@ var tr = {
     versus: "vs",
     axisQuality: "Kalite",
     axisCost: "Maliyet $/M tk",
-    axisCostShort: "Ağırlıklı maliyet ($/M tk, logaritmik ölçek)",
+    axisCostShort: "Ağırlıklı maliyet ($/M tk)",
+    axisLog: "Log",
+    axisLinear: "Doğrusal",
     axisQualityShort: "Kalite (0–100)",
     free: "ücretsiz",
     frontier: "En iyi dengeler",
@@ -3872,7 +3932,9 @@ var uk = {
     versus: "проти",
     axisQuality: "Якість",
     axisCost: "Вартість $/M tk",
-    axisCostShort: "Зважена вартість ($/M tk, лог. шкала)",
+    axisCostShort: "Зважена вартість ($/M tk)",
+    axisLog: "Лог.",
+    axisLinear: "Лінійна",
     axisQualityShort: "Якість (0–100)",
     free: "безкоштовно",
     frontier: "Найкращі компроміси",
@@ -4392,6 +4454,20 @@ var PRICE_KEYS = ["price_in", "price_out", "cache_read"];
 var COST_FLOOR = 0.01;
 var COST_TICKS = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100];
 function ValueView({ models, weights, maxes, metaOf, t }) {
+  const [axisScale, setAxisScale] = useState4(() => {
+    try {
+      return localStorage.getItem("llm-dash-axis-scale") === "linear" ? "linear" : "log";
+    } catch {
+      return "log";
+    }
+  });
+  const pickScale = (s) => {
+    setAxisScale(s);
+    try {
+      localStorage.setItem("llm-dash-axis-scale", s);
+    } catch {
+    }
+  };
   const priceW = {};
   for (const k of PRICE_KEYS) if ((weights[k] ?? 0) > 0) priceW[k] = weights[k];
   if (!Object.keys(priceW).length) {
@@ -4421,7 +4497,7 @@ function ValueView({ models, weights, maxes, metaOf, t }) {
   const costs = points.map((p) => p.cost);
   const lo = Math.max(COST_FLOOR, ...COST_TICKS.filter((v) => v <= Math.min(...costs)));
   const hi = Math.min(...COST_TICKS.filter((v) => v >= Math.max(...costs)), COST_TICKS[COST_TICKS.length - 1]);
-  const ticks = COST_TICKS.filter((v) => v >= lo && v <= hi);
+  const ticks = axisScale === "log" ? logTicks(COST_TICKS, lo, hi) : linearTicks(lo, hi);
   const fmtCost = (v) => v <= COST_FLOOR ? t.views.free : `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}`;
   const qualityLabel = `${t.views.axisQuality} — ${qualityKeys.map((k) => `${metaOf(k).label} ×${qualityW[k]}`).join(", ")}`;
   const costLabel = `${t.views.axisCost} — ${Object.entries(priceW).map(([k, w]) => `${metaOf(k).label} ×${w}`).join(", ")}`;
@@ -4464,11 +4540,47 @@ function ValueView({ models, weights, maxes, metaOf, t }) {
     title: pointTitle(p)
   }));
   return /* @__PURE__ */ jsxs3("div", { style: box, children: [
-    /* @__PURE__ */ jsxs3("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginBottom: 6, display: "grid", gap: 2 }, children: [
-      /* @__PURE__ */ jsxs3("span", { children: [
+    /* @__PURE__ */ jsxs3("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }, children: [
+      /* @__PURE__ */ jsxs3("span", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
         "↖ ",
         t.views.valueRead
       ] }),
+      /* @__PURE__ */ jsx3(
+        "div",
+        {
+          role: "group",
+          "aria-label": t.views.axisCostShort,
+          style: { display: "inline-grid", gridAutoFlow: "column", gap: 2, padding: 2, borderRadius: 5, background: "var(--ui-bg-tertiary)", width: "fit-content" },
+          children: ["log", "linear"].map((s) => {
+            const on = axisScale === s;
+            return /* @__PURE__ */ jsx3(
+              "button",
+              {
+                type: "button",
+                "aria-pressed": on,
+                onClick: () => pickScale(s),
+                title: s === "log" ? t.views.axisLog : t.views.axisLinear,
+                style: {
+                  padding: "2px 8px",
+                  borderRadius: 3,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 10,
+                  fontWeight: 500,
+                  whiteSpace: "nowrap",
+                  background: on ? "var(--ui-bg-editor)" : "transparent",
+                  color: on ? "var(--ui-text-primary)" : "var(--ui-text-secondary)",
+                  boxShadow: on ? "0 1px 2px rgba(0,0,0,0.15)" : "none"
+                },
+                children: s === "log" ? t.views.axisLog : t.views.axisLinear
+              },
+              s
+            );
+          })
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs3("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginBottom: 6, display: "grid", gap: 2 }, children: [
       /* @__PURE__ */ jsxs3("span", { children: [
         "↑ ",
         qualityLabel
@@ -4485,6 +4597,7 @@ function ValueView({ models, weights, maxes, metaOf, t }) {
         lo,
         hi,
         ticks,
+        scale: axisScale,
         formatX: fmtCost,
         xLabel: t.views.axisCostShort,
         yLabel: t.views.axisQualityShort,

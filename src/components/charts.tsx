@@ -9,6 +9,7 @@
  * with ResizeObserver. No dependency, no animation, ~4 KB of bundle.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { positionOnAxis, type AxisScale } from '../core/axis'
 
 /** Width of the box the ref points at, kept current through resizes. */
 export function useMeasure<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
@@ -201,13 +202,13 @@ export function RadarChart({ axes, series, size = 450 }: {
 export type ScatterPoint = {
   id: string
   label: string
-  x: number        // real cost, used for the log position and the tooltip
+  x: number        // real cost, positioned on the axis (see positionOnAxis) and used in the tooltip
   y: number        // 0..100 quality
   frontier?: boolean
   title?: ReactNode
 }
 
-export function ScatterLog({ points, lo, hi, ticks, formatX, xLabel, yLabel, height = 400 }: {
+export function ScatterLog({ points, lo, hi, ticks, formatX, xLabel, yLabel, height = 400, scale = 'log' }: {
   points: ScatterPoint[]
   lo: number
   hi: number
@@ -216,15 +217,15 @@ export function ScatterLog({ points, lo, hi, ticks, formatX, xLabel, yLabel, hei
   xLabel: string
   yLabel: string
   height?: number
+  /** X-axis scale. Log by default: price spans decades. */
+  scale?: AxisScale
 }) {
   const [ref, width] = useMeasure<HTMLDivElement>()
   const [hover, setHover] = useState<{ p: ScatterPoint; x: number; y: number } | null>(null)
   const pad = { l: 52, r: 24, t: 26, b: 44 }
   const iw = Math.max(0, width - pad.l - pad.r)
   const ih = Math.max(0, height - pad.t - pad.b)
-  const l0 = Math.log10(Math.max(lo, 1e-9))
-  const l1 = Math.log10(Math.max(hi, lo * 1.0001))
-  const px = (v: number) => pad.l + ((Math.log10(Math.max(v, lo)) - l0) / (l1 - l0)) * iw
+  const px = (v: number) => pad.l + positionOnAxis(v, lo, hi, scale) * iw
   const py = (v: number) => pad.t + ih - (Math.max(0, Math.min(100, v)) / 100) * ih
 
   // The frontier line joins the same points the legend calls best trade-offs,

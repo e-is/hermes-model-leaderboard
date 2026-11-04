@@ -1,3 +1,19 @@
+## [1.4.0] — 2026-11-04 — the cost axis can be read linearly
+
+### Added
+
+- A **Log / Linear** switch on the quality/cost view's X axis (log by default), sitting next
+  to the "best trade-offs" hint and remembered per viewer. Linear gets its own round ticks
+  (1/2/5 × 10ⁿ): fed the 1-3-10 log ladder, a linear axis bunches most of its labels into the
+  first few percent of the width.
+- `src/core/axis.ts` — `positionOnAxis` (log and linear share one definition of where a
+  value sits), `logTicks`, `linearTicks` — with 10 unit tests.
+
+### Changed
+
+- The axis label no longer says "log scale": the scale is now a choice, and the switch names
+  it. Updated in all 17 locale bundles (the switch labels included).
+
 ## [1.3.5] — 2026-11-04 — one footer for every news card
 
 ### Changed
