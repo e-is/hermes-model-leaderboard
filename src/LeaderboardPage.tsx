@@ -6,6 +6,7 @@ import { api } from './doors'
 import { useLeaderboardI18n } from './i18n'
 import { computeGenericScore, criterionValues, type CriterionKey } from './core/scoring'
 import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
+import { scoreCandidates, top3Threshold as computeTop3Threshold, untrackedOnly } from './core/candidates'
 
 // ---- Types --------------------------------------------------
 type GpuInfo = { param_count_b: number; vram_q4_gb: number; vram_q8_gb: number; vram_fp16_gb: number; fits_64gb: boolean } | null
@@ -36,7 +37,12 @@ type IndexSource = 'manual' | 'openrouter' | 'estimated'
 type SearchHit = {
   id: string; name: string; context_length?: number
   prompt_price?: number; completion_price?: number
-  open_weights?: boolean; model_size?: string | null; has_vision?: boolean
+  cache_read_price?: number; open_weights?: boolean; model_size?: string | null
+  has_vision?: boolean; supported_parameters?: string[]
+  // Same indices as the tracked table: /openrouter/search returns the same shape now,
+  // so a hit can be scored and show why it scored that way.
+  intelligence_index?: number | null; coding_index?: number | null; agentic_index?: number | null
+  created?: number
 }
 
 export type ProfileConfig = {
@@ -217,6 +223,13 @@ function buildModelTooltip(m: any): string {
   lines.push(`Modalités : Input: [${inMod}] → Output: [${outMod}]`)
   return lines.join("\n")
 }
+
+/** Grid of the search-results table: model, three indices, context, two prices, score, action. */
+const SEARCH_COLS = 'minmax(150px, 1fr) 40px 42px 42px 50px 62px 62px 48px 80px'
+/** An index as the table shows it: rounded, '–' when the catalogue has no value. */
+const idxCell = (v: number | null | undefined) => (v == null ? '–' : String(Math.round(v)))
+/** '$0.60' — the header carries the unit, so the cell stays narrow. */
+const priceCell = (v: number | null | undefined) => (v == null ? '–' : '$' + Number(v).toFixed(2))
 
 function fmtDate(ts: number | undefined): string {
   if (!ts) return '–'
@@ -483,10 +496,11 @@ export default function App() {
     // pre-stringified body double-encodes it and the gateway rejects it with a
     // 422 ("Input should be a valid dictionary"). Always pass a plain object.
     api('/models', { method: 'POST', body: { id } }).then(() => {
+      // Refresh what the panels read, and stop there: the followed row disappears from the
+      // results on its own (they only list untracked ids), and the other hits stay put so a
+      // user following two models does not have to search again.
       fetchModels()
       fetchNews()
-      setQ('')
-      setSearchRes([])
     }).finally(() => setAdding(false))
   }
 
@@ -709,12 +723,10 @@ export default function App() {
   }, [active, currentProfile, maxes])
 
   // Threshold: rounded score to qualify as top challenger
-  const top3Threshold = useMemo(() => {
-    if (scoredModels.length < 3) return 0
-    const rank3Score = Math.round(scoredModels[2]._score)
-    const rank4Score = scoredModels.length >= 4 ? Math.round(scoredModels[3]._score) : rank3Score
-    return Math.min(rank3Score, rank4Score)
-  }, [scoredModels])
+  const top3Cutoff = useMemo(
+    () => computeTop3Threshold(scoredModels.map(m => m._score)),
+    [scoredModels]
+  )
 
   const scoreMap: Record<string, number> = {}
   scoredModels.forEach(m => { scoreMap[m.id] = (m as any)._score })
@@ -737,19 +749,12 @@ export default function App() {
     const windowDays = newsTimeWindow === '1m' ? 30 : newsTimeWindow === '2m' ? 60 : newsTimeWindow === '3m' ? 90 : newsTimeWindow === '6m' ? 180 : newsTimeWindow === '1y' ? 365 : 99999
     const minCreated = nowTs - (windowDays * 86400)
 
-    const list = news.new_models
-      .filter(nm => (nm.created || 0) >= minCreated)
-      .map(nm => {
-        const rawScore = computeGenericScore(nm, currentProfile.weights, maxes)
-        const roundedScore = Math.round(rawScore)
-        const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold
-        return {
-          ...nm,
-          _score: rawScore,
-          _roundedScore: roundedScore,
-          _isChallenger: isChallenger,
-        }
-      })
+    const list = scoreCandidates(
+      news.new_models.filter(nm => (nm.created || 0) >= minCreated),
+      currentProfile.weights,
+      maxes,
+      top3Cutoff
+    )
 
     // 2. Sort
     if (newsSortBy === 'score') {
@@ -759,23 +764,22 @@ export default function App() {
     }
 
     return list
-  }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Threshold])
+  }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Cutoff])
 
   // ---- Processed Promotions for Sidebar ----
-  const processedPromotions = useMemo(() => {
-    if (!news?.promotions) return []
-    return news.promotions.map(p => {
-      const rawScore = computeGenericScore(p, currentProfile.weights, maxes)
-      const roundedScore = Math.round(rawScore)
-      const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold
-      return {
-        ...p,
-        _score: rawScore,
-        _roundedScore: roundedScore,
-        _isChallenger: isChallenger,
-      }
-    })
-  }, [news?.promotions, currentProfile, maxes, top3Threshold])
+  const processedPromotions = useMemo(
+    () => scoreCandidates(news?.promotions || [], currentProfile.weights, maxes, top3Cutoff),
+    [news?.promotions, currentProfile, maxes, top3Cutoff]
+  )
+
+  // ---- Search results: the hits the user has not followed yet, scored like the rest ----
+  // Following one adds it to `models`, so `untrackedOnly` drops that row and the others stay.
+  const trackedNow = useMemo(() => new Set(models.map(m => m.id)), [models])
+  const searchRows = useMemo(
+    () => scoreCandidates(untrackedOnly(searchRes, trackedNow), currentProfile.weights, maxes, top3Cutoff)
+      .sort((a, b) => b._score - a._score),
+    [searchRes, trackedNow, currentProfile, maxes, top3Cutoff]
+  )
 
   // ---- Radar dynamique basé sur les critères actifs du profil (poids > 0) ----
   const radarData = useMemo(() => {
@@ -1001,20 +1005,56 @@ export default function App() {
                 </div>
 
                 {/* ---- RÉSULTATS (modèles non suivis) ---- */}
-                {searchRes.length > 0 && (
+                {searchRows.length > 0 && (
                   <div style={{ background: 'var(--ui-row-hover-background)', borderRadius: 8, padding: 12, marginBottom: 12, border: '1px solid var(--ui-stroke-tertiary)' }}>
-                    <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 700, color: 'var(--ui-text-secondary)' }}>{i18n.results(searchRes.filter((sr: any) => !models.some(m => m.id === sr.id)).length)}</div>
-                    {searchRes.filter((sr: any) => !models.some(m => m.id === sr.id)).map((s, i) => (
-                      <div key={s.id} style={{ ...S.searchRow, background: i % 2 === 0 ? 'var(--ui-bg-editor)' : 'var(--ui-row-hover-background)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ui-text-secondary)' }}>{i18n.results(searchRows.length)}</span>
+                      {/* Closing the results is explicit: following a model only removes its row. */}
+                      <button
+                        onClick={() => setSearchRes([])}
+                        title={i18n.modal.close}
+                        aria-label={i18n.modal.close}
+                        style={{ border: 'none', background: 'transparent', color: 'var(--ui-text-tertiary)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '2px 4px' }}
+                      >✕</button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: SEARCH_COLS, gap: 6, alignItems: 'center', padding: '0 8px 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ui-text-quaternary)' }}>
+                      <span>{i18n.table.model}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.intel}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.coding}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.agentic}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.context}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.priceIn}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.priceOut}</span>
+                      <span style={{ textAlign: 'right' }}>{i18n.table.score}</span>
+                      <span />
+                    </div>
+                    {searchRows.map((s, i) => (
+                      <div key={s.id} style={{ display: 'grid', gridTemplateColumns: SEARCH_COLS, gap: 6, alignItems: 'center', padding: '5px 8px', fontSize: 11, background: i % 2 === 0 ? 'var(--ui-bg-editor)' : 'var(--ui-row-hover-background)', borderRadius: 4 }}>
+                        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <b>{s.name || s.id}</b>
-                          <span style={{ color: 'var(--ui-text-tertiary)', marginLeft: 8 }}>{fmtPrice(s.prompt_price)} in / {fmtPrice(s.completion_price)} out · ctx: {(s.context_length || 0).toLocaleString()}</span>
-                          {s.has_vision && <span style={{ marginLeft: 6, background: 'color-mix(in srgb, var(--ui-blue) 8%, transparent)', color: 'var(--ui-blue)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>👁</span>}
-                          {s.open_weights && <span style={{ marginLeft: 4, background: 'color-mix(in srgb, var(--ui-green) 12%, transparent)', color: 'var(--ui-green)', padding: '1px 5px', borderRadius: 3, fontSize: 10 }}>open</span>}
-                          {s.model_size && <span style={{ marginLeft: 4, color: 'var(--ui-text-tertiary)', fontSize: 11 }}>{s.model_size}</span>}
-                        </div>
-                        <button onClick={() => addModel(s.id)} disabled={adding} style={{ minWidth: 100, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)', cursor: 'pointer' }}>
-                          {i18n.add}
+                          {s.has_vision ? <span title="vision" style={{ marginLeft: 4, background: 'color-mix(in srgb, var(--ui-blue) 8%, transparent)', color: 'var(--ui-blue)', padding: '0 4px', borderRadius: 3, fontSize: 10 }}>👁</span> : null}
+                          {s.open_weights ? <span style={{ marginLeft: 4, background: 'color-mix(in srgb, var(--ui-green) 12%, transparent)', color: 'var(--ui-green)', padding: '0 4px', borderRadius: 3, fontSize: 10 }}>open</span> : null}
+                          {s.model_size ? <span style={{ marginLeft: 4, color: 'var(--ui-text-quaternary)', fontSize: 10 }}>{s.model_size}</span> : null}
+                        </span>
+                        <span style={{ textAlign: 'right' }}>{idxCell(s.intelligence_index)}</span>
+                        <span style={{ textAlign: 'right' }}>{idxCell(s.coding_index)}</span>
+                        <span style={{ textAlign: 'right' }}>{idxCell(s.agentic_index)}</span>
+                        <span style={{ textAlign: 'right' }} title={`${(s.context_length || 0).toLocaleString()} tokens`}>{fmtCtx(s.context_length)}</span>
+                        <span style={{ textAlign: 'right' }}>{priceCell(s.prompt_price)}</span>
+                        <span style={{ textAlign: 'right' }}>{priceCell(s.completion_price)}</span>
+                        <span
+                          style={{ textAlign: 'right', fontWeight: 700, color: s._isChallenger ? 'var(--ui-orange)' : 'var(--ui-text-secondary)' }}
+                          title={s._isChallenger ? i18n.news.top3 : undefined}
+                        >
+                          {s._isChallenger ? '⭐ ' : ''}{s._roundedScore > 0 ? s._roundedScore : '–'}
+                        </span>
+                        <button
+                          onClick={() => addModel(s.id)}
+                          disabled={adding}
+                          title={i18n.news.follow}
+                          style={{ padding: '3px 8px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)', background: 'transparent', color: 'var(--ui-text-primary)', cursor: adding ? 'default' : 'pointer', fontWeight: 600, fontSize: 11 }}
+                        >
+                          {adding ? '…' : i18n.news.follow}
                         </button>
                       </div>
                     ))}

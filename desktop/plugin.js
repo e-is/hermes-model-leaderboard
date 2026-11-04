@@ -4508,6 +4508,31 @@ function ScoreView({ view, models, weights, maxes, criteria, icon, t, onSetIndex
   return /* @__PURE__ */ jsx3(DuelView, { ...args });
 }
 
+// src/core/candidates.ts
+function top3Threshold(scores) {
+  if (scores.length < 3) return 0;
+  const ranked = [...scores].sort((a, b) => b - a).map((s) => Math.round(s));
+  const third = ranked[2];
+  const fourth = ranked.length >= 4 ? ranked[3] : third;
+  return Math.min(third, fourth);
+}
+function scoreCandidates(items, weights, maxes, threshold) {
+  return items.map((item) => {
+    const score = computeGenericScore(item, weights, maxes);
+    const rounded = Math.round(score);
+    return {
+      ...item,
+      _score: score,
+      _roundedScore: rounded,
+      _isChallenger: rounded > 0 && threshold > 0 && rounded >= threshold
+    };
+  });
+}
+function untrackedOnly(hits, tracked) {
+  const ids = tracked instanceof Set ? tracked : new Set(tracked);
+  return hits.filter((hit) => !ids.has(hit.id));
+}
+
 // src/LeaderboardPage.tsx
 import { Fragment as Fragment3, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
 var AVAILABLE_CRITERIA = [
@@ -4600,6 +4625,9 @@ function buildModelTooltip(m) {
   lines.push(`Modalités : Input: [${inMod}] → Output: [${outMod}]`);
   return lines.join("\n");
 }
+var SEARCH_COLS = "minmax(150px, 1fr) 40px 42px 42px 50px 62px 62px 48px 80px";
+var idxCell = (v) => v == null ? "–" : String(Math.round(v));
+var priceCell = (v) => v == null ? "–" : "$" + Number(v).toFixed(2);
 function fmtDate(ts) {
   if (!ts) return "–";
   return new Date(ts * 1e3).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" });
@@ -4850,8 +4878,6 @@ function App() {
     api("/models", { method: "POST", body: { id } }).then(() => {
       fetchModels();
       fetchNews();
-      setQ("");
-      setSearchRes([]);
     }).finally(() => setAdding(false));
   };
   const removeModel = (id) => setPendingDelete(id);
@@ -5020,12 +5046,10 @@ function App() {
     });
     return withScores;
   }, [active, currentProfile, maxes]);
-  const top3Threshold = useMemo3(() => {
-    if (scoredModels.length < 3) return 0;
-    const rank3Score = Math.round(scoredModels[2]._score);
-    const rank4Score = scoredModels.length >= 4 ? Math.round(scoredModels[3]._score) : rank3Score;
-    return Math.min(rank3Score, rank4Score);
-  }, [scoredModels]);
+  const top3Cutoff = useMemo3(
+    () => top3Threshold(scoredModels.map((m) => m._score)),
+    [scoredModels]
+  );
   const scoreMap = {};
   scoredModels.forEach((m) => {
     scoreMap[m.id] = m._score;
@@ -5042,38 +5066,28 @@ function App() {
     const nowTs = Math.floor(Date.now() / 1e3);
     const windowDays = newsTimeWindow === "1m" ? 30 : newsTimeWindow === "2m" ? 60 : newsTimeWindow === "3m" ? 90 : newsTimeWindow === "6m" ? 180 : newsTimeWindow === "1y" ? 365 : 99999;
     const minCreated = nowTs - windowDays * 86400;
-    const list = news.new_models.filter((nm) => (nm.created || 0) >= minCreated).map((nm) => {
-      const rawScore = computeGenericScore(nm, currentProfile.weights, maxes);
-      const roundedScore = Math.round(rawScore);
-      const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold;
-      return {
-        ...nm,
-        _score: rawScore,
-        _roundedScore: roundedScore,
-        _isChallenger: isChallenger
-      };
-    });
+    const list = scoreCandidates(
+      news.new_models.filter((nm) => (nm.created || 0) >= minCreated),
+      currentProfile.weights,
+      maxes,
+      top3Cutoff
+    );
     if (newsSortBy === "score") {
       list.sort((a, b) => b._score - a._score);
     } else {
       list.sort((a, b) => (b.created || 0) - (a.created || 0));
     }
     return list;
-  }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Threshold]);
-  const processedPromotions = useMemo3(() => {
-    if (!news?.promotions) return [];
-    return news.promotions.map((p) => {
-      const rawScore = computeGenericScore(p, currentProfile.weights, maxes);
-      const roundedScore = Math.round(rawScore);
-      const isChallenger = roundedScore > 0 && top3Threshold > 0 && roundedScore >= top3Threshold;
-      return {
-        ...p,
-        _score: rawScore,
-        _roundedScore: roundedScore,
-        _isChallenger: isChallenger
-      };
-    });
-  }, [news?.promotions, currentProfile, maxes, top3Threshold]);
+  }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Cutoff]);
+  const processedPromotions = useMemo3(
+    () => scoreCandidates(news?.promotions || [], currentProfile.weights, maxes, top3Cutoff),
+    [news?.promotions, currentProfile, maxes, top3Cutoff]
+  );
+  const trackedNow = useMemo3(() => new Set(models.map((m) => m.id)), [models]);
+  const searchRows = useMemo3(
+    () => scoreCandidates(untrackedOnly(searchRes, trackedNow), currentProfile.weights, maxes, top3Cutoff).sort((a, b) => b._score - a._score),
+    [searchRes, trackedNow, currentProfile, maxes, top3Cutoff]
+  );
   const radarData = useMemo3(() => {
     if (active.length < 2) return [];
     const short = i18n.views.short;
@@ -5308,23 +5322,65 @@ function App() {
             ),
             lastRefresh ? /* @__PURE__ */ jsx4("span", { style: { fontSize: 11, color: "var(--ui-text-quaternary)" }, children: i18n.updatedAgo(Math.max(0, Math.round((Date.now() / 1e3 - lastRefresh) / 60))) }) : null
           ] }) }),
-          searchRes.length > 0 && /* @__PURE__ */ jsxs4("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
-            /* @__PURE__ */ jsx4("div", { style: { marginBottom: 6, fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).length) }),
-            searchRes.filter((sr) => !models.some((m) => m.id === sr.id)).map((s, i) => /* @__PURE__ */ jsxs4("div", { style: { ...S.searchRow, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
-              /* @__PURE__ */ jsxs4("div", { children: [
+          searchRows.length > 0 && /* @__PURE__ */ jsxs4("div", { style: { background: "var(--ui-row-hover-background)", borderRadius: 8, padding: 12, marginBottom: 12, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
+            /* @__PURE__ */ jsxs4("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }, children: [
+              /* @__PURE__ */ jsx4("span", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-text-secondary)" }, children: i18n.results(searchRows.length) }),
+              /* @__PURE__ */ jsx4(
+                "button",
+                {
+                  onClick: () => setSearchRes([]),
+                  title: i18n.modal.close,
+                  "aria-label": i18n.modal.close,
+                  style: { border: "none", background: "transparent", color: "var(--ui-text-tertiary)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "2px 4px" },
+                  children: "✕"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs4("div", { style: { display: "grid", gridTemplateColumns: SEARCH_COLS, gap: 6, alignItems: "center", padding: "0 8px 4px", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--ui-text-quaternary)" }, children: [
+              /* @__PURE__ */ jsx4("span", { children: i18n.table.model }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.intel }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.coding }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.agentic }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.context }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.priceIn }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.priceOut }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: i18n.table.score }),
+              /* @__PURE__ */ jsx4("span", {})
+            ] }),
+            searchRows.map((s, i) => /* @__PURE__ */ jsxs4("div", { style: { display: "grid", gridTemplateColumns: SEARCH_COLS, gap: 6, alignItems: "center", padding: "5px 8px", fontSize: 11, background: i % 2 === 0 ? "var(--ui-bg-editor)" : "var(--ui-row-hover-background)", borderRadius: 4 }, children: [
+              /* @__PURE__ */ jsxs4("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                 /* @__PURE__ */ jsx4("b", { children: s.name || s.id }),
-                /* @__PURE__ */ jsxs4("span", { style: { color: "var(--ui-text-tertiary)", marginLeft: 8 }, children: [
-                  fmtPrice(s.prompt_price),
-                  " in / ",
-                  fmtPrice(s.completion_price),
-                  " out · ctx: ",
-                  (s.context_length || 0).toLocaleString()
-                ] }),
-                s.has_vision && /* @__PURE__ */ jsx4("span", { style: { marginLeft: 6, background: "color-mix(in srgb, var(--ui-blue) 8%, transparent)", color: "var(--ui-blue)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "👁" }),
-                s.open_weights && /* @__PURE__ */ jsx4("span", { style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-green) 12%, transparent)", color: "var(--ui-green)", padding: "1px 5px", borderRadius: 3, fontSize: 10 }, children: "open" }),
-                s.model_size && /* @__PURE__ */ jsx4("span", { style: { marginLeft: 4, color: "var(--ui-text-tertiary)", fontSize: 11 }, children: s.model_size })
+                s.has_vision ? /* @__PURE__ */ jsx4("span", { title: "vision", style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-blue) 8%, transparent)", color: "var(--ui-blue)", padding: "0 4px", borderRadius: 3, fontSize: 10 }, children: "👁" }) : null,
+                s.open_weights ? /* @__PURE__ */ jsx4("span", { style: { marginLeft: 4, background: "color-mix(in srgb, var(--ui-green) 12%, transparent)", color: "var(--ui-green)", padding: "0 4px", borderRadius: 3, fontSize: 10 }, children: "open" }) : null,
+                s.model_size ? /* @__PURE__ */ jsx4("span", { style: { marginLeft: 4, color: "var(--ui-text-quaternary)", fontSize: 10 }, children: s.model_size }) : null
               ] }),
-              /* @__PURE__ */ jsx4("button", { onClick: () => addModel(s.id), disabled: adding, style: { minWidth: 100, padding: "4px 8px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", cursor: "pointer" }, children: i18n.add })
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: idxCell(s.intelligence_index) }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: idxCell(s.coding_index) }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: idxCell(s.agentic_index) }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, title: `${(s.context_length || 0).toLocaleString()} tokens`, children: fmtCtx(s.context_length) }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: priceCell(s.prompt_price) }),
+              /* @__PURE__ */ jsx4("span", { style: { textAlign: "right" }, children: priceCell(s.completion_price) }),
+              /* @__PURE__ */ jsxs4(
+                "span",
+                {
+                  style: { textAlign: "right", fontWeight: 700, color: s._isChallenger ? "var(--ui-orange)" : "var(--ui-text-secondary)" },
+                  title: s._isChallenger ? i18n.news.top3 : void 0,
+                  children: [
+                    s._isChallenger ? "⭐ " : "",
+                    s._roundedScore > 0 ? s._roundedScore : "–"
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsx4(
+                "button",
+                {
+                  onClick: () => addModel(s.id),
+                  disabled: adding,
+                  title: i18n.news.follow,
+                  style: { padding: "3px 8px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", background: "transparent", color: "var(--ui-text-primary)", cursor: adding ? "default" : "pointer", fontWeight: 600, fontSize: 11 },
+                  children: adding ? "…" : i18n.news.follow
+                }
+              )
             ] }, s.id))
           ] }),
           /* @__PURE__ */ jsx4("h3", { style: { margin: "0 0 8px 0", color: "var(--ui-text-primary)", fontSize: 15, fontWeight: 650 }, children: i18n.tableTitle }),

@@ -1,3 +1,28 @@
+## [1.3.3] — 2026-11-04 — following from the search results
+
+### Changed
+
+- A search hit is offered as **Follow**, like the news panel, not "Add": same action, and
+  two names for it made the two lists look like two features.
+- Following a hit no longer closes the results. Its row goes away on its own (the list only
+  holds untracked models) and the other hits stay, so following two models is one search.
+  The results close on the ✕ in their header — or by themselves when nothing is left.
+- The results are a table with the tracked table's indicators (intelligence, coding,
+  agentic, context, in/out price) and the profile's score, starred ⭐ when the hit would
+  make the top 3 — the numbers it keeps once followed.
+
+### Fixed
+
+- `/openrouter/search` returned a thinner model shape than `/news`, so a search hit could
+  not be scored or explain its score while the same model scored fine in the news panel.
+  The three candidate lists (new models, promotions, search) now share `_candidate_fields()`.
+
+### Added
+
+- `src/core/candidates.ts` — `top3Threshold`, `scoreCandidates`, `untrackedOnly` — the pass
+  the news panel, the promotions and the search results each rebuilt by hand, with 11 unit
+  tests (`tests/unit/candidates.test.ts`), plus a backend test for the search hit's shape.
+
 ## [1.3.2] — 2026-11-04 — the ranking header acts like a control
 
 ### Changed

@@ -429,6 +429,42 @@ def delete_model(model_id: str):
     return {"deleted": model_id}
 
 
+def _price_per_mtok(m: dict, key: str):
+    """A catalogue price in USD per million tokens — the unit the UI and scoring use."""
+    try:
+        return round(float((m.get("pricing") or {}).get(key) or 0) * 1e6, 4)
+    except (TypeError, ValueError):
+        return None
+
+
+def _candidate_fields(m: dict) -> dict:
+    """The slice of a catalogue model every "candidate" list needs.
+
+    /news (new models and promotions) and /openrouter/search each rebuilt this by hand;
+    the search one had dropped the indices, so its list could not be scored while the
+    others could. One builder, one shape: a list that scores a model can also show why.
+    GET /models keeps its own richer payload (cache write, modalities, GPU estimate,
+    description) — it feeds the tracked table, not a candidate list.
+    """
+    aa = (m.get("benchmarks") or {}).get("artificial_analysis") or {}
+    modality = (m.get("architecture") or {}).get("modality") or ""
+    return {
+        "id": m.get("id"),
+        "name": m.get("name") or m.get("id"),
+        "context_length": m.get("context_length"),
+        "prompt_price": _price_per_mtok(m, "prompt"),
+        "completion_price": _price_per_mtok(m, "completion"),
+        "cache_read_price": _price_per_mtok(m, "input_cache_read"),
+        "has_vision": "image" in modality or "video" in modality,
+        "open_weights": bool(m.get("hugging_face_id")),
+        "supported_parameters": m.get("supported_parameters") or [],
+        "intelligence_index": aa.get("intelligence_index"),
+        "coding_index": aa.get("coding_index"),
+        "agentic_index": aa.get("agentic_index"),
+        "model_size": _extract_model_size(m),
+    }
+
+
 def _extract_model_size(raw):
     candidates = []
     for key in ("name", "canonical_slug", "hugging_face_id"):
@@ -562,16 +598,7 @@ def search_openrouter(q: str = ""):
     for m in all_models:
         if ql and ql not in m["id"].lower() and ql not in (m.get("name") or "").lower():
             continue
-        modality = (m.get("architecture") or {}).get("modality") or ""
-        results.append({
-            "id": m["id"], "name": m.get("name"),
-            "context_length": m.get("context_length"),
-            "prompt_price": round(float(m.get("pricing", {}).get("prompt") or 0) * 1e6, 4),
-            "completion_price": round(float(m.get("pricing", {}).get("completion") or 0) * 1e6, 4),
-            "open_weights": bool(m.get("hugging_face_id")),
-            "model_size": _extract_model_size(m),
-            "has_vision": "image" in modality or "video" in modality,
-        })
+        results.append(_candidate_fields(m))
     return {"results": results[:40], "total": len(results), "cache_age_s": _cache_age()}
 
 
@@ -595,30 +622,10 @@ def get_news():
         reverse=True
     )
     
-    new_models = []
-    for m in sorted_by_created[:120]:
-        p = m.get("pricing", {})
-        def _pr(k):
-            try: return round(float(p.get(k, 0) or 0) * 1e6, 4)
-            except: return None
-        aa = m.get("benchmarks", {}).get("artificial_analysis", {})
-        modality = (m.get("architecture") or {}).get("modality") or ""
-        new_models.append({
-            "id": m["id"],
-            "name": m.get("name") or m["id"],
-            "created": m.get("created"),
-            "context_length": m.get("context_length"),
-            "prompt_price": _pr("prompt"),
-            "completion_price": _pr("completion"),
-            "cache_read_price": _pr("input_cache_read"),
-            "has_vision": "image" in modality or "video" in modality,
-            "open_weights": bool(m.get("hugging_face_id")),
-            "supported_parameters": m.get("supported_parameters", []),
-            "intelligence_index": aa.get("intelligence_index"),
-            "coding_index": aa.get("coding_index"),
-            "agentic_index": aa.get("agentic_index"),
-            "is_tracked": m["id"] in tracked_ids,
-        })
+    new_models = [
+        {**_candidate_fields(m), "created": m.get("created"), "is_tracked": m["id"] in tracked_ids}
+        for m in sorted_by_created[:120]
+    ]
         
     # 2. Price changes from history — rolling 24h and 7d variations
     def _pct(old, new):
@@ -702,28 +709,13 @@ def get_news():
     promotions = []
     for p in promo_defs:
         raw = catalog_map.get(p["id"], {})
-        pricing = raw.get("pricing", {})
-        def _pr_promo(k):
-            try: return round(float(pricing.get(k, 0) or 0) * 1e6, 4)
-            except: return None
-        aa = raw.get("benchmarks", {}).get("artificial_analysis", {})
-        modality = (raw.get("architecture") or {}).get("modality") or ""
         promotions.append({
-            "id": p["id"],
-            "name": p["name"],
+            **_candidate_fields(raw),
+            "id": p["id"],                     # a promo may name a model the catalogue no longer has
+            "name": p["name"],                 # the curated label wins over the catalogue one
             "discount_pct": p.get("discount_pct"),
             "detail": p.get("detail") or {},
             "ends_at": p.get("ends_at"),
-            "context_length": raw.get("context_length"),
-            "prompt_price": _pr_promo("prompt"),
-            "completion_price": _pr_promo("completion"),
-            "cache_read_price": _pr_promo("input_cache_read"),
-            "has_vision": "image" in modality or "video" in modality,
-            "open_weights": bool(raw.get("hugging_face_id")),
-            "supported_parameters": raw.get("supported_parameters", []),
-            "intelligence_index": aa.get("intelligence_index"),
-            "coding_index": aa.get("coding_index"),
-            "agentic_index": aa.get("agentic_index"),
             "is_tracked": p["id"] in tracked_ids,
         })
     

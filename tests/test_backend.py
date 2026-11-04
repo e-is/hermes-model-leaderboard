@@ -474,6 +474,37 @@ def test_news_excludes_expired_promos(client_nomonkey, monkeypatch):
     assert all("details" not in p and "discount_text" not in p for p in promos)
 
 
+def test_search_hits_carry_the_scoring_fields(client_nomonkey, monkeypatch):
+    """A search hit must be scorable: same indices/prices as the news lists.
+
+    The results table shows a score and the indicators it comes from. /openrouter/search
+    used to return a thinner shape than /news, so the same model read '–' there and a
+    number in the news panel — both now go through _candidate_fields().
+    """
+    monkeypatch.setattr(main_mod, "_get_cached_or_fetch", lambda force=False: [
+        {"id": "vendor/scored-1", "name": "Scored 1", "created": 1_800_000_000,
+         "context_length": 128_000,
+         "pricing": {"prompt": 0.000001, "completion": 0.000002, "input_cache_read": 0.0000001},
+         "hugging_face_id": "vendor/scored-1", "architecture": {"modality": "text+image"},
+         "supported_parameters": ["tools", "temperature"],
+         "benchmarks": {"artificial_analysis": {"intelligence_index": 42,
+                                                 "coding_index": 38,
+                                                 "agentic_index": 31}}},
+    ])
+    res = client_nomonkey.get(f"{PREFIX}/openrouter/search?q=scored")
+    assert res.status_code == 200
+    hits = res.json()["results"]
+    assert len(hits) == 1
+    hit = hits[0]
+    assert hit["intelligence_index"] == 42
+    assert hit["coding_index"] == 38
+    assert hit["agentic_index"] == 31
+    assert hit["prompt_price"] == 1.0 and hit["completion_price"] == 2.0
+    assert hit["cache_read_price"] == 0.1
+    assert hit["supported_parameters"] == ["tools", "temperature"]
+    assert hit["has_vision"] is True and hit["open_weights"] is True
+
+
 def test_news_rolling_price_variations(client_nomonkey, monkeypatch):
     import time as _time
     now = _time.time()
