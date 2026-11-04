@@ -1,3 +1,21 @@
+## [1.3.4] — 2026-11-04 — a price change says what changed
+
+### Changed
+
+- Price-change rows date their entry like the new-models rows — the date alone. The
+  "Date :" prefix was noise, and the only French left in that row.
+- Hovering a change's percentage now shows the prices it was computed from
+  (`Price in $1.25/M tk · Price out $2.50/M tk`, labels from the catalogue), with a dotted
+  underline as the hint that there is something to hover. `/news` price changes now carry
+  `prompt_price` / `completion_price` for it — a percentage alone never told the user what
+  they would actually pay.
+- The section's empty-state line is no longer hardcoded French; it uses the catalogue.
+
+### Added
+
+- `src/core/news.ts` (`priceChangePrices`) with 4 unit tests, and backend assertions that a
+  price change reports the prices it was derived from.
+
 ## [1.3.3] — 2026-11-04 — following from the search results
 
 ### Changed

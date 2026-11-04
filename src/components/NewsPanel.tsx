@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useResizable } from '../hooks/useResizable'
+import { priceChangePrices } from '../core/news'
 
 /** '$0.375' / '$2' — the unit ("per M tk", "per second") belongs to the sentence. */
 const money = (v: any): string => (typeof v === 'number' ? '$' + String(+v.toFixed(5)) : '')
@@ -264,17 +265,28 @@ export function NewsPanel(props: NewsPanelProps) {
                     const v1 = pc.percent_1d
                     const v7 = pc.percent_7d
                     const pick = v1 != null && Math.abs(v1) >= priceThreshold ? { v: v1, lbl: '24h' } : { v: v7, lbl: '7j' }
+                    // The observed prices behind the percentage, shown on hover of the figure.
+                    const prices = priceChangePrices(pc, { input: t.views.short.price_in, output: t.views.short.price_out }, fmtPrice)
                     return (
                     <div key={pc.id} style={{ background: 'var(--ui-bg-tertiary)', border: '1px solid color-mix(in srgb, var(--ui-blue) 10%, transparent)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', fontSize: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <b>{pc.id.split('/').pop()}</b>
-                        <span style={{ color: pick.v <= 0 ? 'var(--ui-green)' : 'var(--ui-red)', fontWeight: 700, fontSize: 11 }}>
+                        <span
+                          title={prices || undefined}
+                          style={{
+                            color: pick.v <= 0 ? 'var(--ui-green)' : 'var(--ui-red)', fontWeight: 700, fontSize: 11,
+                            // The dotted underline is the only hint that there is something to hover.
+                            cursor: prices ? 'help' : 'default',
+                            textDecoration: prices ? 'underline dotted' : 'none',
+                            textUnderlineOffset: 2,
+                          }}>
                           {pick.v <= 0 ? `🔻 ${pick.v}%` : `🔺 +${pick.v}%`} ({pick.lbl})
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                         <span style={{ fontSize: 10, color: 'var(--ui-text-tertiary)' }}>
-                          Date : {fmtDate(pc.changed_at)}
+                          {/* Same format as the new-models rows: the date alone, no "Date:" label. */}
+                          {fmtDate(pc.changed_at)}
                         </span>
                         <a href={`https://openrouter.ai/${pc.id}`} target="_blank" rel="noreferrer"
                           style={{ fontSize: 11, color: 'var(--ui-blue)', textDecoration: 'underline' }}>
@@ -286,7 +298,7 @@ export function NewsPanel(props: NewsPanelProps) {
                   })}
                   {filteredPriceChanges.length === 0 && (
                     <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)' }}>
-                      Aucune variation ≥ {priceThreshold}% sur {priceDays} derniers jours.
+                      {t.news.none}
                     </div>
                   )}
                   {priceDays < 90 && (

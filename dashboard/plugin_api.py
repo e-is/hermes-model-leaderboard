@@ -669,6 +669,10 @@ def get_news():
             "percent_1d": pct_1d,
             "percent_7d": pct_7d,
             "percent_change": pct_1d if pct_1d is not None else pct_7d,
+            # The prices the figure was computed from: the panel shows them on hover
+            # ("Price in $1.25/M tk · Price out $2.50/M tk") instead of a bare percentage.
+            "prompt_price": p_now_in,
+            "completion_price": p_now_out,
             "is_tracked": mid in tracked_ids,
         })
 

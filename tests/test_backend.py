@@ -529,6 +529,10 @@ def test_news_rolling_price_variations(client_nomonkey, monkeypatch):
     # 24h rolling window: the most recent point at least 24h old is the
     # 2-days-ago sample (2.0) -> 1.25/2.0 = -37.5%
     assert row["percent_1d"] == -37.5
+    # The observed prices ride along: the panel shows them on hover, and without them
+    # a percentage is all the user can see.
+    assert row["prompt_price"] == 1.25
+    assert row["completion_price"] == 2.5
 
 
 # ---------------------------------------------------------------------------

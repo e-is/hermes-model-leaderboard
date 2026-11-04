@@ -285,6 +285,18 @@ function useResizable(opts) {
   return { width, onMouseDown };
 }
 
+// src/core/news.ts
+function priceChangePrices(change, labels, formatPrice) {
+  const parts = [];
+  if (change.prompt_price != null) {
+    parts.push(`${labels.input} ${formatPrice(change.prompt_price)}`);
+  }
+  if (change.completion_price != null) {
+    parts.push(`${labels.output} ${formatPrice(change.completion_price)}`);
+  }
+  return parts.join(" · ");
+}
+
 // src/components/NewsPanel.tsx
 import { Fragment, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
 var money = (v) => typeof v === "number" ? "$" + String(+v.toFixed(5)) : "";
@@ -498,21 +510,34 @@ function NewsPanel(props) {
                   const v1 = pc.percent_1d;
                   const v7 = pc.percent_7d;
                   const pick = v1 != null && Math.abs(v1) >= priceThreshold ? { v: v1, lbl: "24h" } : { v: v7, lbl: "7j" };
+                  const prices = priceChangePrices(pc, { input: t.views.short.price_in, output: t.views.short.price_out }, fmtPrice2);
                   return /* @__PURE__ */ jsxs2("div", { style: { background: "var(--ui-bg-tertiary)", border: "1px solid color-mix(in srgb, var(--ui-blue) 10%, transparent)", borderRadius: "var(--radius-sm)", padding: "8px 10px", fontSize: 12 }, children: [
                     /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
                       /* @__PURE__ */ jsx2("b", { children: pc.id.split("/").pop() }),
-                      /* @__PURE__ */ jsxs2("span", { style: { color: pick.v <= 0 ? "var(--ui-green)" : "var(--ui-red)", fontWeight: 700, fontSize: 11 }, children: [
-                        pick.v <= 0 ? `🔻 ${pick.v}%` : `🔺 +${pick.v}%`,
-                        " (",
-                        pick.lbl,
-                        ")"
-                      ] })
+                      /* @__PURE__ */ jsxs2(
+                        "span",
+                        {
+                          title: prices || void 0,
+                          style: {
+                            color: pick.v <= 0 ? "var(--ui-green)" : "var(--ui-red)",
+                            fontWeight: 700,
+                            fontSize: 11,
+                            // The dotted underline is the only hint that there is something to hover.
+                            cursor: prices ? "help" : "default",
+                            textDecoration: prices ? "underline dotted" : "none",
+                            textUnderlineOffset: 2
+                          },
+                          children: [
+                            pick.v <= 0 ? `🔻 ${pick.v}%` : `🔺 +${pick.v}%`,
+                            " (",
+                            pick.lbl,
+                            ")"
+                          ]
+                        }
+                      )
                     ] }),
                     /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }, children: [
-                      /* @__PURE__ */ jsxs2("span", { style: { fontSize: 10, color: "var(--ui-text-tertiary)" }, children: [
-                        "Date : ",
-                        fmtDate2(pc.changed_at)
-                      ] }),
+                      /* @__PURE__ */ jsx2("span", { style: { fontSize: 10, color: "var(--ui-text-tertiary)" }, children: fmtDate2(pc.changed_at) }),
                       /* @__PURE__ */ jsxs2(
                         "a",
                         {
@@ -529,13 +554,7 @@ function NewsPanel(props) {
                     ] })
                   ] }, pc.id);
                 }),
-                filteredPriceChanges.length === 0 && /* @__PURE__ */ jsxs2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: [
-                  "Aucune variation ≥ ",
-                  priceThreshold,
-                  "% sur ",
-                  priceDays,
-                  " derniers jours."
-                ] }),
+                filteredPriceChanges.length === 0 && /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)" }, children: t.news.none }),
                 priceDays < 90 && /* @__PURE__ */ jsxs2("button", { onClick: () => setPriceDays((prev) => prev + 7), style: {
                   marginTop: 4,
                   padding: "6px 10px",
