@@ -26,6 +26,13 @@ export const af = {
     add: 'Voeg by',
     show: 'Wys',
     hide: 'Versteek',
+    aaKey: {
+        title: "Geen Artificial Analysis API-sleutel nie",
+        body: "Variante sonder 'n gepubliseerde indeks leen een by 'n suster. 'n Gratis sleutel vul dit by die bron in.",
+        get: "Kry 'n gratis sleutel",
+        where: "Plak dit dan in Instellings → Plugins → Model Leaderboard.",
+        dismiss: "Maak toe",
+    },
     removeModel: 'Verwyder model',
     suppressShort: 'Wis?',
     clickToShow: 'Klik om te wys',

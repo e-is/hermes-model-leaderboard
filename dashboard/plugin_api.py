@@ -495,7 +495,12 @@ def get_models():
         _complete_indices(m, m["benchmarks"], estimators, references)
         if not m.get("gpu") and m.get("model_size"):
             m["gpu"] = _estimate_gpu(m["model_size"])
-    return {"models": models, "last_refresh": _meta().get("last_refresh"), "cache_age_s": _cache_age()}
+    return {"models": models, "last_refresh": _meta().get("last_refresh"),
+            "cache_age_s": _cache_age(),
+            # Whether the user declared the optional Artificial Analysis key (Desktop →
+            # Settings → Plugins). The UI offers to set one when it is absent; nothing here
+            # calls AA, and the value itself never leaves the host.
+            "aa_key": bool(os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY"))}
 
 
 @router.post("/models")

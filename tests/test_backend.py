@@ -838,3 +838,13 @@ _spec = _ilu.spec_from_file_location(
 assert _spec and _spec.loader
 harvest = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(harvest)
+
+def test_models_reports_whether_the_aa_key_is_configured(monkeypatch):
+    """The UI offers the optional key only when Hermes has none; /models carries that fact."""
+    monkeypatch.delenv("ARTIFICIAL_ANALYSIS_API_KEY", raising=False)
+    app = FastAPI()
+    app.include_router(main_mod.router)
+    client = TestClient(app)
+    assert client.get("/models").json()["aa_key"] is False
+    monkeypatch.setenv("ARTIFICIAL_ANALYSIS_API_KEY", "test-key")
+    assert client.get("/models").json()["aa_key"] is True

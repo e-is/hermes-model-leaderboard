@@ -27,6 +27,13 @@ export const fr = {
     add: 'Ajouter',
     show: 'Afficher',
     hide: 'Masquer',
+    aaKey: {
+        title: "Aucune clé API Artificial Analysis",
+        body: "Les variantes sans indice publié en empruntent un à un modèle frère. Une clé gratuite les remplit à la source.",
+        get: "Obtenir une clé gratuite",
+        where: "Puis collez-la dans Réglages → Plugins → Model Leaderboard.",
+        dismiss: "Fermer",
+    },
     removeModel: 'Supprimer le modèle',
     suppressShort: 'Suppr?',
     clickToShow: 'Cliquer pour afficher',

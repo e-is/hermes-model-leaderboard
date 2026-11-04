@@ -26,6 +26,13 @@ export const de = {
     add: 'Hinzufügen',
     show: 'Anzeigen',
     hide: 'Ausblenden',
+    aaKey: {
+        title: "Kein Artificial Analysis-API-Schlüssel",
+        body: "Varianten ohne veröffentlichten Index leihen sich einen von einem Geschwistermodell. Ein kostenloser Schlüssel füllt sie aus der Quelle.",
+        get: "Kostenlosen Schlüssel holen",
+        where: "Dann in Einstellungen → Plugins → Model Leaderboard einfügen.",
+        dismiss: "Schließen",
+    },
     removeModel: 'Modell entfernen',
     suppressShort: 'Löschen?',
     clickToShow: 'Zum Anzeigen klicken',

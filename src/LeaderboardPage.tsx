@@ -312,6 +312,18 @@ const S = {
   } as const,
 }
 
+/** Open eye = visible (click hides); struck-through eye = hidden (click shows). */
+function EyeGlyph({ off }: { off: boolean }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="2.7" />
+      {off && <path d="M4 20 20 4" />}
+    </svg>
+  )
+}
+
 // ---- Main --------------------------------------------------
 export default function App() {
   const i18n = useLeaderboardI18n()
@@ -434,9 +446,16 @@ export default function App() {
   // Last /models failure. Without it a gateway that is asleep (--idle-exit) or
   // restarting rendered as an empty table, indistinguishable from "no models".
   const [loadError, setLoadError] = useState<string | null>(null)
+  // Optional Artificial Analysis key: the backend reports whether Hermes has one for us.
+  // null = not answered yet, so the hint never flashes before the first response.
+  const [aaKey, setAaKey] = useState<boolean | null>(null)
+  const [aaHintDismissed, setAaHintDismissed] = useState(() => {
+    try { return localStorage.getItem('llm-dash-aa-hint') === '1' } catch { return false }
+  })
   const applyModels = (d: any) => {
     setModels(Array.isArray(d?.models) ? d.models : [])
     setLastRefresh(d?.last_refresh ?? null)
+    setAaKey(typeof d?.aa_key === 'boolean' ? d.aa_key : null)
     setLoadError(null)
   }
   const fetchModels = () => {
@@ -892,6 +911,27 @@ export default function App() {
                 <button onClick={fetchModels} style={{ padding: '4px 10px', borderRadius: 4, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', cursor: 'pointer' }}>{i18n.retry}</button>
               </div>
             )}
+            {aaKey === false && !aaHintDismissed && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', marginBottom: 12, borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', fontSize: 12 }}>
+                <span style={{ flex: 1, lineHeight: 1.45 }}>
+                  <b>{i18n.aaKey.title}</b> — {i18n.aaKey.body}{' '}
+                  <a href="https://artificialanalysis.ai/login" target="_blank" rel="noreferrer"
+                     style={{ color: 'var(--ui-accent-secondary)' }}>{i18n.aaKey.get} ↗</a>{' '}
+                  {i18n.aaKey.where}
+                </span>
+                <button
+                  onClick={() => {
+                    setAaHintDismissed(true)
+                    try { localStorage.setItem('llm-dash-aa-hint', '1') } catch { /* private mode */ }
+                  }}
+                  title={i18n.aaKey.dismiss}
+                  aria-label={i18n.aaKey.dismiss}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5, padding: 2, lineHeight: 1, color: 'inherit' }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             {loading ? (<p>{i18n.loading}</p>) : (
               <>
                 {/* ---- CLASSEMENT ---- */}
@@ -1141,9 +1181,10 @@ export default function App() {
                               <button
                                 onClick={() => toggleHidden(m.id)}
                                 title={hiddenIds.has(m.id) ? i18n.show : i18n.hide}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: 13, marginRight: 4 }}
+                                aria-label={hiddenIds.has(m.id) ? i18n.show : i18n.hide}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, marginRight: 4, padding: 2, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}
                               >
-                                {hiddenIds.has(m.id) ? '👁' : '🙈'}
+                                <EyeGlyph off={!hiddenIds.has(m.id)} />
                               </button>
                               <button
                                 onClick={() => removeModel(m.id)}

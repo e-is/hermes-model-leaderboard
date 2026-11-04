@@ -27,6 +27,13 @@ export const ko = {
     add: '추가',
     show: '표시',
     hide: '숨기기',
+    aaKey: {
+        title: "Artificial Analysis API 키가 없습니다",
+        body: "공개 지수가 없는 변형은 형제 모델의 지수를 빌립니다. 무료 키를 사용하면 원본에서 채울 수 있습니다.",
+        get: "무료 키 받기",
+        where: "설정 → 플러그인 → Model Leaderboard에 붙여넣으세요.",
+        dismiss: "닫기",
+    },
     removeModel: '모델 제거',
     suppressShort: '삭제',
     clickToShow: '클릭하여 표시',

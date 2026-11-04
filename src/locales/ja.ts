@@ -26,6 +26,13 @@ export const ja = {
     add: '追加',
     show: '表示',
     hide: '非表示',
+    aaKey: {
+        title: "Artificial Analysis の API キーがありません",
+        body: "インデックスが公開されていない派生モデルは兄弟モデルから借用します。無料のキーがあれば提供元から取得できます。",
+        get: "無料キーを取得",
+        where: "設定 → プラグイン → Model Leaderboard に貼り付けてください。",
+        dismiss: "閉じる",
+    },
     removeModel: 'モデルを削除',
     suppressShort: '削除?',
     clickToShow: 'クリックして表示',

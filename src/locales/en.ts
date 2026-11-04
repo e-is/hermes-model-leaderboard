@@ -27,6 +27,13 @@ export const en = {
     add: 'Add',
     show: 'Show',
     hide: 'Hide',
+    aaKey: {
+        title: "No Artificial Analysis API key",
+        body: "Variants without a published index borrow one from a sibling. A free key fills them from the source.",
+        get: "Get a free key",
+        where: "Then paste it in Settings → Plugins → Model Leaderboard.",
+        dismiss: "Dismiss",
+    },
     removeModel: 'Remove model',
     suppressShort: 'Del?',
     clickToShow: 'Click to show',

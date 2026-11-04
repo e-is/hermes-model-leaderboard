@@ -28,6 +28,13 @@ export const zhHant = {
     add: '新增',
     show: '顯示',
     hide: '隱藏',
+    aaKey: {
+        title: "沒有 Artificial Analysis API 金鑰",
+        body: "沒有已公布指數的變體會借用同系列模型的指數。免費金鑰可從來源取得這些數值。",
+        get: "取得免費金鑰",
+        where: "然後貼到「設定 → 外掛 → Model Leaderboard」。",
+        dismiss: "關閉",
+    },
     removeModel: '移除模型',
     suppressShort: '刪',
     clickToShow: '點擊顯示',

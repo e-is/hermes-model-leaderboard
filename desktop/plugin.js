@@ -787,6 +787,13 @@ var en = {
   add: "Add",
   show: "Show",
   hide: "Hide",
+  aaKey: {
+    title: "No Artificial Analysis API key",
+    body: "Variants without a published index borrow one from a sibling. A free key fills them from the source.",
+    get: "Get a free key",
+    where: "Then paste it in Settings → Plugins → Model Leaderboard.",
+    dismiss: "Dismiss"
+  },
   removeModel: "Remove model",
   suppressShort: "Del?",
   clickToShow: "Click to show",
@@ -980,6 +987,13 @@ var fr = {
   add: "Ajouter",
   show: "Afficher",
   hide: "Masquer",
+  aaKey: {
+    title: "Aucune clé API Artificial Analysis",
+    body: "Les variantes sans indice publié en empruntent un à un modèle frère. Une clé gratuite les remplit à la source.",
+    get: "Obtenir une clé gratuite",
+    where: "Puis collez-la dans Réglages → Plugins → Model Leaderboard.",
+    dismiss: "Fermer"
+  },
   removeModel: "Supprimer le modèle",
   suppressShort: "Suppr?",
   clickToShow: "Cliquer pour afficher",
@@ -1173,6 +1187,13 @@ var zh = {
   add: "添加",
   show: "显示",
   hide: "隐藏",
+  aaKey: {
+    title: "没有 Artificial Analysis API 密钥",
+    body: "没有已发布指数的变体会借用同系列模型的指数。免费密钥可从来源获取这些数值。",
+    get: "获取免费密钥",
+    where: "然后粘贴到“设置 → 插件 → Model Leaderboard”。",
+    dismiss: "关闭"
+  },
   removeModel: "移除模型",
   suppressShort: "删",
   clickToShow: "点击显示",
@@ -1366,6 +1387,13 @@ var zhHant = {
   add: "新增",
   show: "顯示",
   hide: "隱藏",
+  aaKey: {
+    title: "沒有 Artificial Analysis API 金鑰",
+    body: "沒有已公布指數的變體會借用同系列模型的指數。免費金鑰可從來源取得這些數值。",
+    get: "取得免費金鑰",
+    where: "然後貼到「設定 → 外掛 → Model Leaderboard」。",
+    dismiss: "關閉"
+  },
   removeModel: "移除模型",
   suppressShort: "刪",
   clickToShow: "點擊顯示",
@@ -1559,6 +1587,13 @@ var af = {
   add: "Voeg by",
   show: "Wys",
   hide: "Versteek",
+  aaKey: {
+    title: "Geen Artificial Analysis API-sleutel nie",
+    body: "Variante sonder 'n gepubliseerde indeks leen een by 'n suster. 'n Gratis sleutel vul dit by die bron in.",
+    get: "Kry 'n gratis sleutel",
+    where: "Plak dit dan in Instellings → Plugins → Model Leaderboard.",
+    dismiss: "Maak toe"
+  },
   removeModel: "Verwyder model",
   suppressShort: "Wis?",
   clickToShow: "Klik om te wys",
@@ -1752,6 +1787,13 @@ var ar = {
   add: "إضافة",
   show: "إظهار",
   hide: "إخفاء",
+  aaKey: {
+    title: "لا يوجد مفتاح API لـ Artificial Analysis",
+    body: "النسخ التي لا تملك مؤشرًا منشورًا تستعير مؤشرًا من طراز شقيق. المفتاح المجاني يملؤها من المصدر.",
+    get: "احصل على مفتاح مجاني",
+    where: "ثم الصقه في الإعدادات ← الإضافات ← Model Leaderboard.",
+    dismiss: "إغلاق"
+  },
   removeModel: "إزالة النموذج",
   suppressShort: "حذف؟",
   clickToShow: "انقر للإظهار",
@@ -1945,6 +1987,13 @@ var de = {
   add: "Hinzufügen",
   show: "Anzeigen",
   hide: "Ausblenden",
+  aaKey: {
+    title: "Kein Artificial Analysis-API-Schlüssel",
+    body: "Varianten ohne veröffentlichten Index leihen sich einen von einem Geschwistermodell. Ein kostenloser Schlüssel füllt sie aus der Quelle.",
+    get: "Kostenlosen Schlüssel holen",
+    where: "Dann in Einstellungen → Plugins → Model Leaderboard einfügen.",
+    dismiss: "Schließen"
+  },
   removeModel: "Modell entfernen",
   suppressShort: "Löschen?",
   clickToShow: "Zum Anzeigen klicken",
@@ -2138,6 +2187,13 @@ var es = {
   add: "Añadir",
   show: "Mostrar",
   hide: "Ocultar",
+  aaKey: {
+    title: "Sin clave de API de Artificial Analysis",
+    body: "Las variantes sin índice publicado toman uno de un modelo hermano. Una clave gratuita los rellena desde la fuente.",
+    get: "Obtener una clave gratuita",
+    where: "Luego pégala en Ajustes → Plugins → Model Leaderboard.",
+    dismiss: "Cerrar"
+  },
   removeModel: "Quitar modelo",
   suppressShort: "¿Borrar?",
   clickToShow: "Clic para mostrar",
@@ -2331,6 +2387,13 @@ var ga = {
   add: "Cuir leis",
   show: "Taispeáin",
   hide: "Folaigh",
+  aaKey: {
+    title: "Gan eochair API Artificial Analysis",
+    body: "Faigheann leaganacha gan innéacs foilsithe ceann ó mhac samhail. Líonann eochair saor in aisce iad ón bhfoinse.",
+    get: "Faigh eochair saor in aisce",
+    where: "Ansin greamaigh í i Socruithe → Breiseáin → Model Leaderboard.",
+    dismiss: "Dún"
+  },
   removeModel: "Bain an tsamhail",
   suppressShort: "Scrios?",
   clickToShow: "Cliceáil le taispeáint",
@@ -2524,6 +2587,13 @@ var hu = {
   add: "Hozzáadás",
   show: "Mutat",
   hide: "Elrejtés",
+  aaKey: {
+    title: "Nincs Artificial Analysis API-kulcs",
+    body: "A közzétett index nélküli változatok egy testvérmodelltől kölcsönöznek indexet. Egy ingyenes kulcs a forrásból tölti ki őket.",
+    get: "Ingyenes kulcs beszerzése",
+    where: "Majd illeszd be: Beállítások → Beépülők → Model Leaderboard.",
+    dismiss: "Bezárás"
+  },
   removeModel: "Modell eltávolítása",
   suppressShort: "Törlés?",
   clickToShow: "Kattints a megjelenítéshez",
@@ -2717,6 +2787,13 @@ var it = {
   add: "Aggiungi",
   show: "Mostra",
   hide: "Nascondi",
+  aaKey: {
+    title: "Nessuna chiave API Artificial Analysis",
+    body: "Le varianti senza indice pubblicato ne prendono uno da un modello gemello. Una chiave gratuita le riempie dalla fonte.",
+    get: "Ottieni una chiave gratuita",
+    where: "Poi incollala in Impostazioni → Plugin → Model Leaderboard.",
+    dismiss: "Chiudi"
+  },
   removeModel: "Rimuovi modello",
   suppressShort: "Elim.?",
   clickToShow: "Clicca per mostrare",
@@ -2910,6 +2987,13 @@ var ja = {
   add: "追加",
   show: "表示",
   hide: "非表示",
+  aaKey: {
+    title: "Artificial Analysis の API キーがありません",
+    body: "インデックスが公開されていない派生モデルは兄弟モデルから借用します。無料のキーがあれば提供元から取得できます。",
+    get: "無料キーを取得",
+    where: "設定 → プラグイン → Model Leaderboard に貼り付けてください。",
+    dismiss: "閉じる"
+  },
   removeModel: "モデルを削除",
   suppressShort: "削除?",
   clickToShow: "クリックして表示",
@@ -3103,6 +3187,13 @@ var ko = {
   add: "추가",
   show: "표시",
   hide: "숨기기",
+  aaKey: {
+    title: "Artificial Analysis API 키가 없습니다",
+    body: "공개 지수가 없는 변형은 형제 모델의 지수를 빌립니다. 무료 키를 사용하면 원본에서 채울 수 있습니다.",
+    get: "무료 키 받기",
+    where: "설정 → 플러그인 → Model Leaderboard에 붙여넣으세요.",
+    dismiss: "닫기"
+  },
   removeModel: "모델 제거",
   suppressShort: "삭제",
   clickToShow: "클릭하여 표시",
@@ -3296,6 +3387,13 @@ var pt = {
   add: "Adicionar",
   show: "Mostrar",
   hide: "Ocultar",
+  aaKey: {
+    title: "Sem chave de API da Artificial Analysis",
+    body: "As variantes sem índice publicado tomam um de um modelo irmão. Uma chave gratuita preenche-os na fonte.",
+    get: "Obter uma chave gratuita",
+    where: "Depois cole em Configurações → Plugins → Model Leaderboard.",
+    dismiss: "Fechar"
+  },
   removeModel: "Remover modelo",
   suppressShort: "Eliminar?",
   clickToShow: "Clique para mostrar",
@@ -3489,6 +3587,13 @@ var ru = {
   add: "Добавить",
   show: "Показать",
   hide: "Скрыть",
+  aaKey: {
+    title: "Нет ключа API Artificial Analysis",
+    body: "Варианты без опубликованного индекса заимствуют его у модели-родственника. Бесплатный ключ заполнит их из источника.",
+    get: "Получить бесплатный ключ",
+    where: "Затем вставьте его в Настройки → Плагины → Model Leaderboard.",
+    dismiss: "Закрыть"
+  },
   removeModel: "Удалить модель",
   suppressShort: "Удал.?",
   clickToShow: "Нажмите, чтобы показать",
@@ -3682,6 +3787,13 @@ var tr = {
   add: "Ekle",
   show: "Göster",
   hide: "Gizle",
+  aaKey: {
+    title: "Artificial Analysis API anahtarı yok",
+    body: "Yayımlanmış indeksi olmayan varyantlar bunu kardeş bir modelden ödünç alır. Ücretsiz bir anahtar bunları kaynaktan doldurur.",
+    get: "Ücretsiz anahtar al",
+    where: "Sonra Ayarlar → Eklentiler → Model Leaderboard bölümüne yapıştırın.",
+    dismiss: "Kapat"
+  },
   removeModel: "Modeli kaldır",
   suppressShort: "Sil?",
   clickToShow: "Göstermek için tıkla",
@@ -3875,6 +3987,13 @@ var uk = {
   add: "Додати",
   show: "Показати",
   hide: "Приховати",
+  aaKey: {
+    title: "Немає ключа API Artificial Analysis",
+    body: "Варіанти без опублікованого індексу позичають його в моделі-родича. Безкоштовний ключ заповнить їх із джерела.",
+    get: "Отримати безкоштовний ключ",
+    where: "Потім вставте його в Налаштування → Плагіни → Model Leaderboard.",
+    dismiss: "Закрити"
+  },
   removeModel: "Видалити модель",
   suppressShort: "Вил.?",
   clickToShow: "Натисніть, щоб показати",
@@ -4873,6 +4992,27 @@ var S = {
     transition: "all 0.15s ease"
   }
 };
+function EyeGlyph({ off }) {
+  return /* @__PURE__ */ jsxs4(
+    "svg",
+    {
+      width: "15",
+      height: "15",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.8",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": "true",
+      children: [
+        /* @__PURE__ */ jsx4("path", { d: "M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12Z" }),
+        /* @__PURE__ */ jsx4("circle", { cx: "12", cy: "12", r: "2.7" }),
+        off && /* @__PURE__ */ jsx4("path", { d: "M4 20 20 4" })
+      ]
+    }
+  );
+}
 function App() {
   const i18n = useLeaderboardI18n();
   const [hermesProfiles, setHermesProfiles] = useState5([]);
@@ -4983,9 +5123,18 @@ function App() {
   };
   const [lastRefresh, setLastRefresh] = useState5(null);
   const [loadError, setLoadError] = useState5(null);
+  const [aaKey, setAaKey] = useState5(null);
+  const [aaHintDismissed, setAaHintDismissed] = useState5(() => {
+    try {
+      return localStorage.getItem("llm-dash-aa-hint") === "1";
+    } catch {
+      return false;
+    }
+  });
   const applyModels = (d) => {
     setModels(Array.isArray(d?.models) ? d.models : []);
     setLastRefresh(d?.last_refresh ?? null);
+    setAaKey(typeof d?.aa_key === "boolean" ? d.aa_key : null);
     setLoadError(null);
   };
   const fetchModels = () => {
@@ -5327,6 +5476,45 @@ function App() {
           ] }),
           /* @__PURE__ */ jsx4("button", { onClick: fetchModels, style: { padding: "4px 10px", borderRadius: 4, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", cursor: "pointer" }, children: i18n.retry })
         ] }),
+        aaKey === false && !aaHintDismissed && /* @__PURE__ */ jsxs4("div", { style: { display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", marginBottom: 12, borderRadius: 6, border: "1px solid var(--ui-stroke-secondary)", background: "var(--ui-bg-editor)", fontSize: 12 }, children: [
+          /* @__PURE__ */ jsxs4("span", { style: { flex: 1, lineHeight: 1.45 }, children: [
+            /* @__PURE__ */ jsx4("b", { children: i18n.aaKey.title }),
+            " — ",
+            i18n.aaKey.body,
+            " ",
+            /* @__PURE__ */ jsxs4(
+              "a",
+              {
+                href: "https://artificialanalysis.ai/login",
+                target: "_blank",
+                rel: "noreferrer",
+                style: { color: "var(--ui-accent-secondary)" },
+                children: [
+                  i18n.aaKey.get,
+                  " ↗"
+                ]
+              }
+            ),
+            " ",
+            i18n.aaKey.where
+          ] }),
+          /* @__PURE__ */ jsx4(
+            "button",
+            {
+              onClick: () => {
+                setAaHintDismissed(true);
+                try {
+                  localStorage.setItem("llm-dash-aa-hint", "1");
+                } catch {
+                }
+              },
+              title: i18n.aaKey.dismiss,
+              "aria-label": i18n.aaKey.dismiss,
+              style: { background: "none", border: "none", cursor: "pointer", opacity: 0.5, padding: 2, lineHeight: 1, color: "inherit" },
+              children: "✕"
+            }
+          )
+        ] }),
         loading ? /* @__PURE__ */ jsx4("p", { children: i18n.loading }) : /* @__PURE__ */ jsxs4(Fragment3, { children: [
           /* @__PURE__ */ jsxs4("div", { style: { marginBottom: 24, padding: 16, background: "var(--ui-row-hover-background)", borderRadius: 8, border: "1px solid var(--ui-stroke-tertiary)" }, children: [
             /* @__PURE__ */ jsxs4("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, children: [
@@ -5638,8 +5826,9 @@ function App() {
                     {
                       onClick: () => toggleHidden(m.id),
                       title: hiddenIds.has(m.id) ? i18n.show : i18n.hide,
-                      style: { background: "none", border: "none", cursor: "pointer", opacity: 0.6, fontSize: 13, marginRight: 4 },
-                      children: hiddenIds.has(m.id) ? "👁" : "🙈"
+                      "aria-label": hiddenIds.has(m.id) ? i18n.show : i18n.hide,
+                      style: { background: "none", border: "none", cursor: "pointer", opacity: 0.6, marginRight: 4, padding: 2, display: "inline-flex", alignItems: "center", color: "inherit" },
+                      children: /* @__PURE__ */ jsx4(EyeGlyph, { off: !hiddenIds.has(m.id) })
                     }
                   ),
                   /* @__PURE__ */ jsx4(

@@ -27,6 +27,13 @@ export const zh = {
     add: '添加',
     show: '显示',
     hide: '隐藏',
+    aaKey: {
+        title: "没有 Artificial Analysis API 密钥",
+        body: "没有已发布指数的变体会借用同系列模型的指数。免费密钥可从来源获取这些数值。",
+        get: "获取免费密钥",
+        where: "然后粘贴到“设置 → 插件 → Model Leaderboard”。",
+        dismiss: "关闭",
+    },
     removeModel: '移除模型',
     suppressShort: '删',
     clickToShow: '点击显示',

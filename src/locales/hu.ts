@@ -26,6 +26,13 @@ export const hu = {
     add: 'Hozzáadás',
     show: 'Mutat',
     hide: 'Elrejtés',
+    aaKey: {
+        title: "Nincs Artificial Analysis API-kulcs",
+        body: "A közzétett index nélküli változatok egy testvérmodelltől kölcsönöznek indexet. Egy ingyenes kulcs a forrásból tölti ki őket.",
+        get: "Ingyenes kulcs beszerzése",
+        where: "Majd illeszd be: Beállítások → Beépülők → Model Leaderboard.",
+        dismiss: "Bezárás",
+    },
     removeModel: 'Modell eltávolítása',
     suppressShort: 'Törlés?',
     clickToShow: 'Kattints a megjelenítéshez',

@@ -26,6 +26,13 @@ export const ar = {
     add: 'إضافة',
     show: 'إظهار',
     hide: 'إخفاء',
+    aaKey: {
+        title: "لا يوجد مفتاح API لـ Artificial Analysis",
+        body: "النسخ التي لا تملك مؤشرًا منشورًا تستعير مؤشرًا من طراز شقيق. المفتاح المجاني يملؤها من المصدر.",
+        get: "احصل على مفتاح مجاني",
+        where: "ثم الصقه في الإعدادات ← الإضافات ← Model Leaderboard.",
+        dismiss: "إغلاق",
+    },
     removeModel: 'إزالة النموذج',
     suppressShort: 'حذف؟',
     clickToShow: 'انقر للإظهار',

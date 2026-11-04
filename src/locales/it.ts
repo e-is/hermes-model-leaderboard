@@ -26,6 +26,13 @@ export const it = {
     add: 'Aggiungi',
     show: 'Mostra',
     hide: 'Nascondi',
+    aaKey: {
+        title: "Nessuna chiave API Artificial Analysis",
+        body: "Le varianti senza indice pubblicato ne prendono uno da un modello gemello. Una chiave gratuita le riempie dalla fonte.",
+        get: "Ottieni una chiave gratuita",
+        where: "Poi incollala in Impostazioni → Plugin → Model Leaderboard.",
+        dismiss: "Chiudi",
+    },
     removeModel: 'Rimuovi modello',
     suppressShort: 'Elim.?',
     clickToShow: 'Clicca per mostrare',

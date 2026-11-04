@@ -26,6 +26,13 @@ export const ga = {
     add: 'Cuir leis',
     show: 'Taispeáin',
     hide: 'Folaigh',
+    aaKey: {
+        title: "Gan eochair API Artificial Analysis",
+        body: "Faigheann leaganacha gan innéacs foilsithe ceann ó mhac samhail. Líonann eochair saor in aisce iad ón bhfoinse.",
+        get: "Faigh eochair saor in aisce",
+        where: "Ansin greamaigh í i Socruithe → Breiseáin → Model Leaderboard.",
+        dismiss: "Dún",
+    },
     removeModel: 'Bain an tsamhail',
     suppressShort: 'Scrios?',
     clickToShow: 'Cliceáil le taispeáint',

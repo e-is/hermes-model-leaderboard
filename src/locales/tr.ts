@@ -26,6 +26,13 @@ export const tr = {
     add: 'Ekle',
     show: 'Göster',
     hide: 'Gizle',
+    aaKey: {
+        title: "Artificial Analysis API anahtarı yok",
+        body: "Yayımlanmış indeksi olmayan varyantlar bunu kardeş bir modelden ödünç alır. Ücretsiz bir anahtar bunları kaynaktan doldurur.",
+        get: "Ücretsiz anahtar al",
+        where: "Sonra Ayarlar → Eklentiler → Model Leaderboard bölümüne yapıştırın.",
+        dismiss: "Kapat",
+    },
     removeModel: 'Modeli kaldır',
     suppressShort: 'Sil?',
     clickToShow: 'Göstermek için tıkla',
