@@ -212,7 +212,9 @@ export function NewsPanel(props: NewsPanelProps) {
                            {t.news.until(p.ends_at)}
                         </div>
                       ) : null}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                      {/* Same footer as the new-models cards: the link sits on the right,
+                          immediately before Follow, instead of alone on the left. */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 6 }}>
                         <a href={`https://openrouter.ai/${p.id}`} target="_blank" rel="noreferrer"
                           style={{ fontSize: 11, color: 'var(--ui-accent-secondary)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
                           {t.news.details} ↗

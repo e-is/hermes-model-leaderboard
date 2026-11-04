@@ -1,3 +1,11 @@
+## [1.3.5] — 2026-11-04 — one footer for every news card
+
+### Changed
+
+- A promotion's "Details" link sits on the right, immediately before Follow, as on the
+  new-models cards: the two cards are the same object (a candidate with an action), so their
+  footers should not put the same link in two different places.
+
 ## [1.3.4] — 2026-11-04 — a price change says what changed
 
 ### Changed

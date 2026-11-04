@@ -447,7 +447,7 @@ function NewsPanel(props) {
                 ] }),
                 promoLine(t, p.detail) ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4 }, children: promoLine(t, p.detail) }) : null,
                 p.ends_at ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: t.news.until(p.ends_at) }) : null,
-                /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }, children: [
+                /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: 6 }, children: [
                   /* @__PURE__ */ jsxs2(
                     "a",
                     {
