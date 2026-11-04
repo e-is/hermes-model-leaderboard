@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useResizable } from '../hooks/useResizable'
 import { priceChangePrices } from '../core/news'
+import { openExternal, linkButtonStyle } from '../links.ts'
 
 /** '$0.375' / '$2' — the unit ("per M tk", "per second") belongs to the sentence. */
 const money = (v: any): string => (typeof v === 'number' ? '$' + String(+v.toFixed(5)) : '')
@@ -215,10 +216,11 @@ export function NewsPanel(props: NewsPanelProps) {
                       {/* Same footer as the new-models cards: the link sits on the right,
                           immediately before Follow, instead of alone on the left. */}
                       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                        <a href={`https://openrouter.ai/${p.id}`} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, color: 'var(--ui-accent-secondary)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                        <button
+                          onClick={() => openExternal(`https://openrouter.ai/${p.id}`)}
+                          style={linkButtonStyle('var(--ui-accent-secondary)')}>
                           {t.news.details} ↗
-                        </a>
+                        </button>
                         <button
                           onClick={() => addModel(p.id)}
                           disabled={isTracked(p.id)}
@@ -290,10 +292,11 @@ export function NewsPanel(props: NewsPanelProps) {
                           {/* Same format as the new-models rows: the date alone, no "Date:" label. */}
                           {fmtDate(pc.changed_at)}
                         </span>
-                        <a href={`https://openrouter.ai/${pc.id}`} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, color: 'var(--ui-blue)', textDecoration: 'underline' }}>
+                        <button
+                          onClick={() => openExternal(`https://openrouter.ai/${pc.id}`)}
+                          style={linkButtonStyle('var(--ui-blue)')}>
                           {t.news.details} ↗
-                        </a>
+                        </button>
                       </div>
                     </div>
                     )
@@ -394,10 +397,11 @@ export function NewsPanel(props: NewsPanelProps) {
                       <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>{fmtPrice(nm.prompt_price)} / {fmtPrice(nm.completion_price)}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <a href={`https://openrouter.ai/${nm.id}`} target="_blank" rel="noreferrer"
-                            style={{ fontSize: 11, color: 'var(--ui-accent-secondary)', textDecoration: 'underline' }}>
+                          <button
+                            onClick={() => openExternal(`https://openrouter.ai/${nm.id}`)}
+                            style={linkButtonStyle('var(--ui-accent-secondary)')}>
                             {t.news.details} ↗
-                          </a>
+                          </button>
                           <button
                             onClick={() => addModel(nm.id)}
                             disabled={isTracked(nm.id)}

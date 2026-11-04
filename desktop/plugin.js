@@ -325,6 +325,30 @@ function priceChangePrices(change, labels, formatPrice) {
   return parts.join(" · ");
 }
 
+// src/links.ts
+function openExternal(url) {
+  const bridge = window.hermesDesktop;
+  if (bridge && typeof bridge.openExternal === "function") {
+    Promise.resolve(bridge.openExternal(url)).catch(() => {
+    });
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+var linkButtonStyle = (color, fontSize = 11) => ({
+  background: "none",
+  border: "none",
+  padding: 0,
+  font: "inherit",
+  fontSize,
+  color,
+  textDecoration: "underline",
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 2
+});
+
 // src/components/NewsPanel.tsx
 import { Fragment, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
 var money = (v) => typeof v === "number" ? "$" + String(+v.toFixed(5)) : "";
@@ -477,12 +501,10 @@ function NewsPanel(props) {
                 p.ends_at ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: t.news.until(p.ends_at) }) : null,
                 /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: 6 }, children: [
                   /* @__PURE__ */ jsxs2(
-                    "a",
+                    "button",
                     {
-                      href: `https://openrouter.ai/${p.id}`,
-                      target: "_blank",
-                      rel: "noreferrer",
-                      style: { fontSize: 11, color: "var(--ui-accent-secondary)", textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 2 },
+                      onClick: () => openExternal(`https://openrouter.ai/${p.id}`),
+                      style: linkButtonStyle("var(--ui-accent-secondary)"),
                       children: [
                         t.news.details,
                         " ↗"
@@ -567,12 +589,10 @@ function NewsPanel(props) {
                     /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }, children: [
                       /* @__PURE__ */ jsx2("span", { style: { fontSize: 10, color: "var(--ui-text-tertiary)" }, children: fmtDate2(pc.changed_at) }),
                       /* @__PURE__ */ jsxs2(
-                        "a",
+                        "button",
                         {
-                          href: `https://openrouter.ai/${pc.id}`,
-                          target: "_blank",
-                          rel: "noreferrer",
-                          style: { fontSize: 11, color: "var(--ui-blue)", textDecoration: "underline" },
+                          onClick: () => openExternal(`https://openrouter.ai/${pc.id}`),
+                          style: linkButtonStyle("var(--ui-blue)"),
                           children: [
                             t.news.details,
                             " ↗"
@@ -685,12 +705,10 @@ function NewsPanel(props) {
                     ] }),
                     /* @__PURE__ */ jsxs2("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
                       /* @__PURE__ */ jsxs2(
-                        "a",
+                        "button",
                         {
-                          href: `https://openrouter.ai/${nm.id}`,
-                          target: "_blank",
-                          rel: "noreferrer",
-                          style: { fontSize: 11, color: "var(--ui-accent-secondary)", textDecoration: "underline" },
+                          onClick: () => openExternal(`https://openrouter.ai/${nm.id}`),
+                          style: linkButtonStyle("var(--ui-accent-secondary)"),
                           children: [
                             t.news.details,
                             " ↗"
@@ -5483,12 +5501,10 @@ function App() {
             i18n.aaKey.body,
             " ",
             /* @__PURE__ */ jsxs4(
-              "a",
+              "button",
               {
-                href: "https://artificialanalysis.ai/login",
-                target: "_blank",
-                rel: "noreferrer",
-                style: { color: "var(--ui-accent-secondary)" },
+                onClick: () => openExternal("https://artificialanalysis.ai/login"),
+                style: linkButtonStyle("var(--ui-accent-secondary)", 12),
                 children: [
                   i18n.aaKey.get,
                   " ↗"

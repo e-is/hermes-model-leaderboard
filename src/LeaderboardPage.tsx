@@ -7,6 +7,7 @@ import { useLeaderboardI18n } from './i18n'
 import { computeGenericScore, criterionValues, type CriterionKey } from './core/scoring'
 import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
 import { scoreCandidates, top3Threshold as computeTop3Threshold, untrackedOnly } from './core/candidates'
+import { openExternal, linkButtonStyle } from './links.ts'
 
 // ---- Types --------------------------------------------------
 type GpuInfo = { param_count_b: number; vram_q4_gb: number; vram_q8_gb: number; vram_fp16_gb: number; fits_64gb: boolean } | null
@@ -915,8 +916,10 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', marginBottom: 12, borderRadius: 6, border: '1px solid var(--ui-stroke-secondary)', background: 'var(--ui-bg-editor)', fontSize: 12 }}>
                 <span style={{ flex: 1, lineHeight: 1.45 }}>
                   <b>{i18n.aaKey.title}</b> — {i18n.aaKey.body}{' '}
-                  <a href="https://artificialanalysis.ai/login" target="_blank" rel="noreferrer"
-                     style={{ color: 'var(--ui-accent-secondary)' }}>{i18n.aaKey.get} ↗</a>{' '}
+                  <button
+                     onClick={() => openExternal('https://artificialanalysis.ai/login')}
+                     style={linkButtonStyle('var(--ui-accent-secondary)', 12)}
+                  >{i18n.aaKey.get} ↗</button>{' '}
                   {i18n.aaKey.where}
                 </span>
                 <button
