@@ -104,6 +104,48 @@ def _profile_config_files():
     return sorted(found.items(), key=lambda kv: (kv[0] != "default", kv[0]))
 
 
+def _read_yaml_file(path):
+    for module in ("hermes_yaml", "yaml"):
+        try:
+            reader = __import__(module)
+        except Exception:
+            continue
+        try:
+            return reader.safe_load(path.read_text()) or {}
+        except Exception:
+            return {}
+    return {}
+
+
+#: Hermes defaults for context compaction (hermes_cli/config_defaults.py, `compression`).
+#: `threshold` is a ratio of the model's window; windows below 512K are floored at 0.75
+#: (raise-only), so a 200K model compacts at 150K, not at 100K. `threshold_tokens`, when set,
+#: is an absolute cap: compaction triggers at the lower of the two.
+_COMPACTION_DEFAULTS = {"threshold": 0.5, "threshold_tokens": None}
+_WINDOW_FLOOR_AT = 512_000
+_WINDOW_FLOOR_RATIO = 0.75
+
+
+def _compaction_of(cfg_path) -> dict:
+    """The profile's compaction settings, as Hermes will apply them (defaults filled in)."""
+    data = _read_yaml_file(cfg_path) if cfg_path else {}
+    section = data.get("compression") if isinstance(data, dict) else None
+    section = section if isinstance(section, dict) else {}
+    threshold = section.get("threshold", _COMPACTION_DEFAULTS["threshold"])
+    try:
+        threshold = float(threshold)
+    except (TypeError, ValueError):
+        threshold = _COMPACTION_DEFAULTS["threshold"]
+    if not 0 < threshold <= 1:
+        threshold = _COMPACTION_DEFAULTS["threshold"]
+    cap = section.get("threshold_tokens")
+    try:
+        cap = int(cap) if cap is not None and int(cap) > 0 else None
+    except (TypeError, ValueError):
+        cap = None
+    return {"threshold": threshold, "threshold_tokens": cap}
+
+
 def _model_from_config(cfg_path):
     """The main model slug declared by a profile, or None."""
     # Hermes ships `hermes_yaml` (PyYAML may not be installed at all, which used to
@@ -490,7 +532,10 @@ def get_models():
     cached = _read_cache() if CACHE_FILE.exists() else None
     estimators = _index_estimators(cached["data"] if cached else [])
     references = _index_references(cached["data"] if cached else [])
+    # Tiers live on the catalogue entry; a tracked record only carries its base prices.
+    tiers_by_id = {c.get("id"): _price_tiers(c) for c in (cached["data"] if cached else []) if c.get("id")}
     for m in models:
+        m["price_tiers"] = tiers_by_id.get(m["id"]) or []
         m["benchmarks"] = benchmarks.get(m["id"], {})
         _complete_indices(m, m["benchmarks"], estimators, references)
         if not m.get("gpu") and m.get("model_size"):
@@ -541,6 +586,47 @@ def _price_per_mtok(m: dict, key: str):
         return None
 
 
+def _price_tiers(m: dict) -> list[dict]:
+    """Context-price tiers of a catalogue entry, in $/M, ascending.
+
+    OpenRouter publishes `pricing.overrides` with two selector families: a prompt-token
+    threshold (`min_prompt_tokens`) and time windows (`utc_start`/`utc_days`). Only the first
+    kind is a price tier; the time windows are promotions (DeepSeek off-peak, MiniMax…) and
+    are left out — a comparison across models must not depend on the hour. The field is not
+    in the public API docs, so a malformed override is dropped rather than raising.
+    """
+    overrides = (m.get("pricing") or {}).get("overrides")
+    if not isinstance(overrides, list):
+        return []
+    def as_number(value):
+        # The API sends prices as strings ("0.0000005"); a malformed one must be dropped.
+        try:
+            return float(value) if isinstance(value, (int, float, str)) and value != "" else None
+        except (TypeError, ValueError):
+            return None
+
+    tiers = []
+    for raw in overrides:
+        if not isinstance(raw, dict):
+            continue
+        threshold = as_number(raw.get("min_prompt_tokens"))
+        prompt = as_number(raw.get("prompt"))
+        if threshold is None or prompt is None or threshold <= 0:
+            continue
+        def per_mtok(key):
+            value = as_number(raw.get(key))
+            return round(value * 1_000_000, 6) if value is not None else None
+        tiers.append({
+            "min_prompt_tokens": int(threshold),
+            "prompt": round(prompt * 1_000_000, 6),
+            "completion": per_mtok("completion"),
+            "cache_read": per_mtok("input_cache_read"),
+            "cache_write": per_mtok("input_cache_write"),
+        })
+    tiers.sort(key=lambda t: t["min_prompt_tokens"])
+    return tiers
+
+
 def _prompt_price_mtok(m: dict):
     """Input price in $/M tokens from either shape: a tracked record (`prompt_price`,
     already per million) or a catalogue entry (`pricing.prompt`, per token). Reading only
@@ -566,6 +652,7 @@ def _candidate_fields(m: dict) -> dict:
         "id": m.get("id"),
         "name": m.get("name") or m.get("id"),
         "context_length": m.get("context_length"),
+        "price_tiers": _price_tiers(m),
         "prompt_price": _price_per_mtok(m, "prompt"),
         "completion_price": _price_per_mtok(m, "completion"),
         "cache_read_price": _price_per_mtok(m, "input_cache_read"),
@@ -654,6 +741,7 @@ def _fetch_openrouter(ids, force=False):
         arch = m.get("architecture") or {}
         out[m["id"]] = {
             "name": m.get("name"), "context_length": m.get("context_length"),
+            "price_tiers": _price_tiers(m),
             "prompt_price": p_in, "completion_price": p_out,
             "cache_read_price": p_cache_read, "cache_write_price": p_cache_write,
             "web_search_price": _price("web_search"),
@@ -728,6 +816,7 @@ def get_news():
     tracked_models = _load_models()
     tracked_ids = set(m["id"] for m in tracked_models)
     price_history = _load_price_history()
+    catalogue_by_id = {m["id"]: m for m in all_models}
     
     # 1. New models (top 30 recent models from catalog)
     sorted_by_created = sorted(
@@ -787,6 +876,9 @@ def get_news():
             # ("Price in $1.25/M tk · Price out $2.50/M tk") instead of a bare percentage.
             "prompt_price": p_now_in,
             "completion_price": p_now_out,
+            # Base prices stay the reference for a change over time; the tiers let the
+            # cards show the price that applies at the profile's context size.
+            "price_tiers": _price_tiers(catalogue_by_id.get(mid) or {}),
             "is_tracked": mid in tracked_ids,
         })
 
@@ -886,6 +978,11 @@ class ProfileIn(BaseModel):
     id: str
     name: str
     weights: dict[str, int | float] = {}
+    # Approximate prompt size this profile sends, in tokens (32k / 100k / …); null =
+    # "don't know", which keeps base prices (with a tier badge) instead of picking a tier.
+    context_tokens: int | None = None
+    # 'auto' (default) derives the size from the profile's compaction settings.
+    context_mode: str = "auto"
 
 
 
@@ -989,10 +1086,17 @@ def hermes_profiles():
     Same scan as the seeding path (`_profile_config_files`), so the chips and the
     seeding can never disagree; falls back to ['default'] when the Hermes home is
     not reachable (unit tests)."""
-    names = [name for name, _cfg in _profile_config_files()]
+    entries = _profile_config_files()
+    names = [name for name, _cfg in entries]
     if "default" in names:
         names.remove("default")
-    return {"profiles": ["default"] + sorted(names)}
+    # Compaction settings feed the profile's "Auto" context size: the size a prompt really
+    # reaches is the trigger (ratio × window, floored below 512K) or the absolute cap.
+    return {
+        "profiles": ["default"] + sorted(names),
+        "compaction": {name: _compaction_of(cfg) for name, cfg in entries},
+        "compaction_defaults": dict(_COMPACTION_DEFAULTS),
+    }
 
 
 _CRITERIA_DOC = {
@@ -1167,10 +1271,36 @@ def create_profile(p: ProfileIn):
     profiles[pid] = {
         "id": pid,
         "name": p.name.strip() or pid,
-        "weights": _clean_weights(p.weights)
+        "weights": _clean_weights(p.weights),
+        "context_tokens": _clean_context_tokens(p.context_tokens),
+        "context_mode": _clean_context_mode(p.context_mode),
     }
     _save_profiles(profiles)
     return {"status": "ok", "profile": profiles[pid]}
+
+
+#: 'unknown' = no context size declared (base prices + tier badge), 'auto' = derive it per
+#: model from the profile's Hermes compaction settings, 'size' = the declared `context_tokens`.
+CONTEXT_MODES = ("unknown", "auto", "size")
+
+
+def _clean_context_mode(value) -> str:
+    """'auto' is the default: a profile that never answered the question is priced at the
+    size Hermes itself compacts it to, which is the truest 'typical' size available.
+    'unknown' stays reachable — it is the explicit "show base prices" choice."""
+    if value is None:
+        return "auto"
+    return value if isinstance(value, str) and value in CONTEXT_MODES else "auto"
+
+
+def _clean_context_tokens(value) -> int | None:
+    """A positive token count, or None ("don't know"). Rejects anything else rather than
+    storing a value the price resolver would have to guess about."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return None
+    return int(value)
 
 
 def _clean_weights(weights: dict) -> dict:
@@ -1190,6 +1320,8 @@ def update_profile(profile_id: str, p: ProfileIn):
     current = profiles.get(pid) or {"id": pid, "name": pid}
     current["name"] = p.name.strip() or current["name"]
     current["weights"] = _clean_weights(p.weights)
+    current["context_tokens"] = _clean_context_tokens(p.context_tokens)
+    current["context_mode"] = _clean_context_mode(p.context_mode)
     profiles[pid] = current
     _save_profiles(profiles)
     return {"status": "ok", "profile": current}

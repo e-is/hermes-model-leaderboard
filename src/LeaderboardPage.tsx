@@ -8,6 +8,10 @@ import { computeGenericScore, criterionValues, type CriterionKey } from './core/
 import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
 import { scoreCandidates, top3Threshold as computeTop3Threshold, untrackedOnly } from './core/candidates'
 import { openExternal, linkButtonStyle } from './links.ts'
+import {
+  CONTEXT_SIZES, autoPromptTokens, contextLabel, effectivePricesFor, scenarioTokens,
+  servesContextFor, type CompactionConfig, type ContextScenario,
+} from './core/pricing.ts'
 
 // ---- Types --------------------------------------------------
 type GpuInfo = { param_count_b: number; vram_q4_gb: number; vram_q8_gb: number; vram_fp16_gb: number; fits_64gb: boolean } | null
@@ -51,6 +55,9 @@ export type ProfileConfig = {
   id: string
   name: string
   weights: Record<string, number>
+  /** Context scenario: how many prompt tokens this profile sends. */
+  context_mode?: 'unknown' | 'auto' | 'size'
+  context_tokens?: number | null
 }
 
 type NewsTimeWindow = '1m' | '2m' | '3m' | '6m' | '1y' | 'all'
@@ -313,6 +320,30 @@ const S = {
   } as const,
 }
 
+/** '×5' next to a tiered price; the threshold is in the tooltip. */
+function TierBadge({ m }: { m: any }) {
+  const tier = m?._tier
+  if (!tier) return null
+  const mult = m?._tier_mult
+  const label = mult && mult !== 1
+    ? `×${mult >= 10 ? mult.toFixed(0) : mult.toFixed(1).replace(/\.0$/, '')}`
+    : '↑'
+  return (
+    <span title={`≥ ${tier.min_prompt_tokens.toLocaleString()} tokens`}
+      style={{ marginLeft: 4, fontSize: 9, padding: '1px 3px', borderRadius: 3, background: 'color-mix(in srgb, var(--ui-orange) 16%, transparent)', color: 'var(--ui-orange)', whiteSpace: 'nowrap' }}>
+      {label}
+    </span>
+  )
+}
+
+/** Hover text of a price cell: which tier is in force and what was assumed. */
+function tierCellTitle(m: any, _field: 'prompt' | 'completion', i18n: any): string {
+  const parts: string[] = []
+  if (m?._tier) parts.push(i18n.contextSize.tierAt(m._tier.min_prompt_tokens))
+  if (m?._ctx_tokens) parts.push(`${i18n.contextSize.assumed}: ${m._ctx_tokens.toLocaleString()} tokens`)
+  return parts.join(' · ')
+}
+
 /** Open eye = visible (click hides); struck-through eye = hidden (click shows). */
 function EyeGlyph({ off }: { off: boolean }) {
   return (
@@ -346,6 +377,9 @@ export default function App() {
   const [q, setQ] = useState('')
   const [dq, setDq] = useState('')   // debounced `q`: what the filter and the fetch actually use
   const [searchRes, setSearchRes] = useState<SearchHit[]>([])
+  // Per-profile Hermes compaction settings, for the "Auto" context size.
+  const [compactionByProfile, setCompactionByProfile] = useState<Record<string, CompactionConfig>>({})
+  const [compactionDefaults, setCompactionDefaults] = useState<CompactionConfig>({ threshold: 0.5, threshold_tokens: null })
   const [adding, setAdding] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [sortCol, setSortCol] = useState<string | null>(null)
@@ -415,6 +449,7 @@ export default function App() {
       id: selectedProfileId,
       name: selectedProfileId,
       weights: { ...defaultWeights },
+      context_mode: 'auto',
     }
   }, [effectiveProfiles, selectedProfileId])
 
@@ -492,7 +527,15 @@ export default function App() {
     return () => { clearInterval(uiPoll); clearInterval(dataPull) }
   }, [])
 
-  useEffect(() => { api('/hermes-profiles').then(d => setHermesProfiles(d.profiles || ['default'])).catch(() => setHermesProfiles(['default'])) }, [])
+  useEffect(() => {
+    api('/hermes-profiles')
+      .then((d: any) => {
+        setHermesProfiles(d.profiles || ['default'])
+        setCompactionByProfile(d.compaction || {})
+        if (d.compaction_defaults) setCompactionDefaults(d.compaction_defaults)
+      })
+      .catch(() => setHermesProfiles(['default']))
+  }, [])
 
   const fetchNews = () => {
     setLoadingNews(true)
@@ -720,24 +763,77 @@ export default function App() {
   }
   const sortArrow = (col: string) => sortCol === col ? (sortAsc ? ' ↑' : ' ↓') : ' ↕'
 
+  // ---- Context scenario (per profile) ----
+  // 'unknown' keeps the base prices (the table shows the tier as a badge), 'auto' derives the
+  // size from the profile's Hermes compaction settings, 'size' uses the declared volume.
+  // A profile that never answered defaults to 'auto' (retro-compatible: the field was absent).
+  const ctxMode: ContextScenario['mode'] = (currentProfile as any).context_mode
+    || ((currentProfile as any).context_tokens ? 'size' : 'auto')
+  const ctxSize = (currentProfile as any).context_tokens ?? null
+  const compaction = compactionByProfile[currentProfile.id] || compactionDefaults
+  const ctxScenario: ContextScenario = { mode: ctxMode, tokens: ctxSize }
+
+  /** Prices to show and score with: the tier that applies at the profile's context size. */
+  const priceAt = (m: any) => {
+    const eff = effectivePricesFor(m, ctxScenario, compaction)
+    const tokens = scenarioTokens(m, ctxScenario, compaction)
+    const base = m.prompt_price ?? null
+    return {
+      ...m,
+      _base_prompt: base,
+      _ctx_tokens: tokens,
+      _tier: eff.tier,
+      _tier_mult: eff.tier && base ? eff.tier.prompt / base : null,
+      _out_of_context: !servesContextFor(m, ctxScenario, compaction),
+      prompt_price: eff.prompt ?? m.prompt_price,
+      completion_price: eff.completion ?? m.completion_price,
+      cache_read_price: eff.cache_read ?? m.cache_read_price,
+    }
+  }
+  /** Small tag after the price headers: which context the prices assume. */
+  const scenarioTag = ctxMode === 'auto'
+    ? ` (${i18n.contextSize.autoShort})`
+    : ctxMode === 'size' && ctxSize
+      ? ` (${contextLabel(ctxSize)})`
+      : ''
+  const pricedModels = useMemo(
+    () => models.map(priceAt),
+    [models, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens])
+  const priceList = (list: any[]) => list.map(priceAt)
+  // The news panel and the search results are catalogue-wide (not per profile): they follow
+  // the active profile's scenario, and the price tooltips say what was assumed.
+  const pricedNews = useMemo(() => {
+    if (!news) return news
+    return {
+      ...news,
+      new_models: priceList(news.new_models || []),
+      promotions: priceList(news.promotions || []),
+      price_changes: priceList(news.price_changes || []),
+    }
+  }, [news, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens])
+
   // Visible / active
-  const visible = models.filter(m => !hiddenIds.has(m.id))
-  const hidden = models.filter(m => hiddenIds.has(m.id))
-  const active = visible.filter(m => m.available)
+  const visible = pricedModels.filter(m => !hiddenIds.has(m.id))
+  const hidden = pricedModels.filter(m => hiddenIds.has(m.id))
+  // A model that cannot take the declared prompt size is out of scope for the ranking and
+  // the Pareto: there is no price for a request it cannot serve. It stays in the table, flagged.
+  const active = visible.filter(m => m.available && !(m as any)._out_of_context)
 
   // Maxes for normalization
   const maxes = useMemo(() => ({
-    maxCtx: Math.max(1, ...models.map(m => m.context_length || 0)),
-    maxPrice: Math.max(0.01, ...models.flatMap(m => [m.prompt_price || 0, m.completion_price || 0])),
-    maxPriceIn: Math.max(0.01, ...models.map(m => m.prompt_price || 0)),
-    maxPriceOut: Math.max(0.01, ...models.map(m => m.completion_price || 0)),
-    maxPriceCache: Math.max(0.01, ...models.map(m => m.cache_read_price || 0)),
+    maxCtx: Math.max(1, ...pricedModels.map(m => m.context_length || 0)),
+    // Scales from the prices actually shown: with a context size declared, the tier prices
+    // are what the "cheaper is better" criteria must normalise against.
+    maxPrice: Math.max(0.01, ...pricedModels.flatMap(m => [m.prompt_price || 0, m.completion_price || 0])),
+    maxPriceIn: Math.max(0.01, ...pricedModels.map(m => m.prompt_price || 0)),
+    maxPriceOut: Math.max(0.01, ...pricedModels.map(m => m.completion_price || 0)),
+    maxPriceCache: Math.max(0.01, ...pricedModels.map(m => m.cache_read_price || 0)),
     // Index maxima from MEASURED values only: an estimate must not set the
     // 100 % mark that every other model is graded against.
-    maxIntel: Math.max(1, ...models.map(m => measured(m, 'intelligence_index'))),
-    maxCoding: Math.max(1, ...models.map(m => measured(m, 'coding_index'))),
-    maxAgentic: Math.max(1, ...models.map(m => measured(m, 'agentic_index'))),
-  }), [models])
+    maxIntel: Math.max(1, ...pricedModels.map(m => measured(m, 'intelligence_index'))),
+    maxCoding: Math.max(1, ...pricedModels.map(m => measured(m, 'coding_index'))),
+    maxAgentic: Math.max(1, ...pricedModels.map(m => measured(m, 'agentic_index'))),
+  }), [pricedModels])
 
   // Scores + ranks (using generic scoring algorithm based on currentProfile.weights)
   const scoredModels = useMemo(() => {
@@ -761,12 +857,12 @@ export default function App() {
 
   const sortedModels = useMemo(() => {
     if (sortCol && sortFns[sortCol]) {
-      const sorted = [...models].sort(sortFns[sortCol])
+      const sorted = [...pricedModels].sort(sortFns[sortCol])
       return sortAsc ? sorted : sorted.reverse()
     }
     // Default: sort by score (best first)
-    return [...models].sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0))
-  }, [models, sortCol, sortAsc, scoreMap])
+    return [...pricedModels].sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0))
+  }, [pricedModels, sortCol, sortAsc, scoreMap])
 
   // ---- Filtered & Sorted New Models for Sidebar ----
   const processedNewModels = useMemo(() => {
@@ -778,7 +874,7 @@ export default function App() {
     const minCreated = nowTs - (windowDays * 86400)
 
     const list = scoreCandidates(
-      news.new_models.filter(nm => (nm.created || 0) >= minCreated),
+      (pricedNews?.new_models || []).filter(nm => (nm.created || 0) >= minCreated),
       currentProfile.weights,
       maxes,
       top3Cutoff
@@ -792,21 +888,21 @@ export default function App() {
     }
 
     return list
-  }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Cutoff])
+  }, [pricedNews?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Cutoff])
 
   // ---- Processed Promotions for Sidebar ----
   const processedPromotions = useMemo(
-    () => scoreCandidates(news?.promotions || [], currentProfile.weights, maxes, top3Cutoff),
-    [news?.promotions, currentProfile, maxes, top3Cutoff]
+    () => scoreCandidates(pricedNews?.promotions || [], currentProfile.weights, maxes, top3Cutoff),
+    [pricedNews?.promotions, currentProfile, maxes, top3Cutoff]
   )
 
   // ---- Search results: the hits the user has not followed yet, scored like the rest ----
   // Following one adds it to `models`, so `untrackedOnly` drops that row and the others stay.
   const trackedNow = useMemo(() => new Set(models.map(m => m.id)), [models])
   const searchRows = useMemo(
-    () => scoreCandidates(untrackedOnly(searchRes, trackedNow), currentProfile.weights, maxes, top3Cutoff)
+    () => scoreCandidates(untrackedOnly(priceList(searchRes), trackedNow), currentProfile.weights, maxes, top3Cutoff)
       .sort((a, b) => b._score - a._score),
-    [searchRes, trackedNow, currentProfile, maxes, top3Cutoff]
+    [searchRes, trackedNow, currentProfile, maxes, top3Cutoff, ctxMode, ctxSize]
   )
 
   // ---- Radar dynamique basé sur les critères actifs du profil (poids > 0) ----
@@ -1122,8 +1218,12 @@ export default function App() {
                         <th style={S.th}></th>
                         <th style={{ ...S.th, cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('label')}>{i18n.table.model}{sortArrow('label')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('context_length')}>{i18n.table.context}{sortArrow('context_length')}</th>
-                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('prompt_price')}>$ in{sortArrow('prompt_price')}</th>
-                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('completion_price')}>$ out{sortArrow('completion_price')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('prompt_price')} title={i18n.contextSize.columnHint}>
+                          $ in{scenarioTag}{sortArrow('prompt_price')}
+                        </th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('completion_price')} title={i18n.contextSize.columnHint}>
+                          $ out{scenarioTag}{sortArrow('completion_price')}
+                        </th>
                         <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('cache_read_price')}>$ cache{sortArrow('cache_read_price')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('intelligence_index')}>Intel.{sortArrow('intelligence_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('coding_index')}>Coding{sortArrow('coding_index')}</th>
@@ -1156,9 +1256,19 @@ export default function App() {
                             </td>
                             <td style={{ ...S.td, textAlign: 'right' }} title={`${(m.context_length || 0).toLocaleString()} tokens`}>
                               {fmtCtx(m.context_length)}
+                              {(m as any)._out_of_context && (
+                                <span title={i18n.contextSize.outOfContextHint}
+                                  style={{ marginLeft: 4, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'color-mix(in srgb, var(--ui-red) 12%, transparent)', color: 'var(--ui-red)', whiteSpace: 'nowrap' }}>
+                                  {i18n.contextSize.outOfContext}
+                                </span>
+                              )}
                             </td>
-                            <td style={{ ...S.td, textAlign: 'right' }}>{fmtPrice(m.prompt_price)}</td>
-                            <td style={{ ...S.td, textAlign: 'right' }}>{fmtPrice(m.completion_price)}</td>
+                            <td style={{ ...S.td, textAlign: 'right' }} title={tierCellTitle(m, 'prompt', i18n)}>
+                              {fmtPrice(m.prompt_price)}<TierBadge m={m} />
+                            </td>
+                            <td style={{ ...S.td, textAlign: 'right' }} title={tierCellTitle(m, 'completion', i18n)}>
+                              {fmtPrice(m.completion_price)}<TierBadge m={m} />
+                            </td>
                             <td style={{ ...S.td, textAlign: 'right', color: m.cache_read_price ? 'var(--ui-blue)' : 'var(--ui-text-quaternary)' }}>
                               {m.cache_read_price != null ? fmtPrice(m.cache_read_price) : '–'}
                             </td>
@@ -1272,7 +1382,7 @@ export default function App() {
           {/* ---- VOLET ACTUALITÉS (DROITE) — composant NewsPanel redimensionnable ---- */}
           {showNews && (
             <NewsPanel
-              news={news}
+              news={pricedNews}
               loading={loadingNews}
               onClose={toggleNews}
               processedPromotions={processedPromotions}
@@ -1473,6 +1583,50 @@ export default function App() {
                       </div>
                     )
                   })}
+                </div>
+
+                {/* Context size: the scenario prices and the Pareto are computed for. */}
+                <div style={{ borderTop: '1px solid var(--ui-stroke-tertiary)', marginTop: 14, paddingTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, gap: 12 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ui-text-primary)' }}>{i18n.contextSize.title}</span>
+                  </div>
+                  <div role="group" aria-label={i18n.contextSize.title}
+                    style={{ display: 'inline-grid', gridAutoFlow: 'column', gap: 2, padding: 2, borderRadius: 5, background: 'var(--ui-bg-tertiary)', width: 'fit-content', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'unknown', label: i18n.contextSize.unknown },
+                      { key: 'auto', label: i18n.contextSize.auto },
+                      ...CONTEXT_SIZES.map(n => ({ key: String(n), label: contextLabel(n) })),
+                    ].map(opt => {
+                      const mode = (editingProfile as any).context_mode || 'auto'
+                      const size = (editingProfile as any).context_tokens ?? null
+                      const on = opt.key === 'unknown' ? mode === 'unknown'
+                        : opt.key === 'auto' ? mode === 'auto'
+                          : mode === 'size' && size === Number(opt.key)
+                      return (
+                        <button key={opt.key} type="button" aria-pressed={on}
+                          onClick={() => setEditingProfile({
+                            ...editingProfile,
+                            context_mode: opt.key === 'unknown' ? 'unknown' : opt.key === 'auto' ? 'auto' : 'size',
+                            context_tokens: opt.key === 'unknown' || opt.key === 'auto' ? null : Number(opt.key),
+                          } as any)}
+                          style={{
+                            padding: '2px 10px', borderRadius: 3, border: 'none', cursor: 'pointer',
+                            fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap',
+                            background: on ? 'var(--ui-bg-editor)' : 'transparent',
+                            color: on ? 'var(--ui-text-primary)' : 'var(--ui-text-secondary)',
+                            boxShadow: on ? '0 1px 2px rgba(0,0,0,0.15)' : 'none',
+                          }}>
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 6, lineHeight: 1.45 }}>
+                    {i18n.contextSize.note}
+                    {ctxMode === 'auto' && compaction.threshold_tokens == null && (
+                      <> {i18n.contextSize.autoHint(Math.round((compaction.threshold ?? 0.5) * 100))}</>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

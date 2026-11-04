@@ -812,6 +812,19 @@ var en = {
     where: "Then paste it in Settings → Plugins → Model Leaderboard.",
     dismiss: "Dismiss"
   },
+  contextSize: {
+    title: "Typical prompt size",
+    unknown: "Don't know",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Some models charge more above a threshold (for example Claude Haiku 5.5: ×5 above 100k tokens). “Auto” follows this profile's Hermes compaction; a size applies that volume everywhere.",
+    autoHint: (p) => `Compaction triggers at ${p}% of the model's window.`,
+    tierAt: (t) => `Long-context rate from ${t} tokens`,
+    assumed: "Assumed",
+    outOfContext: "out of context",
+    outOfContextHint: "This model cannot take the declared prompt size: it is left out of the ranking and the Pareto.",
+    columnHint: "Prices include the context tier of the selected profile."
+  },
   removeModel: "Remove model",
   suppressShort: "Del?",
   clickToShow: "Click to show",
@@ -1011,6 +1024,19 @@ var fr = {
     get: "Obtenir une clé gratuite",
     where: "Puis collez-la dans Réglages → Plugins → Model Leaderboard.",
     dismiss: "Fermer"
+  },
+  contextSize: {
+    title: "Taille de contexte typique",
+    unknown: "Ne sais pas",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Certains modèles facturent plus cher au-delà d'un seuil (par exemple Claude Haiku 5.5 : ×5 au-delà de 100k tokens). « Auto » suit la compaction Hermes de ce profil ; une taille imposerait ce volume partout.",
+    autoHint: (p) => `La compaction se déclenche à ${p} % de la fenêtre du modèle.`,
+    tierAt: (t) => `Tarif long contexte à partir de ${t} tokens`,
+    assumed: "Supposé",
+    outOfContext: "hors contexte",
+    outOfContextHint: "Ce modèle ne peut pas recevoir la taille de prompt déclarée : il est exclu du classement et du Pareto.",
+    columnHint: "Les prix tiennent compte du pallier de contexte du profil sélectionné."
   },
   removeModel: "Supprimer le modèle",
   suppressShort: "Suppr?",
@@ -1212,6 +1238,19 @@ var zh = {
     where: "然后粘贴到“设置 → 插件 → Model Leaderboard”。",
     dismiss: "关闭"
   },
+  contextSize: {
+    title: "典型提示大小",
+    unknown: "不知道",
+    auto: "自动（Hermes）",
+    autoShort: "自动",
+    note: "部分模型超过阈值后更贵（例如 Claude Haiku 5.5：超过 100k tokens 后 ×5）。「自动」遵循该配置档的 Hermes 压缩设置；指定大小则在全局套用该容量。",
+    autoHint: (p) => `模型窗口的 ${p}% 时触发压缩。`,
+    tierAt: (t) => `自 ${t} tokens 起使用长上下文费率`,
+    assumed: "假定",
+    outOfContext: "上下文不足",
+    outOfContextHint: "该模型无法接收所声明的提示大小，因此不列入排名和 Pareto。",
+    columnHint: "价格包含所选配置档的上下文档位。"
+  },
   removeModel: "移除模型",
   suppressShort: "删",
   clickToShow: "点击显示",
@@ -1411,6 +1450,19 @@ var zhHant = {
     get: "取得免費金鑰",
     where: "然後貼到「設定 → 外掛 → Model Leaderboard」。",
     dismiss: "關閉"
+  },
+  contextSize: {
+    title: "典型提示大小",
+    unknown: "不知道",
+    auto: "自動（Hermes）",
+    autoShort: "自動",
+    note: "部分模型超過閾值後更貴（例如 Claude Haiku 5.5：超過 100k tokens 後 ×5）。「自動」依循此設定檔的 Hermes 壓縮設定；指定大小則在全域套用該容量。",
+    autoHint: (p) => `模型視窗的 ${p}% 時觸發壓縮。`,
+    tierAt: (t) => `自 ${t} tokens 起適用長上下文費率`,
+    assumed: "假定",
+    outOfContext: "上下文不足",
+    outOfContextHint: "此模型無法接收所宣告的提示大小，因此不列入排名與 Pareto。",
+    columnHint: "價格包含所選設定檔的上下文級距。"
   },
   removeModel: "移除模型",
   suppressShort: "刪",
@@ -1612,6 +1664,19 @@ var af = {
     where: "Plak dit dan in Instellings → Plugins → Model Leaderboard.",
     dismiss: "Maak toe"
   },
+  contextSize: {
+    title: "Tipiese promptgrootte",
+    unknown: "Weet nie",
+    auto: "Outo (Hermes)",
+    autoShort: "outo",
+    note: "Sommige modelle vra meer bo 'n drempel (bv. Claude Haiku 5.5: ×5 bo 100k tokens). «Outo» volg hierdie profiel se Hermes-kompressie; 'n grootte dwing daardie volume oral af.",
+    autoHint: (p) => `Kompressie begin by ${p} % van die model se venster.`,
+    tierAt: (t) => `Langkonteks-tarief vanaf ${t} tokens`,
+    assumed: "Veronderstel",
+    outOfContext: "buite konteks",
+    outOfContextHint: "Hierdie model kan nie die verklaarde promptgrootte aanvaar nie: dit val buite die ranglys en die Pareto.",
+    columnHint: "Pryse sluit die konteksvlak van die gekose profiel in."
+  },
   removeModel: "Verwyder model",
   suppressShort: "Wis?",
   clickToShow: "Klik om te wys",
@@ -1811,6 +1876,19 @@ var ar = {
     get: "احصل على مفتاح مجاني",
     where: "ثم الصقه في الإعدادات ← الإضافات ← Model Leaderboard.",
     dismiss: "إغلاق"
+  },
+  contextSize: {
+    title: "حجم الموجّه المعتاد",
+    unknown: "لا أعرف",
+    auto: "تلقائي (Hermes)",
+    autoShort: "تلقائي",
+    note: "بعض النماذج تتقاضى أكثر فوق حدّ معيّن (مثل Claude Haiku 5.5: ×5 فوق 100k tokens). «تلقائي» يتبع ضغط Hermes لهذا الملف الشخصي؛ وتحديد حجم يفرض ذلك الحجم في كل مكان.",
+    autoHint: (p) => `يبدأ الضغط عند ${p}% من نافذة النموذج.`,
+    tierAt: (t) => `سعر السياق الطويل ابتداءً من ${t} tokens`,
+    assumed: "مفترض",
+    outOfContext: "خارج السياق",
+    outOfContextHint: "لا يستطيع هذا النموذج استقبال حجم الموجّه المعلن، لذا يُستبعد من الترتيب ومخطط Pareto.",
+    columnHint: "الأسعار تشمل شريحة السياق للملف الشخصي المحدد."
   },
   removeModel: "إزالة النموذج",
   suppressShort: "حذف؟",
@@ -2012,6 +2090,19 @@ var de = {
     where: "Dann in Einstellungen → Plugins → Model Leaderboard einfügen.",
     dismiss: "Schließen"
   },
+  contextSize: {
+    title: "Typische Prompt-Größe",
+    unknown: "Unbekannt",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Manche Modelle verlangen oberhalb einer Schwelle mehr (z. B. Claude Haiku 5.5: ×5 über 100k Tokens). „Auto“ folgt der Hermes-Kompaktierung dieses Profils; eine Größe erzwingt dieses Volumen überall.",
+    autoHint: (p) => `Kompaktierung greift bei ${p} % des Modellfensters.`,
+    tierAt: (t) => `Langkontext-Tarif ab ${t} Tokens`,
+    assumed: "Angenommen",
+    outOfContext: "außerhalb des Kontexts",
+    outOfContextHint: "Dieses Modell kann die deklarierte Prompt-Größe nicht aufnehmen: es fehlt im Ranking und im Pareto.",
+    columnHint: "Die Preise enthalten die Kontextstufe des gewählten Profils."
+  },
   removeModel: "Modell entfernen",
   suppressShort: "Löschen?",
   clickToShow: "Zum Anzeigen klicken",
@@ -2211,6 +2302,19 @@ var es = {
     get: "Obtener una clave gratuita",
     where: "Luego pégala en Ajustes → Plugins → Model Leaderboard.",
     dismiss: "Cerrar"
+  },
+  contextSize: {
+    title: "Tamaño típico del prompt",
+    unknown: "No lo sé",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Algunos modelos cobran más por encima de un umbral (por ejemplo Claude Haiku 5.5: ×5 por encima de 100k tokens). «Auto» sigue la compactación de Hermes de este perfil; un tamaño impone ese volumen en todo.",
+    autoHint: (p) => `La compactación se activa al ${p} % de la ventana del modelo.`,
+    tierAt: (t) => `Tarifa de contexto largo desde ${t} tokens`,
+    assumed: "Supuesto",
+    outOfContext: "fuera de contexto",
+    outOfContextHint: "Este modelo no admite el tamaño de prompt declarado: queda fuera del ranking y del Pareto.",
+    columnHint: "Los precios incluyen el tramo de contexto del perfil seleccionado."
   },
   removeModel: "Quitar modelo",
   suppressShort: "¿Borrar?",
@@ -2412,6 +2516,19 @@ var ga = {
     where: "Ansin greamaigh í i Socruithe → Breiseáin → Model Leaderboard.",
     dismiss: "Dún"
   },
+  contextSize: {
+    title: "Méid tipiciúil an leide",
+    unknown: "Níl a fhios agam",
+    auto: "Uathoibríoch (Hermes)",
+    autoShort: "uath",
+    note: "Iarrann roinnt múnlaí níos mó thar thairseach (m.sh. Claude Haiku 5.5: ×5 thar 100k comhartha). Leanann «Uathoibríoch» comhbhrú Hermes an phróifíl seo; cuireann méid an toirt sin i bhfeidhm i ngach áit.",
+    autoHint: (p) => `Tosaíonn comhbhrú ag ${p} % de fhuinneog an mhúnla.`,
+    tierAt: (t) => `Ráta comhthéacs fhada ó ${t} comhartha`,
+    assumed: "Glactha",
+    outOfContext: "lasmuigh den chomhthéacs",
+    outOfContextHint: "Ní féidir leis an múnla seo méid an leide a luaigh tú a ghlacadh: fágadh as an rangú agus as Pareto é.",
+    columnHint: "Cuimsíonn na praghsanna leibhéal comhthéacs na próifíle roghnaithe."
+  },
   removeModel: "Bain an tsamhail",
   suppressShort: "Scrios?",
   clickToShow: "Cliceáil le taispeáint",
@@ -2611,6 +2728,19 @@ var hu = {
     get: "Ingyenes kulcs beszerzése",
     where: "Majd illeszd be: Beállítások → Beépülők → Model Leaderboard.",
     dismiss: "Bezárás"
+  },
+  contextSize: {
+    title: "Tipikus promptméret",
+    unknown: "Nem tudom",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Egyes modellek egy küszöb felett drágábbak (pl. Claude Haiku 5.5: ×5 100k token felett). Az „Auto” a profil Hermes-tömörítését követi; a megadott méret mindenhol azt a mennyiséget használja.",
+    autoHint: (p) => `A tömörítés a modellablak ${p} %-ánál indul.`,
+    tierAt: (t) => `Hosszú kontextus díja ${t} tokentől`,
+    assumed: "Feltételezett",
+    outOfContext: "kontextuson kívül",
+    outOfContextHint: "Ez a modell nem tudja fogadni a megadott promptméretet: kimarad a rangsorból és a Pareto-görbéről.",
+    columnHint: "Az árak a kiválasztott profil kontextussávját tartalmazzák."
   },
   removeModel: "Modell eltávolítása",
   suppressShort: "Törlés?",
@@ -2812,6 +2942,19 @@ var it = {
     where: "Poi incollala in Impostazioni → Plugin → Model Leaderboard.",
     dismiss: "Chiudi"
   },
+  contextSize: {
+    title: "Dimensione tipica del prompt",
+    unknown: "Non lo so",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Alcuni modelli costano di più oltre una soglia (per esempio Claude Haiku 5.5: ×5 oltre 100k token). «Auto» segue la compattazione Hermes di questo profilo; una dimensione impone quel volume ovunque.",
+    autoHint: (p) => `La compattazione scatta al ${p} % della finestra del modello.`,
+    tierAt: (t) => `Tariffa contesto lungo da ${t} token`,
+    assumed: "Presunto",
+    outOfContext: "fuori contesto",
+    outOfContextHint: "Questo modello non può ricevere la dimensione di prompt dichiarata: è escluso dalla classifica e dal Pareto.",
+    columnHint: "I prezzi includono la fascia di contesto del profilo selezionato."
+  },
   removeModel: "Rimuovi modello",
   suppressShort: "Elim.?",
   clickToShow: "Clicca per mostrare",
@@ -3011,6 +3154,19 @@ var ja = {
     get: "無料キーを取得",
     where: "設定 → プラグイン → Model Leaderboard に貼り付けてください。",
     dismiss: "閉じる"
+  },
+  contextSize: {
+    title: "想定プロンプトサイズ",
+    unknown: "わからない",
+    auto: "自動（Hermes）",
+    autoShort: "自動",
+    note: "モデルによってはしきい値を超えると割高になります（例: Claude Haiku 5.5 は 100k トークン超で ×5）。「自動」はこのプロファイルの Hermes 圧縮設定に従い、サイズ指定はその容量を全体に適用します。",
+    autoHint: (p) => `モデル窓の ${p}% で圧縮が作動します。`,
+    tierAt: (t) => `${t} トークンから長文コンテキスト料金`,
+    assumed: "想定",
+    outOfContext: "コンテキスト不足",
+    outOfContextHint: "このモデルは指定されたプロンプトサイズを受け取れないため、ランキングと Pareto から除外されます。",
+    columnHint: "価格には選択中プロファイルのコンテキスト段階が含まれます。"
   },
   removeModel: "モデルを削除",
   suppressShort: "削除?",
@@ -3212,6 +3368,19 @@ var ko = {
     where: "설정 → 플러그인 → Model Leaderboard에 붙여넣으세요.",
     dismiss: "닫기"
   },
+  contextSize: {
+    title: "예상 프롬프트 크기",
+    unknown: "모름",
+    auto: "자동(Hermes)",
+    autoShort: "자동",
+    note: "일부 모델은 임계값을 넘으면 더 비쌉니다(예: Claude Haiku 5.5는 100k 토큰 초과 시 ×5). «자동»은 이 프로필의 Hermes 압축 설정을 따르고, 크기를 지정하면 그 용량이 모든 곳에 적용됩니다.",
+    autoHint: (p) => `모델 창의 ${p}%에서 압축이 시작됩니다.`,
+    tierAt: (t) => `${t} 토큰부터 장문 컨텍스트 요금`,
+    assumed: "가정",
+    outOfContext: "컨텍스트 초과",
+    outOfContextHint: "이 모델은 지정된 프롬프트 크기를 받을 수 없어 순위와 Pareto에서 제외됩니다.",
+    columnHint: "가격에는 선택한 프로필의 컨텍스트 단계가 반영됩니다."
+  },
   removeModel: "모델 제거",
   suppressShort: "삭제",
   clickToShow: "클릭하여 표시",
@@ -3411,6 +3580,19 @@ var pt = {
     get: "Obter uma chave gratuita",
     where: "Depois cole em Configurações → Plugins → Model Leaderboard.",
     dismiss: "Fechar"
+  },
+  contextSize: {
+    title: "Tamanho típico do prompt",
+    unknown: "Não sei",
+    auto: "Auto (Hermes)",
+    autoShort: "auto",
+    note: "Alguns modelos cobram mais acima de um limite (por exemplo Claude Haiku 5.5: ×5 acima de 100k tokens). «Auto» segue a compactação Hermes deste perfil; um tamanho impõe esse volume em todo o lado.",
+    autoHint: (p) => `A compactação dispara a ${p} % da janela do modelo.`,
+    tierAt: (t) => `Tarifa de contexto longo a partir de ${t} tokens`,
+    assumed: "Presumido",
+    outOfContext: "fora do contexto",
+    outOfContextHint: "Este modelo não aceita o tamanho de prompt declarado: fica fora da classificação e do Pareto.",
+    columnHint: "Os preços incluem o escalão de contexto do perfil selecionado."
   },
   removeModel: "Remover modelo",
   suppressShort: "Eliminar?",
@@ -3612,6 +3794,19 @@ var ru = {
     where: "Затем вставьте его в Настройки → Плагины → Model Leaderboard.",
     dismiss: "Закрыть"
   },
+  contextSize: {
+    title: "Типичный размер промпта",
+    unknown: "Не знаю",
+    auto: "Авто (Hermes)",
+    autoShort: "авто",
+    note: "Некоторые модели берут больше выше порога (например Claude Haiku 5.5: ×5 свыше 100k токенов). «Авто» следует компактизации Hermes этого профиля; заданный размер применяется везде.",
+    autoHint: (p) => `Компактизация срабатывает при ${p} % окна модели.`,
+    tierAt: (t) => `Тариф длинного контекста от ${t} токенов`,
+    assumed: "Предположено",
+    outOfContext: "вне контекста",
+    outOfContextHint: "Модель не вмещает заявленный размер промпта: она исключена из рейтинга и Парето.",
+    columnHint: "Цены учитывают ступень контекста выбранного профиля."
+  },
   removeModel: "Удалить модель",
   suppressShort: "Удал.?",
   clickToShow: "Нажмите, чтобы показать",
@@ -3812,6 +4007,19 @@ var tr = {
     where: "Sonra Ayarlar → Eklentiler → Model Leaderboard bölümüne yapıştırın.",
     dismiss: "Kapat"
   },
+  contextSize: {
+    title: "Tipik prompt boyutu",
+    unknown: "Bilmiyorum",
+    auto: "Otomatik (Hermes)",
+    autoShort: "oto",
+    note: "Bazı modeller bir eşiğin üstünde daha fazla ücret alır (örneğin Claude Haiku 5.5: 100k token üstünde ×5). «Otomatik» bu profilin Hermes sıkıştırmasını izler; bir boyut seçmek o hacmi her yerde uygular.",
+    autoHint: (p) => `Sıkıştırma model penceresinin %${p} değerinde tetiklenir.`,
+    tierAt: (t) => `${t} tokenden itibaren uzun bağlam tarifesi`,
+    assumed: "Varsayılan",
+    outOfContext: "bağlam dışı",
+    outOfContextHint: "Bu model bildirilen prompt boyutunu alamaz: sıralama ve Pareto dışında bırakılır.",
+    columnHint: "Fiyatlar seçili profilin bağlam kademesini içerir."
+  },
   removeModel: "Modeli kaldır",
   suppressShort: "Sil?",
   clickToShow: "Göstermek için tıkla",
@@ -4011,6 +4219,19 @@ var uk = {
     get: "Отримати безкоштовний ключ",
     where: "Потім вставте його в Налаштування → Плагіни → Model Leaderboard.",
     dismiss: "Закрити"
+  },
+  contextSize: {
+    title: "Типовий розмір промпту",
+    unknown: "Не знаю",
+    auto: "Авто (Hermes)",
+    autoShort: "авто",
+    note: "Деякі моделі беруть більше вище порога (наприклад Claude Haiku 5.5: ×5 понад 100k токенів). «Авто» дотримується компактизації Hermes цього профілю; заданий розмір застосовується скрізь.",
+    autoHint: (p) => `Компактизація спрацьовує за ${p} % вікна моделі.`,
+    tierAt: (t) => `Тариф довгого контексту від ${t} токенів`,
+    assumed: "Припущено",
+    outOfContext: "поза контекстом",
+    outOfContextHint: "Модель не вміщає заявлений розмір промпту: її виключено з рейтингу та Парето.",
+    columnHint: "Ціни враховують ступінь контексту вибраного профілю."
   },
   removeModel: "Видалити модель",
   suppressShort: "Вил.?",
@@ -4819,6 +5040,69 @@ function untrackedOnly(hits, tracked) {
   return hits.filter((hit) => !ids.has(hit.id));
 }
 
+// src/core/pricing.ts
+var CONTEXT_SIZES = [32e3, 1e5, 128e3, 2e5, 1e6];
+function tierAt(tiers, tokens) {
+  if (!tokens || tokens <= 0 || !tiers || tiers.length === 0) return null;
+  let chosen = null;
+  for (const tier of tiers) {
+    if (tier.min_prompt_tokens <= tokens && (!chosen || tier.min_prompt_tokens > chosen.min_prompt_tokens)) {
+      chosen = tier;
+    }
+  }
+  return chosen;
+}
+function effectivePrices(m, tokens) {
+  const tier = tierAt(m?.price_tiers, tokens);
+  const base = {
+    prompt: m?.prompt_price ?? null,
+    completion: m?.completion_price ?? null,
+    cache_read: m?.cache_read_price ?? null
+  };
+  if (!tier) return { ...base, tier: null };
+  return {
+    prompt: tier.prompt,
+    completion: tier.completion ?? base.completion,
+    cache_read: tier.cache_read ?? base.cache_read,
+    tier
+  };
+}
+function servesContext(m, tokens) {
+  if (!tokens || tokens <= 0) return true;
+  const limit = m?.context_length;
+  return typeof limit !== "number" || limit <= 0 || limit >= tokens;
+}
+function contextLabel(tokens) {
+  if (tokens >= 1e6) return `${Math.round(tokens / 1e6)}M`;
+  if (tokens >= 1e3) return `${Math.round(tokens / 1e3)}k`;
+  return String(tokens);
+}
+var WINDOW_FLOOR_AT = 512e3;
+var WINDOW_FLOOR_RATIO = 0.75;
+var DEFAULT_COMPACTION_THRESHOLD = 0.5;
+function autoPromptTokens(m, compaction) {
+  const window2 = Number(m?.context_length) || 0;
+  if (window2 <= 0) return null;
+  let ratio = Number(compaction?.threshold ?? DEFAULT_COMPACTION_THRESHOLD);
+  if (!(ratio > 0 && ratio <= 1)) ratio = DEFAULT_COMPACTION_THRESHOLD;
+  if (window2 < WINDOW_FLOOR_AT) ratio = Math.max(WINDOW_FLOOR_RATIO, ratio);
+  const fromRatio = Math.floor(window2 * ratio);
+  const cap = Number(compaction?.threshold_tokens ?? 0);
+  const tokens = cap > 0 ? Math.min(fromRatio, cap) : fromRatio;
+  return Math.min(tokens, window2);
+}
+function scenarioTokens(m, scenario, compaction) {
+  if (!scenario || scenario.mode === "unknown") return null;
+  if (scenario.mode === "auto") return autoPromptTokens(m, compaction);
+  return scenario.tokens && scenario.tokens > 0 ? scenario.tokens : null;
+}
+function effectivePricesFor(m, scenario, compaction) {
+  return effectivePrices(m, scenarioTokens(m, scenario, compaction));
+}
+function servesContextFor(m, scenario, compaction) {
+  return servesContext(m, scenarioTokens(m, scenario, compaction));
+}
+
 // src/LeaderboardPage.tsx
 import { Fragment as Fragment3, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
 var AVAILABLE_CRITERIA = [
@@ -5010,6 +5294,26 @@ var S = {
     transition: "all 0.15s ease"
   }
 };
+function TierBadge({ m }) {
+  const tier = m?._tier;
+  if (!tier) return null;
+  const mult = m?._tier_mult;
+  const label = mult && mult !== 1 ? `×${mult >= 10 ? mult.toFixed(0) : mult.toFixed(1).replace(/\.0$/, "")}` : "↑";
+  return /* @__PURE__ */ jsx4(
+    "span",
+    {
+      title: `≥ ${tier.min_prompt_tokens.toLocaleString()} tokens`,
+      style: { marginLeft: 4, fontSize: 9, padding: "1px 3px", borderRadius: 3, background: "color-mix(in srgb, var(--ui-orange) 16%, transparent)", color: "var(--ui-orange)", whiteSpace: "nowrap" },
+      children: label
+    }
+  );
+}
+function tierCellTitle(m, _field, i18n) {
+  const parts = [];
+  if (m?._tier) parts.push(i18n.contextSize.tierAt(m._tier.min_prompt_tokens));
+  if (m?._ctx_tokens) parts.push(`${i18n.contextSize.assumed}: ${m._ctx_tokens.toLocaleString()} tokens`);
+  return parts.join(" · ");
+}
 function EyeGlyph({ off }) {
   return /* @__PURE__ */ jsxs4(
     "svg",
@@ -5047,6 +5351,8 @@ function App() {
   const [q, setQ] = useState5("");
   const [dq, setDq] = useState5("");
   const [searchRes, setSearchRes] = useState5([]);
+  const [compactionByProfile, setCompactionByProfile] = useState5({});
+  const [compactionDefaults, setCompactionDefaults] = useState5({ threshold: 0.5, threshold_tokens: null });
   const [adding, setAdding] = useState5(false);
   const [pendingDelete, setPendingDelete] = useState5(null);
   const [sortCol, setSortCol] = useState5(null);
@@ -5111,7 +5417,8 @@ function App() {
     return effectiveProfiles[selectedProfileId] || {
       id: selectedProfileId,
       name: selectedProfileId,
-      weights: { ...defaultWeights }
+      weights: { ...defaultWeights },
+      context_mode: "auto"
     };
   }, [effectiveProfiles, selectedProfileId]);
   const toggleNews = () => {
@@ -5181,7 +5488,11 @@ function App() {
     };
   }, []);
   useEffect3(() => {
-    api("/hermes-profiles").then((d) => setHermesProfiles(d.profiles || ["default"])).catch(() => setHermesProfiles(["default"]));
+    api("/hermes-profiles").then((d) => {
+      setHermesProfiles(d.profiles || ["default"]);
+      setCompactionByProfile(d.compaction || {});
+      if (d.compaction_defaults) setCompactionDefaults(d.compaction_defaults);
+    }).catch(() => setHermesProfiles(["default"]));
   }, []);
   const fetchNews = () => {
     setLoadingNews(true);
@@ -5344,21 +5655,58 @@ function App() {
     }
   };
   const sortArrow = (col) => sortCol === col ? sortAsc ? " ↑" : " ↓" : " ↕";
-  const visible = models.filter((m) => !hiddenIds.has(m.id));
-  const hidden = models.filter((m) => hiddenIds.has(m.id));
-  const active = visible.filter((m) => m.available);
+  const ctxMode = currentProfile.context_mode || (currentProfile.context_tokens ? "size" : "auto");
+  const ctxSize = currentProfile.context_tokens ?? null;
+  const compaction = compactionByProfile[currentProfile.id] || compactionDefaults;
+  const ctxScenario = { mode: ctxMode, tokens: ctxSize };
+  const priceAt = (m) => {
+    const eff = effectivePricesFor(m, ctxScenario, compaction);
+    const tokens = scenarioTokens(m, ctxScenario, compaction);
+    const base = m.prompt_price ?? null;
+    return {
+      ...m,
+      _base_prompt: base,
+      _ctx_tokens: tokens,
+      _tier: eff.tier,
+      _tier_mult: eff.tier && base ? eff.tier.prompt / base : null,
+      _out_of_context: !servesContextFor(m, ctxScenario, compaction),
+      prompt_price: eff.prompt ?? m.prompt_price,
+      completion_price: eff.completion ?? m.completion_price,
+      cache_read_price: eff.cache_read ?? m.cache_read_price
+    };
+  };
+  const scenarioTag = ctxMode === "auto" ? ` (${i18n.contextSize.autoShort})` : ctxMode === "size" && ctxSize ? ` (${contextLabel(ctxSize)})` : "";
+  const pricedModels = useMemo3(
+    () => models.map(priceAt),
+    [models, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens]
+  );
+  const priceList = (list) => list.map(priceAt);
+  const pricedNews = useMemo3(() => {
+    if (!news) return news;
+    return {
+      ...news,
+      new_models: priceList(news.new_models || []),
+      promotions: priceList(news.promotions || []),
+      price_changes: priceList(news.price_changes || [])
+    };
+  }, [news, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens]);
+  const visible = pricedModels.filter((m) => !hiddenIds.has(m.id));
+  const hidden = pricedModels.filter((m) => hiddenIds.has(m.id));
+  const active = visible.filter((m) => m.available && !m._out_of_context);
   const maxes = useMemo3(() => ({
-    maxCtx: Math.max(1, ...models.map((m) => m.context_length || 0)),
-    maxPrice: Math.max(0.01, ...models.flatMap((m) => [m.prompt_price || 0, m.completion_price || 0])),
-    maxPriceIn: Math.max(0.01, ...models.map((m) => m.prompt_price || 0)),
-    maxPriceOut: Math.max(0.01, ...models.map((m) => m.completion_price || 0)),
-    maxPriceCache: Math.max(0.01, ...models.map((m) => m.cache_read_price || 0)),
+    maxCtx: Math.max(1, ...pricedModels.map((m) => m.context_length || 0)),
+    // Scales from the prices actually shown: with a context size declared, the tier prices
+    // are what the "cheaper is better" criteria must normalise against.
+    maxPrice: Math.max(0.01, ...pricedModels.flatMap((m) => [m.prompt_price || 0, m.completion_price || 0])),
+    maxPriceIn: Math.max(0.01, ...pricedModels.map((m) => m.prompt_price || 0)),
+    maxPriceOut: Math.max(0.01, ...pricedModels.map((m) => m.completion_price || 0)),
+    maxPriceCache: Math.max(0.01, ...pricedModels.map((m) => m.cache_read_price || 0)),
     // Index maxima from MEASURED values only: an estimate must not set the
     // 100 % mark that every other model is graded against.
-    maxIntel: Math.max(1, ...models.map((m) => measured(m, "intelligence_index"))),
-    maxCoding: Math.max(1, ...models.map((m) => measured(m, "coding_index"))),
-    maxAgentic: Math.max(1, ...models.map((m) => measured(m, "agentic_index")))
-  }), [models]);
+    maxIntel: Math.max(1, ...pricedModels.map((m) => measured(m, "intelligence_index"))),
+    maxCoding: Math.max(1, ...pricedModels.map((m) => measured(m, "coding_index"))),
+    maxAgentic: Math.max(1, ...pricedModels.map((m) => measured(m, "agentic_index")))
+  }), [pricedModels]);
   const scoredModels = useMemo3(() => {
     const withScores = active.map((m) => ({
       ...m,
@@ -5380,18 +5728,18 @@ function App() {
   });
   const sortedModels = useMemo3(() => {
     if (sortCol && sortFns[sortCol]) {
-      const sorted = [...models].sort(sortFns[sortCol]);
+      const sorted = [...pricedModels].sort(sortFns[sortCol]);
       return sortAsc ? sorted : sorted.reverse();
     }
-    return [...models].sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0));
-  }, [models, sortCol, sortAsc, scoreMap]);
+    return [...pricedModels].sort((a, b) => (scoreMap[b.id] ?? 0) - (scoreMap[a.id] ?? 0));
+  }, [pricedModels, sortCol, sortAsc, scoreMap]);
   const processedNewModels = useMemo3(() => {
     if (!news?.new_models) return [];
     const nowTs = Math.floor(Date.now() / 1e3);
     const windowDays = newsTimeWindow === "1m" ? 30 : newsTimeWindow === "2m" ? 60 : newsTimeWindow === "3m" ? 90 : newsTimeWindow === "6m" ? 180 : newsTimeWindow === "1y" ? 365 : 99999;
     const minCreated = nowTs - windowDays * 86400;
     const list = scoreCandidates(
-      news.new_models.filter((nm) => (nm.created || 0) >= minCreated),
+      (pricedNews?.new_models || []).filter((nm) => (nm.created || 0) >= minCreated),
       currentProfile.weights,
       maxes,
       top3Cutoff
@@ -5402,15 +5750,15 @@ function App() {
       list.sort((a, b) => (b.created || 0) - (a.created || 0));
     }
     return list;
-  }, [news?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Cutoff]);
+  }, [pricedNews?.new_models, newsTimeWindow, newsSortBy, currentProfile, maxes, top3Cutoff]);
   const processedPromotions = useMemo3(
-    () => scoreCandidates(news?.promotions || [], currentProfile.weights, maxes, top3Cutoff),
-    [news?.promotions, currentProfile, maxes, top3Cutoff]
+    () => scoreCandidates(pricedNews?.promotions || [], currentProfile.weights, maxes, top3Cutoff),
+    [pricedNews?.promotions, currentProfile, maxes, top3Cutoff]
   );
   const trackedNow = useMemo3(() => new Set(models.map((m) => m.id)), [models]);
   const searchRows = useMemo3(
-    () => scoreCandidates(untrackedOnly(searchRes, trackedNow), currentProfile.weights, maxes, top3Cutoff).sort((a, b) => b._score - a._score),
-    [searchRes, trackedNow, currentProfile, maxes, top3Cutoff]
+    () => scoreCandidates(untrackedOnly(priceList(searchRes), trackedNow), currentProfile.weights, maxes, top3Cutoff).sort((a, b) => b._score - a._score),
+    [searchRes, trackedNow, currentProfile, maxes, top3Cutoff, ctxMode, ctxSize]
   );
   const radarData = useMemo3(() => {
     if (active.length < 2) return [];
@@ -5756,12 +6104,14 @@ function App() {
                 i18n.table.context,
                 sortArrow("context_length")
               ] }),
-              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("prompt_price"), children: [
+              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("prompt_price"), title: i18n.contextSize.columnHint, children: [
                 "$ in",
+                scenarioTag,
                 sortArrow("prompt_price")
               ] }),
-              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("completion_price"), children: [
+              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("completion_price"), title: i18n.contextSize.columnHint, children: [
                 "$ out",
+                scenarioTag,
                 sortArrow("completion_price")
               ] }),
               /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("cache_read_price"), children: [
@@ -5812,9 +6162,25 @@ function App() {
                   /* @__PURE__ */ jsx4("b", { children: m.label }),
                   /* @__PURE__ */ jsx4("div", { style: { fontSize: 10, color: "var(--ui-text-tertiary)" }, children: m.id })
                 ] }),
-                /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right" }, title: `${(m.context_length || 0).toLocaleString()} tokens`, children: fmtCtx(m.context_length) }),
-                /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.prompt_price) }),
-                /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right" }, children: fmtPrice(m.completion_price) }),
+                /* @__PURE__ */ jsxs4("td", { style: { ...S.td, textAlign: "right" }, title: `${(m.context_length || 0).toLocaleString()} tokens`, children: [
+                  fmtCtx(m.context_length),
+                  m._out_of_context && /* @__PURE__ */ jsx4(
+                    "span",
+                    {
+                      title: i18n.contextSize.outOfContextHint,
+                      style: { marginLeft: 4, fontSize: 9, padding: "1px 4px", borderRadius: 3, background: "color-mix(in srgb, var(--ui-red) 12%, transparent)", color: "var(--ui-red)", whiteSpace: "nowrap" },
+                      children: i18n.contextSize.outOfContext
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxs4("td", { style: { ...S.td, textAlign: "right" }, title: tierCellTitle(m, "prompt", i18n), children: [
+                  fmtPrice(m.prompt_price),
+                  /* @__PURE__ */ jsx4(TierBadge, { m })
+                ] }),
+                /* @__PURE__ */ jsxs4("td", { style: { ...S.td, textAlign: "right" }, title: tierCellTitle(m, "completion", i18n), children: [
+                  fmtPrice(m.completion_price),
+                  /* @__PURE__ */ jsx4(TierBadge, { m })
+                ] }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right", color: m.cache_read_price ? "var(--ui-blue)" : "var(--ui-text-quaternary)" }, children: m.cache_read_price != null ? fmtPrice(m.cache_read_price) : "–" }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx4(SourcedIdx, { m, field: "intelligence_index", t: i18n }) }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx4(SourcedIdx, { m, field: "coding_index", t: i18n }) }),
@@ -5934,7 +6300,7 @@ function App() {
       showNews && /* @__PURE__ */ jsx4(
         NewsPanel,
         {
-          news,
+          news: pricedNews,
           loading: loadingNews,
           onClose: toggleNews,
           processedPromotions,
@@ -6131,7 +6497,60 @@ function App() {
               },
               crit.key
             );
-          }) })
+          }) }),
+          /* @__PURE__ */ jsxs4("div", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)", marginTop: 14, paddingTop: 12 }, children: [
+            /* @__PURE__ */ jsx4("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, gap: 12 }, children: /* @__PURE__ */ jsx4("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.contextSize.title }) }),
+            /* @__PURE__ */ jsx4(
+              "div",
+              {
+                role: "group",
+                "aria-label": i18n.contextSize.title,
+                style: { display: "inline-grid", gridAutoFlow: "column", gap: 2, padding: 2, borderRadius: 5, background: "var(--ui-bg-tertiary)", width: "fit-content", flexWrap: "wrap" },
+                children: [
+                  { key: "unknown", label: i18n.contextSize.unknown },
+                  { key: "auto", label: i18n.contextSize.auto },
+                  ...CONTEXT_SIZES.map((n) => ({ key: String(n), label: contextLabel(n) }))
+                ].map((opt) => {
+                  const mode = editingProfile.context_mode || "auto";
+                  const size = editingProfile.context_tokens ?? null;
+                  const on = opt.key === "unknown" ? mode === "unknown" : opt.key === "auto" ? mode === "auto" : mode === "size" && size === Number(opt.key);
+                  return /* @__PURE__ */ jsx4(
+                    "button",
+                    {
+                      type: "button",
+                      "aria-pressed": on,
+                      onClick: () => setEditingProfile({
+                        ...editingProfile,
+                        context_mode: opt.key === "unknown" ? "unknown" : opt.key === "auto" ? "auto" : "size",
+                        context_tokens: opt.key === "unknown" || opt.key === "auto" ? null : Number(opt.key)
+                      }),
+                      style: {
+                        padding: "2px 10px",
+                        borderRadius: 3,
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: 11,
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        background: on ? "var(--ui-bg-editor)" : "transparent",
+                        color: on ? "var(--ui-text-primary)" : "var(--ui-text-secondary)",
+                        boxShadow: on ? "0 1px 2px rgba(0,0,0,0.15)" : "none"
+                      },
+                      children: opt.label
+                    },
+                    opt.key
+                  );
+                })
+              }
+            ),
+            /* @__PURE__ */ jsxs4("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 6, lineHeight: 1.45 }, children: [
+              i18n.contextSize.note,
+              ctxMode === "auto" && compaction.threshold_tokens == null && /* @__PURE__ */ jsxs4(Fragment3, { children: [
+                " ",
+                i18n.contextSize.autoHint(Math.round((compaction.threshold ?? 0.5) * 100))
+              ] })
+            ] })
+          ] })
         ] })
       ] }),
       /* @__PURE__ */ jsxs4("div", { style: {

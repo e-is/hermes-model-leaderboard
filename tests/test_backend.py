@@ -848,3 +848,49 @@ def test_models_reports_whether_the_aa_key_is_configured(monkeypatch):
     assert client.get("/models").json()["aa_key"] is False
     monkeypatch.setenv("ARTIFICIAL_ANALYSIS_API_KEY", "test-key")
     assert client.get("/models").json()["aa_key"] is True
+
+
+def test_price_tiers_normalises_context_overrides_only():
+    """pricing.overrides carries two kinds: token thresholds (a price tier) and time windows
+    (a promotion). Only the first is a tier — a comparison must not depend on the hour."""
+    entry = {
+        "pricing": {
+            "prompt": "0.0000001", "completion": "0.0000005", "input_cache_read": "0.00000001",
+            "overrides": [
+                {"min_prompt_tokens": 100_000, "prompt": "0.0000005", "completion": "0.0000025",
+                 "input_cache_read": "0.00000005", "input_cache_write": "0.000000625"},
+                {"utc_start": 100, "utc_end": 1500, "prompt": "0.000000075"},   # a promo, not a tier
+                "garbage",
+                {"min_prompt_tokens": None, "prompt": "0.0000002"},
+            ],
+        }
+    }
+    tiers = main_mod._price_tiers(entry)
+    assert tiers == [{"min_prompt_tokens": 100_000, "prompt": 0.5, "completion": 2.5,
+                      "cache_read": 0.05, "cache_write": 0.625}]
+
+
+def test_price_tiers_is_empty_without_overrides():
+    assert main_mod._price_tiers({"pricing": {"prompt": "0.0000001"}}) == []
+    assert main_mod._price_tiers({}) == []
+
+
+def test_models_payload_carries_the_price_tiers_of_the_catalogue():
+    """Tracked records hold base prices only; the tiers come from the cached catalogue."""
+    app = FastAPI(); app.include_router(main_mod.router)
+    response = TestClient(app).get("/models").json()
+    for model in response["models"]:
+        assert isinstance(model.get("price_tiers"), list)
+
+
+def test_profile_keeps_the_declared_context_size():
+    app = FastAPI(); app.include_router(main_mod.router)
+    client = TestClient(app)
+    body = {"id": "ctx-probe", "name": "Ctx", "weights": {"price_in": 3}, "context_tokens": 128_000}
+    assert client.put("/profiles/ctx-probe", json=body).json()["profile"]["context_tokens"] == 128_000
+    assert client.put("/profiles/ctx-probe", json={**body, "context_tokens": None}
+                      ).json()["profile"]["context_tokens"] is None
+    # A nonsense value must not be stored: None ("don't know") is the safe reading.
+    assert client.put("/profiles/ctx-probe", json={**body, "context_tokens": -5}
+                      ).json()["profile"]["context_tokens"] is None
+    client.delete("/profiles/ctx-probe")
