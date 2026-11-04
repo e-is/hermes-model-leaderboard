@@ -1,3 +1,38 @@
+## [1.6.0] — 2026-11-04 — prices at the context size each profile really sends
+
+### Added
+
+- **Per-profile context size**, the fourth input of the cost picture. A profile declares the
+  prompt volume it sends — `auto` (default), a fixed size (32k / 100k / 128k / 200k / 1M) or
+  "don't know". Every price the plugin shows or scores (table, sorting, price criteria,
+  ranking, weighted cost and Pareto, search results, news cards) then uses the tier that
+  applies, with a `×N` badge and a tooltip naming the threshold.
+- **`auto`** reads the profile's Hermes compaction settings (`compression.threshold`, floored
+  at 0.75 below a 512K window, and the absolute `compression.threshold_tokens` when set) and
+  derives the size per model. It is the default, including for profiles saved before the
+  field existed (absent → auto).
+- **Tiered prices from OpenRouter** (`pricing.overrides[].min_prompt_tokens`), normalised in
+  `$ / M` per model and exposed as `price_tiers`. Time-window overrides (DeepSeek off-peak,
+  MiniMax…) are promotions, not tiers, and are left out.
+- A model whose `context_length` is below the declared size is flagged "out of context" and
+  kept out of the ranking and the Pareto: there is no price for a request it cannot serve.
+- The optional Artificial Analysis key is declared as an `ARTIFICIAL_ANALYSIS_API_KEY` secret
+  setting: Desktop → Settings → Plugins renders it masked, Hermes stores it in its own `.env`,
+  and the plugin only ever reads it from the environment.
+
+### Fixed
+
+- External links (`Get a free key`, the news "Details" links) did nothing: an `<a
+  target="_blank">` is swallowed by the renderer's navigation guard. They now go through
+  `window.hermesDesktop.openExternal`, with `window.open` as the standalone-dev fallback.
+
+### Notes
+
+- The tier applies to the whole request, not only to the tokens past the threshold (Anthropic's
+  long-context rule).
+- `auto` is an estimate of usage, not a guaranteed maximum: one turn can exceed the compaction
+  trigger, and the provider's window is the hard limit.
+
 ## [1.5.0] — 2026-11-04 — a variant without a published index still gets a grade
 
 ### Added

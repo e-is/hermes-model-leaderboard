@@ -163,6 +163,24 @@ and `..._agentic_index` are documented as always null), so the harvester fills i
 only; the other two come from OpenRouter or inheritance. Attribution to
 artificialanalysis.ai is required by their terms, and the fetched values stay local.
 
+### Prices at the context size you actually send
+
+Some models charge more once the prompt passes a threshold — Claude Haiku 5.5 is $0.10/$0.50
+per million tokens up to 100k, then ×5. OpenRouter publishes those tiers as
+`pricing.overrides[].min_prompt_tokens`; the plugin reads them and prices each model at the
+size the profile declares:
+
+| Mode | What it does |
+|:---|:---|
+| `auto` (default) | Follows the profile's Hermes compaction settings: `min(threshold_tokens, ratio × window)`, with `ratio` floored at 0.75 below a 512K window. It is an estimate of usage, not a guaranteed maximum. |
+| `32k` … `1M` | Forces that volume everywhere — useful for a "what if I sent 1M?" comparison. |
+| don't know | Base prices, with the tier shown as a badge so a cheap-looking model doesn't hide an expensive long context. |
+
+A model that cannot take the declared size is flagged **out of context** and dropped from the
+ranking and the Pareto (its price there does not exist). The choice lives in the profile's
+criteria panel, next to the weights — it is a scenario, not a criterion: it has no weight and
+does not change how a model is graded on quality.
+
 ## TODO / roadmap
 
 **Done**

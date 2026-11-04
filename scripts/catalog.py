@@ -81,7 +81,9 @@ DESCRIPTION = (
     "(seeded from the JSON shipped with the plugin), which LLM_DASH_DATA / "
     "LLM_DASH_CACHE_TTL can move or tune; the optional \"Auto-fill criteria\" action runs "
     "on the host LLM facade (ctx.llm.complete_structured), so it spends the user's "
-    "configured model tokens; ships one read-only skill "
+    "configured model tokens; prices the models at the context size each profile declares "
+    "(the profile's Hermes compaction settings, or a fixed 32k-1M volume) using "
+    "OpenRouter's published context-price tiers; ships one read-only skill "
     "(model-leaderboard:refresh-benchmarks) whose only write is a POST to its own "
     "/benchmarks route; ships an OPTIONAL harvester (scripts/harvest_aa.py) that the "
     "plugin never runs — a user or a cron does — to fill the intelligence index from "
@@ -384,7 +386,7 @@ Result:
 - [x] My PR contains **only** changes related to this fix/feature (one catalog file, no code)
 - [x] The pinned sha is reachable on the commits API
 - [x] `image` / `screenshots` are on GitHub hosts and pinned to the entry's sha
-- [x] `capabilities:` matches what the plugin registers at that commit (one read-only skill; no tools, hooks, middleware or required env)
+- [x] `capabilities:` matches what the plugin registers at that commit (one read-only skill; no tools, hooks or middleware; one optional secret setting, not a required env)
 
 ## Screenshots
 
