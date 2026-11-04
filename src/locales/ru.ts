@@ -95,6 +95,7 @@ export const ru = {
       axisCostShort: 'Взвешенная стоимость ($/M tk)',
       axisLog: 'Лог.',
       axisLinear: 'Линейная',
+      inheritedHint: (from: string) => 'Для этого варианта нет опубликованного индекса — унаследовано от {0}.',
       axisQualityShort: 'Качество (0–100)',
       free: 'бесплатно',
       frontier: 'Лучшие компромиссы',

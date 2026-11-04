@@ -123,8 +123,45 @@ Why the benchmark columns are curated rather than synced — measured, not assum
   figure depends on the scaffold/agent you pick — an editorial choice, not a derivation.
 - **Artificial Analysis** indices are already covered through OpenRouter, which also
   exposes `GET /api/v1/benchmarks?source=artificial-analysis` (154 models, `meta.citation`)
-  covering 12/19 tracked models — usable as a gap-filler. Their own Data API is free at
-  100 req/24 h but **non-redistributable**, so fetched values must never be committed.
+  covering 12/19 tracked models — usable as a gap-filler. Their own Data API is free
+  (100–1000 req/day depending on the doc generation you read) but **non-redistributable**:
+  fetched values must never be committed, which is why the harvester below writes to the
+  user's plugin data, not to `dashboard/data/`.
+
+### When a model has no published index
+
+OpenRouter relays Artificial Analysis indices for ~42 % of its catalogue. A tracked model
+without one used to show `…` and score 0 on intelligence, coding and agentic. The plugin now
+grades the value it has, in this order, and says where each one came from:
+
+| Source | Marker | Meaning |
+|:---|:---|:---|
+| manual | `✎` | typed in the table, or filled by the harvester below |
+| openrouter | — | relayed by OpenRouter (Artificial Analysis) |
+| estimated | `~` | linear fit on the model's *other* indices (R² 0.81–0.94) |
+| inherited | `⤵` | borrowed: exact alias (same price and context) or a published family member |
+
+Inheritance never extrapolates — a variant above every published sibling takes the nearest
+one — and only fills fields that are still missing. `measured()` excludes `~` and `⤵` from
+the scale, so a borrowed value cannot set the 100 % mark the others are graded against.
+
+### Filling the gaps from the source (optional)
+
+`scripts/harvest_aa.py` reads the intelligence index from Artificial Analysis. It prefers
+their free Data API; without a key it falls back to the public leaderboard page (same
+values, brittle parsing — the API is the supported path):
+
+```
+# free key: create an account on artificialanalysis.ai, then API keys
+export ARTIFICIAL_ANALYSIS_API_KEY=...
+python3 scripts/harvest_aa.py --dry-run     # what would change
+python3 scripts/harvest_aa.py --write       # writes ~/.hermes/plugin-data/model-leaderboard/benchmarks.json
+```
+
+Artificial Analysis no longer publishes a Coding or an Agentic index (`..._coding_index`
+and `..._agentic_index` are documented as always null), so the harvester fills intelligence
+only; the other two come from OpenRouter or inheritance. Attribution to
+artificialanalysis.ai is required by their terms, and the fetched values stay local.
 
 ## TODO / roadmap
 

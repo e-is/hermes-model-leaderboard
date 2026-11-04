@@ -96,6 +96,7 @@ export const zh = {
       axisCostShort: '加权成本（$/百万）',
       axisLog: '对数',
       axisLinear: '线性',
+      inheritedHint: (from: string) => '此变体没有已发布的指数 — 继承自 {0}。',
       axisQualityShort: '质量（0–100）',
       free: '免费',
       frontier: '最佳折中',

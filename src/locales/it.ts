@@ -95,6 +95,7 @@ export const it = {
       axisCostShort: 'Costo ponderato ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Lineare',
+      inheritedHint: (from: string) => 'Nessun indice pubblicato per questa variante: ereditato da {0}.',
       axisQualityShort: 'Qualità (0–100)',
       free: 'gratuito',
       frontier: 'Migliori compromessi',

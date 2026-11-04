@@ -96,6 +96,7 @@ export const ko = {
       axisCostShort: '가중 비용($/M tk)',
       axisLog: '로그',
       axisLinear: '선형',
+      inheritedHint: (from: string) => '이 변형에는 공개 지수가 없습니다 — {0}에서 상속.',
       axisQualityShort: '품질(0–100)',
       free: '무료',
       frontier: '최적의 절충',

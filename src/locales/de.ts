@@ -95,6 +95,7 @@ export const de = {
       axisCostShort: 'Gewichtete Kosten ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Linear',
+      inheritedHint: (from: string) => 'Kein veröffentlichter Index für diese Variante — übernommen von {0}.',
       axisQualityShort: 'Qualität (0–100)',
       free: 'kostenlos',
       frontier: 'Beste Kompromisse',

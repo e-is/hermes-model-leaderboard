@@ -95,6 +95,7 @@ export const ja = {
       axisCostShort: '加重コスト（$/M tk）',
       axisLog: '対数',
       axisLinear: '線形',
+      inheritedHint: (from: string) => 'このバリアントには公開指数がありません — {0} から継承。',
       axisQualityShort: '品質 (0–100)',
       free: '無料',
       frontier: '最良のトレードオフ',

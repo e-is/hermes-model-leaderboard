@@ -1,3 +1,40 @@
+## [1.5.0] — 2026-11-04 — a variant without a published index still gets a grade
+
+### Added
+
+- **Inheritance** for the models OpenRouter publishes no index for (58 % of the catalogue:
+  `~…-latest` aliases, `-flashx` / `-prime` / `-legal` variants). An exact alias — same input
+  price, same context — gives the twin's values verbatim; otherwise the model borrows from a
+  published member of its family, interpolated in log-price between two siblings and never
+  extrapolated past them. Displayed as `27.8⤵` with a tooltip naming the source, in every
+  locale.
+- `scripts/harvest_aa.py`: optional harvester of the intelligence index from Artificial
+  Analysis. Free Data API first (`ARTIFICIAL_ANALYSIS_API_KEY`), public leaderboard page as a
+  no-key fallback; dry run by default; writes to the plugin's own benchmarks.json, never to
+  the repository (their data is non-redistributable). 13 unit tests.
+
+### Changed
+
+- `measured()` excludes inherited values from the normalisation scale, as it already did for
+  estimates: a borrowed index must not set the 100 % mark the others are graded against.
+- The catalogue entry's disclosure names the inheritance and the optional harvester.
+
+### Fixed
+
+- Inheritance read only the catalogue's `pricing` (per token). A tracked record carries
+  `prompt_price` (already $/M), so every tracked model looked free: aliases never matched
+  and family lookups fell back to the cheapest sibling. Caught by running the resolver on
+  the real store — `~z-ai/glm-flash-latest` now gets 27.8/71.5/50.9 from `glm-5.3-flash`
+  instead of nothing.
+- The harvester leaves alone the models OpenRouter already relays an index for: writing a
+  snapshot over the live relay would turn its source from `openrouter` into `manual`.
+
+### Notes
+
+- Artificial Analysis no longer publishes Coding or Agentic indices (both documented as
+  always null): the harvester fills intelligence only, the other two come from OpenRouter or
+  inheritance.
+
 ## [1.4.0] — 2026-11-04 — the cost axis can be read linearly
 
 ### Added

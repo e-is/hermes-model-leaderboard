@@ -96,6 +96,7 @@ export const en = {
       axisCostShort: 'Weighted cost ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Linear',
+      inheritedHint: (from: string) => 'No published index for this variant — inherited from {0}.',
       axisQualityShort: 'Quality (0–100)',
       free: 'free',
       frontier: 'Best trade-offs',

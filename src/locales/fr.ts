@@ -96,6 +96,7 @@ export const fr = {
       axisCostShort: 'Coût pondéré ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Linéaire',
+      inheritedHint: (from: string) => 'Aucun indice publié pour cette variante — hérité de {0}.',
       axisQualityShort: 'Qualité (0–100)',
       free: 'gratuit',
       frontier: 'Meilleurs compromis',

@@ -95,6 +95,7 @@ export const tr = {
       axisCostShort: 'Ağırlıklı maliyet ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Doğrusal',
+      inheritedHint: (from: string) => 'Bu varyant için yayımlanmış indeks yok — {0} kaynağından devralındı.',
       axisQualityShort: 'Kalite (0–100)',
       free: 'ücretsiz',
       frontier: 'En iyi dengeler',

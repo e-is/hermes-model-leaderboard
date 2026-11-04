@@ -97,6 +97,7 @@ export const zhHant = {
       axisCostShort: '加權成本（$/M tk）',
       axisLog: '對數',
       axisLinear: '線性',
+      inheritedHint: (from: string) => '此變體沒有已公布的指數 — 繼承自 {0}。',
       axisQualityShort: '品質（0–100）',
       free: '免費',
       frontier: '最佳折衷',

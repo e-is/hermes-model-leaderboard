@@ -95,6 +95,7 @@ export const hu = {
       axisCostShort: 'Súlyozott költség ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Lineáris',
+      inheritedHint: (from: string) => 'Nincs közzétett index ehhez a változathoz — örökölve: {0}.',
       axisQualityShort: 'Minőség (0–100)',
       free: 'ingyenes',
       frontier: 'Legjobb kompromisszumok',

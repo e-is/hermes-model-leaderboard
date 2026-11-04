@@ -313,8 +313,93 @@ def _index_estimators(catalog):
     return out
 
 
-def _complete_indices(model, overrides, estimators):
-    """Fill the index fields of one model in place: manual > openrouter > estimated."""
+#: Suffixes that make an id a *variant* of another entry rather than a model of its own.
+_VARIANT_PARTS = ("latest", "flashx", "legal", "prime", "turbo", "air", "flash", "mini",
+                  "low", "high", "medium", "thinking", "reasoning")
+
+
+def _family_key(model_id: str):
+    """(vendor, first two name segments) of an id — what a variant inherits from.
+
+    `z-ai/glm-5.3-flashx` and `z-ai/glm-5.3` share ("z-ai", "glm", "5.3"). One segment
+    would merge unrelated families (`glm-*` vs `glm-5.3-*`); three would never match.
+    """
+    vendor, _, name = (model_id or "").partition("/")
+    parts = [p for p in name.replace("~", "").split("-") if p]
+    return (vendor.lower(),) + tuple(p.lower() for p in parts[:2])
+
+
+def _index_references(catalog):
+    """What a model with no published index can inherit from.
+
+    Returns (published, alias_key, families):
+      published  id -> {values, price, ctx} for every entry with an AA index;
+      alias_key  (price, ctx) -> id, the exact twin of an alias (`~x-latest` has the
+                 same price and context as the model it aliases);
+      families   family key -> published ids, for the variants of a published model.
+    """
+    published = {}
+    for m in catalog or []:
+        mid = m.get("id")
+        if not mid:
+            continue
+        aa = (m.get("benchmarks") or {}).get("artificial_analysis") or {}
+        values = {f: aa[f] for f in INDEX_FIELDS if isinstance(aa.get(f), (int, float))}
+        if not values:
+            continue
+        published[mid] = {
+            "values": values,
+            "price": _prompt_price_mtok(m),
+            "ctx": m.get("context_length") or 0,
+        }
+    alias_key = {}
+    for mid, info in published.items():
+        alias_key.setdefault((round(info["price"], 6), info["ctx"]), mid)
+    families = {}
+    for mid in published:
+        families.setdefault(_family_key(mid), []).append(mid)
+    return published, alias_key, families
+
+
+def _inheritance(model, published, alias_key, families):
+    """The published entry (or pair) a model with missing indices should borrow from.
+
+    Alias first — an identical price and context is the same model under another id, so
+    the values are exact. Otherwise the published members of its family: interpolated in
+    log-price when the model sits between two of them, nearest sibling otherwise. Never
+    extrapolated past the family's measured values.
+    """
+    price = _prompt_price_mtok(model)
+    ctx = model.get("context_length") or 0
+    twin = alias_key.get((round(price, 6), ctx))
+    if twin and twin != model.get("id"):
+        return {"kind": "alias", "from": [twin], "values": dict(published[twin]["values"])}
+
+    refs = [r for r in families.get(_family_key(model.get("id")), []) if r != model.get("id")]
+    if not refs:
+        return None
+    refs.sort(key=lambda r: published[r]["price"])
+    import math as _math
+    lo = [r for r in refs if published[r]["price"] <= price]
+    hi = [r for r in refs if published[r]["price"] >= price]
+    if (lo and hi and lo[-1] != hi[0] and published[lo[-1]]["price"] > 0
+            and published[hi[0]]["price"] > published[lo[-1]]["price"]):
+        a, b = published[lo[-1]], published[hi[0]]
+        la, lb = _math.log10(a["price"]), _math.log10(b["price"])
+        t = 0.0 if lb == la or price <= 0 else (_math.log10(price) - la) / (lb - la)
+        common = set(a["values"]) & set(b["values"])
+        values = {f: round(a["values"][f] + t * (b["values"][f] - a["values"][f]), 1) for f in common}
+        return {"kind": "family", "from": [lo[-1], hi[0]], "values": values}
+    nearest = min(refs, key=lambda r: abs((published[r]["price"] or 0) - price))
+    return {"kind": "family", "from": [nearest], "values": dict(published[nearest]["values"])}
+
+
+def _complete_indices(model, overrides, estimators, references=None):
+    """Fill the index fields of one model in place.
+
+    Precedence: manual > openrouter > estimated (the model's own other indices) >
+    inherited (an alias or a published family member). Inheritance only fills what is
+    still missing, and says where it came from."""
     sources, estimates = {}, {}
     for field in INDEX_FIELDS:
         manual = (overrides or {}).get(field)
@@ -335,8 +420,21 @@ def _complete_indices(model, overrides, estimators):
                 sources[field] = "estimated"
                 estimates[field] = {"from": pred, "r2": round(r2, 2), "n": n}
                 break
+    # Last resort for a model OpenRouter publishes no index for at all: borrow from its
+    # exact alias or from its family (see _inheritance). The source stays visible.
+    inherits = {}
+    if references and len(sources) < len(INDEX_FIELDS):
+        ref = _inheritance(model, *references)
+        if ref:
+            for field in INDEX_FIELDS:
+                if field in sources or field not in ref["values"]:
+                    continue
+                model[field] = ref["values"][field]
+                sources[field] = "inherited"
+                inherits[field] = {"kind": ref["kind"], "from": ref["from"]}
     model["sources"] = sources
     model["estimates"] = estimates
+    model["inherits"] = inherits
     return model
 
 
@@ -391,9 +489,10 @@ def get_models():
     # endpoint is polled every minute and must never wait on OpenRouter.
     cached = _read_cache() if CACHE_FILE.exists() else None
     estimators = _index_estimators(cached["data"] if cached else [])
+    references = _index_references(cached["data"] if cached else [])
     for m in models:
         m["benchmarks"] = benchmarks.get(m["id"], {})
-        _complete_indices(m, m["benchmarks"], estimators)
+        _complete_indices(m, m["benchmarks"], estimators, references)
         if not m.get("gpu") and m.get("model_size"):
             m["gpu"] = _estimate_gpu(m["model_size"])
     return {"models": models, "last_refresh": _meta().get("last_refresh"), "cache_age_s": _cache_age()}
@@ -435,6 +534,16 @@ def _price_per_mtok(m: dict, key: str):
         return round(float((m.get("pricing") or {}).get(key) or 0) * 1e6, 4)
     except (TypeError, ValueError):
         return None
+
+
+def _prompt_price_mtok(m: dict):
+    """Input price in $/M tokens from either shape: a tracked record (`prompt_price`,
+    already per million) or a catalogue entry (`pricing.prompt`, per token). Reading only
+    `pricing` gave every tracked model a price of 0, which broke alias and family
+    matching — and made a family lookup fall back to the cheapest sibling."""
+    if isinstance(m.get("prompt_price"), (int, float)):
+        return m["prompt_price"]
+    return _price_per_mtok(m, "prompt") or 0.0
 
 
 def _candidate_fields(m: dict) -> dict:

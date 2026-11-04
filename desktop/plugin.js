@@ -863,6 +863,7 @@ var en = {
     axisCostShort: "Weighted cost ($/M tk)",
     axisLog: "Log",
     axisLinear: "Linear",
+    inheritedHint: (from) => "No published index for this variant — inherited from {0}.",
     axisQualityShort: "Quality (0–100)",
     free: "free",
     frontier: "Best trade-offs",
@@ -1055,6 +1056,7 @@ var fr = {
     axisCostShort: "Coût pondéré ($/M tk)",
     axisLog: "Log",
     axisLinear: "Linéaire",
+    inheritedHint: (from) => "Aucun indice publié pour cette variante — hérité de {0}.",
     axisQualityShort: "Qualité (0–100)",
     free: "gratuit",
     frontier: "Meilleurs compromis",
@@ -1247,6 +1249,7 @@ var zh = {
     axisCostShort: "加权成本（$/百万）",
     axisLog: "对数",
     axisLinear: "线性",
+    inheritedHint: (from) => "此变体没有已发布的指数 — 继承自 {0}。",
     axisQualityShort: "质量（0–100）",
     free: "免费",
     frontier: "最佳折中",
@@ -1439,6 +1442,7 @@ var zhHant = {
     axisCostShort: "加權成本（$/M tk）",
     axisLog: "對數",
     axisLinear: "線性",
+    inheritedHint: (from) => "此變體沒有已公布的指數 — 繼承自 {0}。",
     axisQualityShort: "品質（0–100）",
     free: "免費",
     frontier: "最佳折衷",
@@ -1631,6 +1635,7 @@ var af = {
     axisCostShort: "Geweegde koste ($/M tk)",
     axisLog: "Log",
     axisLinear: "Lineêr",
+    inheritedHint: (from) => "Geen gepubliseerde indeks vir hierdie variant nie — geërf van {0}.",
     axisQualityShort: "Kwaliteit (0–100)",
     free: "gratis",
     frontier: "Beste kompromieë",
@@ -1823,6 +1828,7 @@ var ar = {
     axisCostShort: "التكلفة الموزونة ($/M tk)",
     axisLog: "لوغاريتمي",
     axisLinear: "خطي",
+    inheritedHint: (from) => "لا يوجد مؤشر منشور لهذا البديل — موروث من {0}.",
     axisQualityShort: "الجودة (0–100)",
     free: "مجاني",
     frontier: "أفضل المقايضات",
@@ -2015,6 +2021,7 @@ var de = {
     axisCostShort: "Gewichtete Kosten ($/M tk)",
     axisLog: "Log",
     axisLinear: "Linear",
+    inheritedHint: (from) => "Kein veröffentlichter Index für diese Variante — übernommen von {0}.",
     axisQualityShort: "Qualität (0–100)",
     free: "kostenlos",
     frontier: "Beste Kompromisse",
@@ -2207,6 +2214,7 @@ var es = {
     axisCostShort: "Coste ponderado ($/M tk)",
     axisLog: "Log",
     axisLinear: "Lineal",
+    inheritedHint: (from) => "Sin índice publicado para esta variante: heredado de {0}.",
     axisQualityShort: "Calidad (0–100)",
     free: "gratis",
     frontier: "Mejores relaciones",
@@ -2399,6 +2407,7 @@ var ga = {
     axisCostShort: "Costas ualaithe ($/M tk)",
     axisLog: "Log",
     axisLinear: "Líneach",
+    inheritedHint: (from) => "Níl aon innéacs foilsithe don leagan seo — oidhreachtaithe ó {0}.",
     axisQualityShort: "Cáilíocht (0–100)",
     free: "saor in aisce",
     frontier: "Na comhréitigh is fearr",
@@ -2591,6 +2600,7 @@ var hu = {
     axisCostShort: "Súlyozott költség ($/M tk)",
     axisLog: "Log",
     axisLinear: "Lineáris",
+    inheritedHint: (from) => "Nincs közzétett index ehhez a változathoz — örökölve: {0}.",
     axisQualityShort: "Minőség (0–100)",
     free: "ingyenes",
     frontier: "Legjobb kompromisszumok",
@@ -2783,6 +2793,7 @@ var it = {
     axisCostShort: "Costo ponderato ($/M tk)",
     axisLog: "Log",
     axisLinear: "Lineare",
+    inheritedHint: (from) => "Nessun indice pubblicato per questa variante: ereditato da {0}.",
     axisQualityShort: "Qualità (0–100)",
     free: "gratuito",
     frontier: "Migliori compromessi",
@@ -2975,6 +2986,7 @@ var ja = {
     axisCostShort: "加重コスト（$/M tk）",
     axisLog: "対数",
     axisLinear: "線形",
+    inheritedHint: (from) => "このバリアントには公開指数がありません — {0} から継承。",
     axisQualityShort: "品質 (0–100)",
     free: "無料",
     frontier: "最良のトレードオフ",
@@ -3167,6 +3179,7 @@ var ko = {
     axisCostShort: "가중 비용($/M tk)",
     axisLog: "로그",
     axisLinear: "선형",
+    inheritedHint: (from) => "이 변형에는 공개 지수가 없습니다 — {0}에서 상속.",
     axisQualityShort: "품질(0–100)",
     free: "무료",
     frontier: "최적의 절충",
@@ -3359,6 +3372,7 @@ var pt = {
     axisCostShort: "Custo ponderado ($/M tk)",
     axisLog: "Log",
     axisLinear: "Linear",
+    inheritedHint: (from) => "Sem índice publicado para esta variante: herdado de {0}.",
     axisQualityShort: "Qualidade (0–100)",
     free: "grátis",
     frontier: "Melhores relações",
@@ -3551,6 +3565,7 @@ var ru = {
     axisCostShort: "Взвешенная стоимость ($/M tk)",
     axisLog: "Лог.",
     axisLinear: "Линейная",
+    inheritedHint: (from) => "Для этого варианта нет опубликованного индекса — унаследовано от {0}.",
     axisQualityShort: "Качество (0–100)",
     free: "бесплатно",
     frontier: "Лучшие компромиссы",
@@ -3743,6 +3758,7 @@ var tr = {
     axisCostShort: "Ağırlıklı maliyet ($/M tk)",
     axisLog: "Log",
     axisLinear: "Doğrusal",
+    inheritedHint: (from) => "Bu varyant için yayımlanmış indeks yok — {0} kaynağından devralındı.",
     axisQualityShort: "Kalite (0–100)",
     free: "ücretsiz",
     frontier: "En iyi dengeler",
@@ -3935,6 +3951,7 @@ var uk = {
     axisCostShort: "Зважена вартість ($/M tk)",
     axisLog: "Лог.",
     axisLinear: "Лінійна",
+    inheritedHint: (from) => "Для цього варіанта немає опублікованого індексу — успадковано від {0}.",
     axisQualityShort: "Якість (0–100)",
     free: "безкоштовно",
     frontier: "Найкращі компроміси",
@@ -4727,10 +4744,18 @@ function SourcedIdx({ m, field, t }) {
     v.toFixed(1),
     /* @__PURE__ */ jsx4("sup", { style: { fontSize: 9 }, children: "✎" })
   ] });
+  if (src === "inherited") {
+    const refs = (m.inherits?.[field]?.from || []).join(" / ");
+    return /* @__PURE__ */ jsxs4("i", { style: { color: "var(--ui-text-tertiary)" }, title: t.views.inheritedHint(refs), children: [
+      v.toFixed(1),
+      /* @__PURE__ */ jsx4("sup", { style: { fontSize: 9 }, children: "⤵" })
+    ] });
+  }
   return /* @__PURE__ */ jsx4(Fragment3, { children: v.toFixed(1) });
 }
 function measured(m, field) {
-  return m.sources?.[field] === "estimated" ? 0 : m[field] || 0;
+  const src = m.sources?.[field];
+  return src === "estimated" || src === "inherited" ? 0 : m[field] || 0;
 }
 function fmtCtx(v) {
   if (!v) return "?";

@@ -536,6 +536,111 @@ def test_news_rolling_price_variations(client_nomonkey, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# Index inheritance: variants that OpenRouter publishes no index for
+# ---------------------------------------------------------------------------
+
+def _cat_entry(mid, price_in, ctx, intel=None, coding=None, agentic=None):
+    """A catalogue entry; prices are given in $/M tk and stored as OpenRouter does."""
+    aa = {}
+    if intel is not None: aa["intelligence_index"] = intel
+    if coding is not None: aa["coding_index"] = coding
+    if agentic is not None: aa["agentic_index"] = agentic
+    return {"id": mid, "context_length": ctx,
+            "pricing": {"prompt": price_in / 1e6, "completion": 2 * price_in / 1e6},
+            "benchmarks": {"artificial_analysis": aa} if aa else {}}
+
+
+def _complete(entry, catalog, overrides=None, estimators=None):
+    published, alias_key, families = main_mod._index_references(catalog)
+    model = {"id": entry["id"], "context_length": entry["context_length"],
+             "pricing": entry["pricing"]}
+    return main_mod._complete_indices(model, overrides or {}, estimators or {},
+                                      (published, alias_key, families))
+
+
+def test_inheritance_alias_copies_the_twins_indices():
+    """`~x-latest` shares the price and context of the model it aliases: exact values."""
+    base = _cat_entry("z-ai/glm-5.3-flash", 0.0269, 1_048_576, 27.8, 71.5, 50.9)
+    alias = _cat_entry("~z-ai/glm-flash-latest", 0.0269, 1_048_576)
+    out = _complete(alias, [base, alias])
+    assert out["intelligence_index"] == 27.8
+    assert out["coding_index"] == 71.5
+    assert out["agentic_index"] == 50.9
+    assert out["sources"]["intelligence_index"] == "inherited"
+    assert out["inherits"]["intelligence_index"] == {"kind": "alias", "from": ["z-ai/glm-5.3-flash"]}
+
+
+def test_inheritance_family_interpolates_between_published_siblings():
+    """A variant priced between two published members is interpolated in log-price."""
+    lo = _cat_entry("z-ai/glm-5.3-flash", 0.02, 1_000_000, 20.0, 60.0, 40.0)
+    hi = _cat_entry("z-ai/glm-5.3", 0.20, 1_000_000, 30.0, 70.0, 50.0)
+    mid = _cat_entry("z-ai/glm-5.3-flashx", 0.063246, 1_000_000)  # sqrt(0.02*0.2) → halfway in log
+    out = _complete(mid, [lo, hi, mid])
+    assert out["sources"]["intelligence_index"] == "inherited"
+    assert out["inherits"]["intelligence_index"]["kind"] == "family"
+    assert out["inherits"]["intelligence_index"]["from"] == ["z-ai/glm-5.3-flash", "z-ai/glm-5.3"]
+    assert abs(out["intelligence_index"] - 25.0) <= 0.2
+    assert abs(out["coding_index"] - 65.0) <= 0.2
+
+
+def test_inheritance_family_never_extrapolates():
+    """Above every published sibling, it borrows the nearest one instead of inventing."""
+    lo = _cat_entry("z-ai/glm-5.3-flash", 0.02, 1_000_000, 20.0, 60.0, 40.0)
+    hi = _cat_entry("z-ai/glm-5.3", 0.20, 1_000_000, 30.0, 70.0, 50.0)
+    prime = _cat_entry("z-ai/glm-5.3-prime", 9.0, 1_000_000)
+    out = _complete(prime, [lo, hi, prime])
+    assert out["intelligence_index"] == 30.0
+    assert out["inherits"]["intelligence_index"]["from"] == ["z-ai/glm-5.3"]
+
+
+def test_inheritance_works_on_a_tracked_record_shape():
+    """A tracked model carries `prompt_price` (already $/M), not `pricing` (per token).
+
+    Reading only `pricing` gave every tracked model a price of 0, so an alias never
+    matched and a family lookup fell back to the cheapest sibling. Regression guard.
+    """
+    base = _cat_entry("z-ai/glm-5.3-flash", 0.0269, 1_048_576, 27.8, 71.5, 50.9)
+    tracked = {"id": "~z-ai/glm-flash-latest", "context_length": 1_048_576,
+               "prompt_price": 0.0269, "completion_price": 0.0996}
+    published, alias_key, families = main_mod._index_references([base])
+    out = main_mod._complete_indices(tracked, {}, {}, (published, alias_key, families))
+    assert out["intelligence_index"] == 27.8
+    assert out["sources"]["intelligence_index"] == "inherited"
+    assert out["inherits"]["intelligence_index"]["kind"] == "alias"
+
+
+def test_inheritance_does_nothing_without_a_reference():
+    lonely = _cat_entry("nobody/unique-model", 1.0, 8_000)
+    out = _complete(lonely, [lonely])
+    assert out.get("intelligence_index") is None
+    assert out["sources"] == {}
+    assert out["inherits"] == {}
+
+
+def test_inheritance_never_overrides_a_manual_or_measured_value():
+    base = _cat_entry("z-ai/glm-5.3-flash", 0.0269, 1_048_576, 27.8, 71.5, 50.9)
+    alias = _cat_entry("~z-ai/glm-flash-latest", 0.0269, 1_048_576)
+    out = _complete(alias, [base, alias], overrides={"intelligence_index": 99.0})
+    assert out["intelligence_index"] == 99.0
+    assert out["sources"]["intelligence_index"] == "manual"
+    # The other two still come from the twin.
+    assert out["sources"]["coding_index"] == "inherited"
+
+
+def test_estimate_wins_over_inheritance_when_the_model_has_an_index():
+    """A measured index makes the intra-model fit available; that beats borrowing."""
+    base = _cat_entry("z-ai/glm-5.3-flash", 0.0269, 1_048_576, 27.8, 71.5, 50.9)
+    partial = {"id": "z-ai/glm-5.3-flashx", "context_length": 1_048_576,
+               "pricing": {"prompt": 0.37 / 1e6, "completion": 0.74 / 1e6},
+               "intelligence_index": 28.0}
+    published, alias_key, families = main_mod._index_references([base, partial])
+    estimators = {"coding_index": [("intelligence_index", 40.0, 1.0, 0.9, 30, 0.0, 100.0)]}
+    out = main_mod._complete_indices(partial, {}, estimators, (published, alias_key, families))
+    assert out["sources"]["coding_index"] == "estimated"
+    assert out["sources"]["intelligence_index"] == "openrouter"
+
+
+# ---------------------------------------------------------------------------
 # 422 regression: the desktop bridge JSON.stringify()es the request body itself
 # (electron/main.ts: `Buffer.from(JSON.stringify(options.body))`), so a plugin
 # that pre-stringifies its body double-encodes it — the JSON *string* reaches

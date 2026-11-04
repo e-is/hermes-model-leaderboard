@@ -95,6 +95,7 @@ export const ga = {
       axisCostShort: 'Costas ualaithe ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Líneach',
+      inheritedHint: (from: string) => 'Níl aon innéacs foilsithe don leagan seo — oidhreachtaithe ó {0}.',
       axisQualityShort: 'Cáilíocht (0–100)',
       free: 'saor in aisce',
       frontier: 'Na comhréitigh is fearr',

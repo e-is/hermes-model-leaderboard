@@ -95,6 +95,7 @@ export const ar = {
       axisCostShort: 'التكلفة الموزونة ($/M tk)',
       axisLog: 'لوغاريتمي',
       axisLinear: 'خطي',
+      inheritedHint: (from: string) => 'لا يوجد مؤشر منشور لهذا البديل — موروث من {0}.',
       axisQualityShort: 'الجودة (0–100)',
       free: 'مجاني',
       frontier: 'أفضل المقايضات',

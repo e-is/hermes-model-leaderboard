@@ -95,6 +95,7 @@ export const af = {
       axisCostShort: 'Geweegde koste ($/M tk)',
       axisLog: 'Log',
       axisLinear: 'Lineêr',
+      inheritedHint: (from: string) => 'Geen gepubliseerde indeks vir hierdie variant nie — geërf van {0}.',
       axisQualityShort: 'Kwaliteit (0–100)',
       free: 'gratis',
       frontier: 'Beste kompromieë',

@@ -95,6 +95,7 @@ export const uk = {
       axisCostShort: 'Зважена вартість ($/M tk)',
       axisLog: 'Лог.',
       axisLinear: 'Лінійна',
+      inheritedHint: (from: string) => 'Для цього варіанта немає опублікованого індексу — успадковано від {0}.',
       axisQualityShort: 'Якість (0–100)',
       free: 'безкоштовно',
       frontier: 'Найкращі компроміси',

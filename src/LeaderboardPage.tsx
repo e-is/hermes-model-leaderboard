@@ -29,10 +29,11 @@ type ModelRecord = {
   /** Where each index value comes from (backend `_complete_indices`). */
   sources?: Record<string, IndexSource>
   estimates?: Record<string, { from: string; r2: number; n: number }>
+  inherits?: Record<string, { kind: 'alias' | 'family'; from: string[] }>
   size_source?: string
 }
 
-type IndexSource = 'manual' | 'openrouter' | 'estimated'
+type IndexSource = 'manual' | 'openrouter' | 'estimated' | 'inherited'
 
 type SearchHit = {
   id: string; name: string; context_length?: number
@@ -172,12 +173,19 @@ function SourcedIdx({ m, field, t }: { m: ModelRecord; field: string; t: any }) 
     return <i style={{ color: 'var(--ui-text-tertiary)' }} title={e ? t.views.estimatedHint(t.views.fieldName[e.from] ?? e.from, e.r2, e.n) : ''}>~{v.toFixed(1)}</i>
   }
   if (src === 'manual') return <span title={t.views.manualHint}>{v.toFixed(1)}<sup style={{ fontSize: 9 }}>✎</sup></span>
+  if (src === 'inherited') {
+    const refs = (m.inherits?.[field]?.from || []).join(' / ')
+    return <i style={{ color: 'var(--ui-text-tertiary)' }} title={t.views.inheritedHint(refs)}>{v.toFixed(1)}<sup style={{ fontSize: 9 }}>⤵</sup></i>
+  }
   return <>{v.toFixed(1)}</>
 }
 
 /** An index value if it was measured (OpenRouter or typed in), else 0. */
 function measured(m: ModelRecord, field: string): number {
-  return m.sources?.[field] === 'estimated' ? 0 : ((m as any)[field] || 0)
+  // Only measured values (OpenRouter or typed in) define the scale: an inherited twin or a
+  // fitted estimate must not set the 100 % mark the others are graded against.
+  const src = m.sources?.[field]
+  return src === 'estimated' || src === 'inherited' ? 0 : ((m as any)[field] || 0)
 }
 
 function modelSafeKey(m: string): string {
