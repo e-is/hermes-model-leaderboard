@@ -14,7 +14,7 @@ import {
 } from '@hermes/plugin-sdk'
 
 import LeaderboardPage from './LeaderboardPage'
-import { setRest } from './doors'
+import { setOpenExternal, setRest } from './doors'
 import { LOCALES } from './i18n'
 
 const plugin: HermesPlugin = {
@@ -24,6 +24,8 @@ const plugin: HermesPlugin = {
 
   register(ctx: PluginContext) {
     setRest((path, opts) => ctx.rest(path, opts))
+    // SDK route to the system browser; the private preload bridge is off-limits (catalog rule 9)
+    setOpenExternal((url: string) => ctx.os?.openExternal(url))
     if (ctx.i18n && typeof ctx.i18n.register === 'function') {
       ctx.i18n.register(LOCALES as any)
     }

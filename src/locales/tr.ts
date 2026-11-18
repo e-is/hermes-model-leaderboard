@@ -137,6 +137,8 @@ export const tr = {
       loading: 'Haberler yükleniyor…',
       none: 'Haber yok.',
       promos: 'SÜREN KAMPANYALAR',
+      sample: 'örnek',
+      sampleHint: 'Örnek teklif, gerçek teklif değil',
       priceChanges: 'FİYAT DEĞİŞİKLİKLERİ',
       newModels: 'YENİ MODELLER',
       newModelsHeading: (p: string) => `🚀 Yeni modeller (${p})`,

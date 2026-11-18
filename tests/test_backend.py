@@ -201,6 +201,8 @@ def test_news_shape(monkeypatch):
     assert nm["id"] == "vendor/new-1" and nm["is_tracked"] is False
     assert data["price_changes"] == []
     assert isinstance(data["promotions"], list) and len(data["promotions"]) > 0
+    # curated demo entries: the UI labels them, so nobody reads them as live OpenRouter offers
+    assert all(p["sample"] is True for p in data["promotions"])
 
 
 # ---------------------------------------------------------------------------
@@ -894,3 +896,35 @@ def test_profile_keeps_the_declared_context_size():
     assert client.put("/profiles/ctx-probe", json={**body, "context_tokens": -5}
                       ).json()["profile"]["context_tokens"] is None
     client.delete("/profiles/ctx-probe")
+
+
+# ---------------------------------------------------------------------------
+# Artificial Analysis key: the profile's secret store first, the environment second
+# ---------------------------------------------------------------------------
+
+def test_aa_key_reads_the_host_secret_store(monkeypatch):
+    import sys
+    import types
+
+    secret = types.ModuleType("agent.secret_scope")
+    secret.get_secret = lambda name: "stored" if name == "ARTIFICIAL_ANALYSIS_API_KEY" else None
+    package = types.ModuleType("agent")
+    package.secret_scope = secret
+    monkeypatch.setitem(sys.modules, "agent", package)
+    monkeypatch.setitem(sys.modules, "agent.secret_scope", secret)
+    monkeypatch.delenv("ARTIFICIAL_ANALYSIS_API_KEY", raising=False)
+
+    assert main_mod._aa_key_configured() is True
+
+
+def test_aa_key_falls_back_to_the_environment(monkeypatch):
+    monkeypatch.setenv("ARTIFICIAL_ANALYSIS_API_KEY", "from-env")
+    assert main_mod._aa_key_configured() is True
+
+
+def test_aa_key_absent(monkeypatch):
+    import sys
+
+    monkeypatch.delenv("ARTIFICIAL_ANALYSIS_API_KEY", raising=False)
+    monkeypatch.setitem(sys.modules, "agent.secret_scope", None)  # import fails: no host
+    assert main_mod._aa_key_configured() is False

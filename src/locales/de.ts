@@ -137,6 +137,8 @@ export const de = {
       loading: 'Neuigkeiten werden geladen…',
       none: 'Keine Neuigkeiten verfügbar.',
       promos: 'LAUFENDE AKTIONEN',
+      sample: 'Beispiel',
+      sampleHint: 'Beispielangebot, kein echtes Angebot',
       priceChanges: 'PREISÄNDERUNGEN',
       newModels: 'NEUE MODELLE',
       newModelsHeading: (p: string) => `🚀 Neue Modelle (${p})`,

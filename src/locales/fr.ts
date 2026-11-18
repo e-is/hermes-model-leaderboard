@@ -138,6 +138,8 @@ export const fr = {
       loading: 'Chargement des actualités…',
       none: 'Aucune actualité disponible.',
       promos: '🏷️ Promos en cours',
+      sample: 'exemple',
+      sampleHint: 'Offre d’exemple, pas une annonce réelle',
       priceChanges: '📉 Changements de tarifs',
       newModels: 'NOUVEAUX MODÈLES',
       newModelsHeading: (p: string) => `🚀 Nouveautés (${p})`,

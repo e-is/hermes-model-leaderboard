@@ -139,6 +139,8 @@ export const zhHant = {
       loading: '正在載入新聞…',
       none: '目前沒有新聞。',
       promos: '進行中的優惠',
+      sample: '範例',
+      sampleHint: '範例，並非真實優惠',
       priceChanges: '價格變動',
       newModels: '新模型',
       newModelsHeading: (p: string) => `🚀 新模型（${p}）`,

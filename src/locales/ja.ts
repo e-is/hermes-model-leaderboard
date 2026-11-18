@@ -137,6 +137,8 @@ export const ja = {
       loading: 'ニュースを読み込み中…',
       none: 'ニュースはありません。',
       promos: '開催中のプロモ',
+      sample: '例',
+      sampleHint: 'サンプル表示であり、実際の提供ではありません',
       priceChanges: '価格変更',
       newModels: '新着モデル',
       newModelsHeading: (p: string) => `🚀 新着モデル (${p})`,

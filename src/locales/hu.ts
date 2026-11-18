@@ -137,6 +137,8 @@ export const hu = {
       loading: 'Hírek betöltése…',
       none: 'Nincs elérhető hír.',
       promos: 'AKTÍV AKCIÓK',
+      sample: 'példa',
+      sampleHint: 'Példaajánlat, nem valódi ajánlat',
       priceChanges: 'ÁRVÁLTOZÁSOK',
       newModels: 'ÚJ MODELLEK',
       newModelsHeading: (p: string) => `🚀 Új modellek (${p})`,

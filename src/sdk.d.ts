@@ -19,6 +19,9 @@ declare module '@hermes/plugin-sdk' {
     registerMany: (cs: Contribution[]) => () => void
     rest: <T = unknown>(path: string, opts?: { method?: string; body?: unknown }) => Promise<T>
     socket: (path: string, onMessage: (data: unknown) => void) => () => void
+    os?: {
+      openExternal: (url: string) => Promise<boolean>
+    }
     storage: {
       get: (key: string, fallback?: unknown) => any
       set: (key: string, value: unknown) => void

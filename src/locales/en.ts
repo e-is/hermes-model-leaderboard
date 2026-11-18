@@ -138,6 +138,8 @@ export const en = {
       loading: 'Loading news…',
       none: 'No news available.',
       promos: 'ONGOING PROMOS',
+      sample: 'example',
+      sampleHint: 'Sample offer, not a live listing',
       priceChanges: 'PRICE CHANGES',
       newModels: 'NEW MODELS',
       newModelsHeading: (p: string) => `🚀 New models (${p})`,

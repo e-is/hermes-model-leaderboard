@@ -190,6 +190,12 @@ export function NewsPanel(props: NewsPanelProps) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <b>{p.name}</b>
+                           {p.sample && (
+                             <span title={t.news.sampleHint}
+                               style={{ color: 'var(--ui-text-tertiary)', border: '1px dashed var(--ui-stroke-secondary)', padding: '0 5px', borderRadius: 3, fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                               {t.news.sample}
+                             </span>
+                           )}
                           <span style={{ background: 'var(--ui-red)', color: 'var(--ui-bg-editor)', padding: '1px 5px', borderRadius: 3, fontWeight: 700, fontSize: 10 }}>
                             🔻 {p.discount_pct != null ? t.news.promo.discount(p.discount_pct) : '🔻'}
                           </span>
@@ -208,7 +214,7 @@ export function NewsPanel(props: NewsPanelProps) {
                       {promoLine(t, p.detail) ? (
                         <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4 }}>{promoLine(t, p.detail)}</div>
                       ) : null}
-                      {p.ends_at ? (
+                      {p.ends_at && !p.sample ? (
                         <div style={{ fontSize: 10, color: p._isChallenger ? 'var(--ui-orange)' : 'var(--ui-text-tertiary)', marginTop: 2 }}>
                            {t.news.until(p.ends_at)}
                         </div>

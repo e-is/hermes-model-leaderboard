@@ -138,6 +138,8 @@ export const zh = {
       loading: '正在加载资讯…',
       none: '暂无资讯。',
       promos: '进行中的优惠',
+      sample: '示例',
+      sampleHint: '示例，并非真实优惠',
       priceChanges: '价格变动',
       newModels: '新模型',
       newModelsHeading: (p: string) => `🚀 新模型（${p}）`,

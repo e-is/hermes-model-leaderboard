@@ -1,21 +1,17 @@
 import type { CSSProperties } from 'react'
 
+import { hostOpenExternal } from './doors.ts'
+
 /**
  * Open a URL outside the app.
  *
- * Inside Hermes Desktop the preload bridge (`window.hermesDesktop.openExternal`) hands the
- * URL to the system browser. A plain `<a href target="_blank">` does not work there: the
- * renderer's navigation guard swallows the click, so the link looked dead. The `window.open`
- * fallback only serves the standalone dev page (vite), where the bridge is absent.
+ * The desktop injects `ctx.os.openExternal` at register() time (see doors.ts), which is the
+ * SDK route to the system browser. A plain `<a href target="_blank">` does not work there: the
+ * renderer's navigation guard swallows the click, so the link looked dead. `window.open` only
+ * serves the standalone dev page (vite), where no host is registered.
  */
 export function openExternal(url: string): void {
-  const bridge = (window as any).hermesDesktop
-  if (bridge && typeof bridge.openExternal === 'function') {
-    Promise.resolve(bridge.openExternal(url)).catch(() => {
-      /* the main process already logs a failure; nothing useful to show in the card */
-    })
-    return
-  }
+  if (hostOpenExternal(url)) return
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 

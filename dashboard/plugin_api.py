@@ -523,6 +523,26 @@ class ModelIn(BaseModel):
     label: str | None = None
 
 
+_AA_KEY_ENV = "ARTIFICIAL_ANALYSIS_API_KEY"
+
+
+def _aa_key_configured() -> bool:
+    """Whether the optional Artificial Analysis key is set for the active profile.
+
+    The host keeps it in its secret store (Desktop -> Settings -> Plugins writes it); reading
+    that store is what makes the key follow the profile. The environment is only a fallback for
+    a standalone run of the backend.
+    """
+    try:
+        from agent.secret_scope import get_secret
+
+        if get_secret(_AA_KEY_ENV):
+            return True
+    except Exception:  # no host (standalone/tests) — fall through to the environment
+        pass
+    return bool(os.environ.get(_AA_KEY_ENV))
+
+
 @router.get("/models")
 def get_models():
     models = _load_models()
@@ -545,7 +565,7 @@ def get_models():
             # Whether the user declared the optional Artificial Analysis key (Desktop →
             # Settings → Plugins). The UI offers to set one when it is absent; nothing here
             # calls AA, and the value itself never leaves the host.
-            "aa_key": bool(os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY"))}
+            "aa_key": _aa_key_configured()}
 
 
 @router.post("/models")
@@ -926,6 +946,9 @@ def get_news():
             "discount_pct": p.get("discount_pct"),
             "detail": p.get("detail") or {},
             "ends_at": p.get("ends_at"),
+            # curated demo entries, not live OpenRouter offers: the UI labels them, and the
+            # rolling end date is for the demo only
+            "sample": True,
             "is_tracked": p["id"] in tracked_ids,
         })
     

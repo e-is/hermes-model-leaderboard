@@ -138,6 +138,8 @@ export const ko = {
       loading: '뉴스를 불러오는 중…',
       none: '표시할 뉴스가 없습니다.',
       promos: '진행 중인 프로모션',
+      sample: '예시',
+      sampleHint: '예시이며 실제 제공이 아닙니다',
       priceChanges: '가격 변동',
       newModels: '새 모델',
       newModelsHeading: (p: string) => `🚀 새 모델 (${p})`,

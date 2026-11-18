@@ -17,3 +17,27 @@ export function api(path: string, opts?: any): Promise<any> {
     return r.json()
   })
 }
+
+/**
+ * External-link door: the desktop injects `ctx.os.openExternal` at register() time.
+ * Standalone dev (vite) has no host, so `window.open` is the fallback there.
+ */
+type OpenExternalFn = (url: string) => Promise<unknown> | unknown
+
+let openExternalFn: OpenExternalFn | null = null
+
+export function setOpenExternal(fn: OpenExternalFn | null) {
+  openExternalFn = fn
+}
+
+export function hostOpenExternal(url: string): boolean {
+  if (!openExternalFn) return false
+  try {
+    Promise.resolve(openExternalFn(url)).catch(() => {
+      /* the host logs the failure; the card has nothing useful to show */
+    })
+    return true
+  } catch {
+    return false
+  }
+}

@@ -171,3 +171,14 @@ def test_relayed_models_are_not_shadowed(monkeypatch, tmp_path):
     ]})
     matches = {k: v for k, v in harvest.match(entries, ids).items() if k not in relayed}
     assert matches == {"z-ai/glm-5.3-flashx": 29.0}
+
+
+def test_default_store_follows_the_hermes_home(monkeypatch):
+    import sys
+    import types
+
+    constants = types.ModuleType("hermes_constants")
+    constants.get_hermes_home = lambda: Path("/tmp/hermes-home")
+    monkeypatch.setitem(sys.modules, "hermes_constants", constants)
+
+    assert harvest._default_store() == Path("/tmp/hermes-home/plugin-data/model-leaderboard")

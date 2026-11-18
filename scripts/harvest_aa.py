@@ -241,10 +241,19 @@ def openrouter_catalogue(store: Path) -> tuple[list[str], set[str]]:
     return ids, relayed
 
 
+def _default_store() -> Path:
+    """The plugin's data directory, following HERMES_HOME when the host is importable."""
+    try:
+        from hermes_constants import get_hermes_home
+
+        return Path(get_hermes_home()) / "plugin-data" / "model-leaderboard"
+    except Exception:  # standalone run: the documented default
+        return Path.home() / ".hermes" / "plugin-data" / "model-leaderboard"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Harvest the Artificial Analysis intelligence index.")
-    parser.add_argument("--store", type=Path,
-                        default=Path.home() / ".hermes" / "plugin-data" / "model-leaderboard",
+    parser.add_argument("--store", type=Path, default=_default_store(),
                         help="plugin data directory (holds benchmarks.json and the OpenRouter cache)")
     parser.add_argument("--write", action="store_true", help="update benchmarks.json")
     parser.add_argument("--dry-run", action="store_true",

@@ -137,6 +137,8 @@ export const ru = {
       loading: 'Загрузка новостей…',
       none: 'Новостей нет.',
       promos: 'АКТИВНЫЕ АКЦИИ',
+      sample: 'пример',
+      sampleHint: 'Пример, а не реальное предложение',
       priceChanges: 'ИЗМЕНЕНИЯ ЦЕН',
       newModels: 'НОВЫЕ МОДЕЛИ',
       newModelsHeading: (p: string) => `🚀 Новые модели (${p})`,

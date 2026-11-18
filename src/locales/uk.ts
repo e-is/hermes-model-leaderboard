@@ -137,6 +137,8 @@ export const uk = {
       loading: 'Завантаження новин…',
       none: 'Новин немає.',
       promos: 'АКТИВНІ АКЦІЇ',
+      sample: 'приклад',
+      sampleHint: 'Приклад, а не реальна пропозиція',
       priceChanges: 'ЗМІНИ ЦІН',
       newModels: 'НОВІ МОДЕЛІ',
       newModelsHeading: (p: string) => `🚀 Нові моделі (${p})`,

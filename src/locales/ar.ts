@@ -137,6 +137,8 @@ export const ar = {
       loading: 'جارٍ تحميل الأخبار…',
       none: 'لا توجد أخبار متاحة.',
       promos: 'عروض جارية',
+      sample: 'مثال',
+      sampleHint: 'عرض توضيحي وليس عرضًا فعليًا',
       priceChanges: 'تغيّرات الأسعار',
       newModels: 'نماذج جديدة',
       newModelsHeading: (p: string) => `🚀 نماذج جديدة (${p})`,

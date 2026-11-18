@@ -1,3 +1,24 @@
+## [1.6.2] — 2026-11-05 — catalog review: public surfaces only
+
+### Changed
+
+- **External links now use the SDK.** They go through `ctx.os.openExternal`, injected at
+  `register()` time, instead of the private `window.hermesDesktop` preload bridge — catalog
+  rule 9 ("public surfaces only"). `window.open` remains only for the standalone dev page.
+- **The optional Artificial Analysis key is read from the host's secret store**
+  (`agent.secret_scope.get_secret`), so it follows the active profile instead of whatever the
+  process environment happens to hold; the environment stays as the standalone fallback.
+- **Curated demo promotions are labelled as examples** in the news panel, and no longer show an
+  end date: a rolling date read like a live OpenRouter offer.
+- **`scripts/harvest_aa.py --store`** defaults to `hermes_constants.get_hermes_home()` when the
+  host is importable, instead of a hard-coded `~/.hermes` path.
+
+### Tests
+
+- Link routing (host opener, dev fallback, no reference to the private bridge), the key lookup
+  (secret store, environment fallback, absent), the harvester's store default, and the `sample`
+  flag on promotions. 104 node tests, 70 Python tests.
+
 ## [1.6.1] — 2026-11-04 — captures refreshed against the 1.6.0 UI
 
 ### Documentation

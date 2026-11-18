@@ -137,6 +137,8 @@ export const ga = {
       loading: 'Nuacht á lódáil…',
       none: 'Níl aon nuacht ar fáil.',
       promos: 'FÓGRAÍ REATHA',
+      sample: 'sampla',
+      sampleHint: 'Tairiscint shamplach, ní fíorfhairiscint',
       priceChanges: 'ATHRAITHE PRAGHAS',
       newModels: 'SAMHLACHA NUA',
       newModelsHeading: (p: string) => `🚀 Samhlacha nua (${p})`,

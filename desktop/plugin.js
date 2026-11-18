@@ -325,14 +325,38 @@ function priceChangePrices(change, labels, formatPrice) {
   return parts.join(" · ");
 }
 
+// src/doors.ts
+var restFn = null;
+function setRest(fn) {
+  restFn = fn;
+}
+function api(path, opts) {
+  if (restFn) return restFn(path, opts);
+  return fetch(`/api${path}`, opts).then((r) => {
+    if (!r.ok) return r.json().then((e) => {
+      throw new Error(e.detail || `HTTP ${r.status}`);
+    });
+    return r.json();
+  });
+}
+var openExternalFn = null;
+function setOpenExternal(fn) {
+  openExternalFn = fn;
+}
+function hostOpenExternal(url) {
+  if (!openExternalFn) return false;
+  try {
+    Promise.resolve(openExternalFn(url)).catch(() => {
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // src/links.ts
 function openExternal(url) {
-  const bridge = window.hermesDesktop;
-  if (bridge && typeof bridge.openExternal === "function") {
-    Promise.resolve(bridge.openExternal(url)).catch(() => {
-    });
-    return;
-  }
+  if (hostOpenExternal(url)) return;
   window.open(url, "_blank", "noopener,noreferrer");
 }
 var linkButtonStyle = (color, fontSize = 11) => ({
@@ -487,6 +511,14 @@ function NewsPanel(props) {
                 /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" }, children: [
                   /* @__PURE__ */ jsxs2("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }, children: [
                     /* @__PURE__ */ jsx2("b", { children: p.name }),
+                    p.sample && /* @__PURE__ */ jsx2(
+                      "span",
+                      {
+                        title: t.news.sampleHint,
+                        style: { color: "var(--ui-text-tertiary)", border: "1px dashed var(--ui-stroke-secondary)", padding: "0 5px", borderRadius: 3, fontWeight: 600, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.4 },
+                        children: t.news.sample
+                      }
+                    ),
                     /* @__PURE__ */ jsxs2("span", { style: { background: "var(--ui-red)", color: "var(--ui-bg-editor)", padding: "1px 5px", borderRadius: 3, fontWeight: 700, fontSize: 10 }, children: [
                       "🔻 ",
                       p.discount_pct != null ? t.news.promo.discount(p.discount_pct) : "🔻"
@@ -498,7 +530,7 @@ function NewsPanel(props) {
                   ] })
                 ] }),
                 promoLine(t, p.detail) ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4 }, children: promoLine(t, p.detail) }) : null,
-                p.ends_at ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: t.news.until(p.ends_at) }) : null,
+                p.ends_at && !p.sample ? /* @__PURE__ */ jsx2("div", { style: { fontSize: 10, color: p._isChallenger ? "var(--ui-orange)" : "var(--ui-text-tertiary)", marginTop: 2 }, children: t.news.until(p.ends_at) }) : null,
                 /* @__PURE__ */ jsxs2("div", { style: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: 6 }, children: [
                   /* @__PURE__ */ jsxs2(
                     "button",
@@ -764,21 +796,6 @@ function NewsPanel(props) {
 // src/LeaderboardPage.tsx
 import { ConfirmDialog } from "@hermes/plugin-sdk";
 
-// src/doors.ts
-var restFn = null;
-function setRest(fn) {
-  restFn = fn;
-}
-function api(path, opts) {
-  if (restFn) return restFn(path, opts);
-  return fetch(`/api${path}`, opts).then((r) => {
-    if (!r.ok) return r.json().then((e) => {
-      throw new Error(e.detail || `HTTP ${r.status}`);
-    });
-    return r.json();
-  });
-}
-
 // src/i18n.ts
 import { useMemo } from "react";
 import { usePluginI18n } from "@hermes/plugin-sdk";
@@ -923,6 +940,8 @@ var en = {
     loading: "Loading news…",
     none: "No news available.",
     promos: "ONGOING PROMOS",
+    sample: "example",
+    sampleHint: "Sample offer, not a live listing",
     priceChanges: "PRICE CHANGES",
     newModels: "NEW MODELS",
     newModelsHeading: (p) => `🚀 New models (${p})`,
@@ -1136,6 +1155,8 @@ var fr = {
     loading: "Chargement des actualités…",
     none: "Aucune actualité disponible.",
     promos: "🏷️ Promos en cours",
+    sample: "exemple",
+    sampleHint: "Offre d’exemple, pas une annonce réelle",
     priceChanges: "📉 Changements de tarifs",
     newModels: "NOUVEAUX MODÈLES",
     newModelsHeading: (p) => `🚀 Nouveautés (${p})`,
@@ -1349,6 +1370,8 @@ var zh = {
     loading: "正在加载资讯…",
     none: "暂无资讯。",
     promos: "进行中的优惠",
+    sample: "示例",
+    sampleHint: "示例，并非真实优惠",
     priceChanges: "价格变动",
     newModels: "新模型",
     newModelsHeading: (p) => `🚀 新模型（${p}）`,
@@ -1562,6 +1585,8 @@ var zhHant = {
     loading: "正在載入新聞…",
     none: "目前沒有新聞。",
     promos: "進行中的優惠",
+    sample: "範例",
+    sampleHint: "範例，並非真實優惠",
     priceChanges: "價格變動",
     newModels: "新模型",
     newModelsHeading: (p) => `🚀 新模型（${p}）`,
@@ -1775,6 +1800,8 @@ var af = {
     loading: "Laai nuus…",
     none: "Geen nuus beskikbaar nie.",
     promos: "LOPENDE PROMOSIES",
+    sample: "voorbeeld",
+    sampleHint: "Voorbeeldaanbod, nie ’n werklike aanbod nie",
     priceChanges: "PRYSVERANDERINGS",
     newModels: "NUWE MODELLE",
     newModelsHeading: (p) => `🚀 Nuwe modelle (${p})`,
@@ -1988,6 +2015,8 @@ var ar = {
     loading: "جارٍ تحميل الأخبار…",
     none: "لا توجد أخبار متاحة.",
     promos: "عروض جارية",
+    sample: "مثال",
+    sampleHint: "عرض توضيحي وليس عرضًا فعليًا",
     priceChanges: "تغيّرات الأسعار",
     newModels: "نماذج جديدة",
     newModelsHeading: (p) => `🚀 نماذج جديدة (${p})`,
@@ -2201,6 +2230,8 @@ var de = {
     loading: "Neuigkeiten werden geladen…",
     none: "Keine Neuigkeiten verfügbar.",
     promos: "LAUFENDE AKTIONEN",
+    sample: "Beispiel",
+    sampleHint: "Beispielangebot, kein echtes Angebot",
     priceChanges: "PREISÄNDERUNGEN",
     newModels: "NEUE MODELLE",
     newModelsHeading: (p) => `🚀 Neue Modelle (${p})`,
@@ -2414,6 +2445,8 @@ var es = {
     loading: "Cargando noticias…",
     none: "No hay noticias disponibles.",
     promos: "PROMOCIONES ACTIVAS",
+    sample: "ejemplo",
+    sampleHint: "Oferta de ejemplo, no una oferta real",
     priceChanges: "CAMBIOS DE PRECIO",
     newModels: "NUEVOS MODELOS",
     newModelsHeading: (p) => `🚀 Nuevos modelos (${p})`,
@@ -2627,6 +2660,8 @@ var ga = {
     loading: "Nuacht á lódáil…",
     none: "Níl aon nuacht ar fáil.",
     promos: "FÓGRAÍ REATHA",
+    sample: "sampla",
+    sampleHint: "Tairiscint shamplach, ní fíorfhairiscint",
     priceChanges: "ATHRAITHE PRAGHAS",
     newModels: "SAMHLACHA NUA",
     newModelsHeading: (p) => `🚀 Samhlacha nua (${p})`,
@@ -2840,6 +2875,8 @@ var hu = {
     loading: "Hírek betöltése…",
     none: "Nincs elérhető hír.",
     promos: "AKTÍV AKCIÓK",
+    sample: "példa",
+    sampleHint: "Példaajánlat, nem valódi ajánlat",
     priceChanges: "ÁRVÁLTOZÁSOK",
     newModels: "ÚJ MODELLEK",
     newModelsHeading: (p) => `🚀 Új modellek (${p})`,
@@ -3053,6 +3090,8 @@ var it = {
     loading: "Caricamento notizie…",
     none: "Nessuna notizia disponibile.",
     promos: "PROMOZIONI IN CORSO",
+    sample: "esempio",
+    sampleHint: "Offerta di esempio, non reale",
     priceChanges: "VARIAZIONI DI PREZZO",
     newModels: "NUOVI MODELLI",
     newModelsHeading: (p) => `🚀 Nuovi modelli (${p})`,
@@ -3266,6 +3305,8 @@ var ja = {
     loading: "ニュースを読み込み中…",
     none: "ニュースはありません。",
     promos: "開催中のプロモ",
+    sample: "例",
+    sampleHint: "サンプル表示であり、実際の提供ではありません",
     priceChanges: "価格変更",
     newModels: "新着モデル",
     newModelsHeading: (p) => `🚀 新着モデル (${p})`,
@@ -3479,6 +3520,8 @@ var ko = {
     loading: "뉴스를 불러오는 중…",
     none: "표시할 뉴스가 없습니다.",
     promos: "진행 중인 프로모션",
+    sample: "예시",
+    sampleHint: "예시이며 실제 제공이 아닙니다",
     priceChanges: "가격 변동",
     newModels: "새 모델",
     newModelsHeading: (p) => `🚀 새 모델 (${p})`,
@@ -3692,6 +3735,8 @@ var pt = {
     loading: "A carregar notícias…",
     none: "Não há notícias disponíveis.",
     promos: "PROMOÇÕES ATIVAS",
+    sample: "exemplo",
+    sampleHint: "Oferta de exemplo, não real",
     priceChanges: "ALTERAÇÕES DE PREÇO",
     newModels: "NOVOS MODELOS",
     newModelsHeading: (p) => `🚀 Novos modelos (${p})`,
@@ -3905,6 +3950,8 @@ var ru = {
     loading: "Загрузка новостей…",
     none: "Новостей нет.",
     promos: "АКТИВНЫЕ АКЦИИ",
+    sample: "пример",
+    sampleHint: "Пример, а не реальное предложение",
     priceChanges: "ИЗМЕНЕНИЯ ЦЕН",
     newModels: "НОВЫЕ МОДЕЛИ",
     newModelsHeading: (p) => `🚀 Новые модели (${p})`,
@@ -4118,6 +4165,8 @@ var tr = {
     loading: "Haberler yükleniyor…",
     none: "Haber yok.",
     promos: "SÜREN KAMPANYALAR",
+    sample: "örnek",
+    sampleHint: "Örnek teklif, gerçek teklif değil",
     priceChanges: "FİYAT DEĞİŞİKLİKLERİ",
     newModels: "YENİ MODELLER",
     newModelsHeading: (p) => `🚀 Yeni modeller (${p})`,
@@ -4331,6 +4380,8 @@ var uk = {
     loading: "Завантаження новин…",
     none: "Новин немає.",
     promos: "АКТИВНІ АКЦІЇ",
+    sample: "приклад",
+    sampleHint: "Приклад, а не реальна пропозиція",
     priceChanges: "ЗМІНИ ЦІН",
     newModels: "НОВІ МОДЕЛІ",
     newModelsHeading: (p) => `🚀 Нові моделі (${p})`,
@@ -6664,6 +6715,7 @@ var plugin = {
   defaultEnabled: true,
   register(ctx) {
     setRest((path, opts) => ctx.rest(path, opts));
+    setOpenExternal((url) => ctx.os?.openExternal(url));
     if (ctx.i18n && typeof ctx.i18n.register === "function") {
       ctx.i18n.register(LOCALES);
     }

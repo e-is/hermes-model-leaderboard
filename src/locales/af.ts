@@ -137,6 +137,8 @@ export const af = {
       loading: 'Laai nuus…',
       none: 'Geen nuus beskikbaar nie.',
       promos: 'LOPENDE PROMOSIES',
+      sample: 'voorbeeld',
+      sampleHint: 'Voorbeeldaanbod, nie ’n werklike aanbod nie',
       priceChanges: 'PRYSVERANDERINGS',
       newModels: 'NUWE MODELLE',
       newModelsHeading: (p: string) => `🚀 Nuwe modelle (${p})`,
