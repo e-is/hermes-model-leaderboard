@@ -1,3 +1,23 @@
+## [1.7.0] — 2026-11-05 — batch variants stay out of the ranking
+
+### Added
+
+- **"Exclude batch variants"**, a per-profile switch in the criteria dialog, **on by default**.
+  A `:batch` entry is the same model served asynchronously at half price: Hermes cannot drive the
+  Batch API unless a plugin does, so a cheap async price must not compete with interactive prices
+  in the ranking, the Pareto frontier, the weighted cost or the news. The table still lists them
+  (with a `batch` badge) so you can see what you are leaving out.
+- **`:free` stays in.** A good free model must never be penalised for being free; the switch only
+  concerns `:batch`.
+- `/models` and `/news` now expose `variant` and `base_id` per entry, and
+  `/news?exclude_batch=` follows the profile. Only *catalog* variants (`:batch`, `:free`,
+  `:thinking`, `:extended`) are recognised; routing modifiers (`:nitro`, `:floor`, `:exacto`,
+  `:online`) are part of the base id and are never stripped.
+
+### Notes
+
+- Profiles saved before this release default to excluding batch (absent field = on).
+
 ## [1.6.2] — 2026-11-05 — catalog review: public surfaces only
 
 ### Changed

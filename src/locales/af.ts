@@ -46,6 +46,13 @@ export const af = {
         outOfContextHint: "Hierdie model kan nie die verklaarde promptgrootte aanvaar nie: dit val buite die ranglys en die Pareto.",
         columnHint: "Pryse sluit die konteksvlak van die gekose profiel in.",
     },
+        variants: {
+            excludeBatch: "Sluit batch-variante uit",
+            excludeBatchHint: "Batch lewer dieselfde model asinkroon teen die helfte van die prys; Hermes kan dit net met ’n plugin vir die Batch API gebruik. Gratis variante bly in die ranglys.",
+            batch: "batch",
+            batchHint: "Asinkrone Batch API-inskrywing (halfprys), nie deur Hermes bruikbaar nie.",
+        },
+
     removeModel: 'Verwyder model',
     suppressShort: 'Wis?',
     clickToShow: 'Klik om te wys',

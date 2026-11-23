@@ -46,6 +46,13 @@ export const ga = {
         outOfContextHint: "Ní féidir leis an múnla seo méid an leide a luaigh tú a ghlacadh: fágadh as an rangú agus as Pareto é.",
         columnHint: "Cuimsíonn na praghsanna leibhéal comhthéacs na próifíle roghnaithe.",
     },
+        variants: {
+            excludeBatch: "Eisíoc le leaganacha batch",
+            excludeBatchHint: "Seirbheálann batch an tsamhail chéanna go neamhshioncronach ar leathphraghas; ní féidir le Hermes é a úsáid gan breiseán don Batch API. Fanann leaganacha saora sa rangú.",
+            batch: "batch",
+            batchHint: "Iontráil Batch API neamhshioncronach (leathphraghas), nach féidir le Hermes a úsáid.",
+        },
+
     removeModel: 'Bain an tsamhail',
     suppressShort: 'Scrios?',
     clickToShow: 'Cliceáil le taispeáint',

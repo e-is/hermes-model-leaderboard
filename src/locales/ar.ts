@@ -46,6 +46,13 @@ export const ar = {
         outOfContextHint: "لا يستطيع هذا النموذج استقبال حجم الموجّه المعلن، لذا يُستبعد من الترتيب ومخطط Pareto.",
         columnHint: "الأسعار تشمل شريحة السياق للملف الشخصي المحدد.",
     },
+        variants: {
+            excludeBatch: "استبعاد متغيرات batch",
+            excludeBatchHint: "يقدّم batch النموذج نفسه بشكل غير متزامن بنصف السعر، ولا يستطيع Hermes استخدامه إلا بإضافة تدعم Batch API. تبقى المتغيرات المجانية في الترتيب.",
+            batch: "batch",
+            batchHint: "إدخال Batch API غير متزامن (نصف السعر) غير قابل للاستخدام في Hermes.",
+        },
+
     removeModel: 'إزالة النموذج',
     suppressShort: 'حذف؟',
     clickToShow: 'انقر للإظهار',

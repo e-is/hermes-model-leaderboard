@@ -46,6 +46,13 @@ export const tr = {
         outOfContextHint: "Bu model bildirilen prompt boyutunu alamaz: sıralama ve Pareto dışında bırakılır.",
         columnHint: "Fiyatlar seçili profilin bağlam kademesini içerir.",
     },
+        variants: {
+            excludeBatch: "batch varyantlarını hariç tut",
+            excludeBatchHint: "batch aynı modeli eşzamansız olarak yarı fiyata sunar; Hermes bunu Batch API eklentisi olmadan kullanamaz. Ücretsiz varyantlar sıralamada kalır.",
+            batch: "batch",
+            batchHint: "Eşzamansız Batch API kaydı (yarı fiyat), Hermes tarafından kullanılamaz.",
+        },
+
     removeModel: 'Modeli kaldır',
     suppressShort: 'Sil?',
     clickToShow: 'Göstermek için tıkla',

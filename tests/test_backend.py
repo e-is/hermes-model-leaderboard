@@ -928,3 +928,47 @@ def test_aa_key_absent(monkeypatch):
     monkeypatch.delenv("ARTIFICIAL_ANALYSIS_API_KEY", raising=False)
     monkeypatch.setitem(sys.modules, "agent.secret_scope", None)  # import fails: no host
     assert main_mod._aa_key_configured() is False
+
+
+# ---------------------------------------------------------------------------
+# Catalogue variants: batch is labelled, and the news hides it by default
+# ---------------------------------------------------------------------------
+
+def test_split_variant_only_strips_catalog_suffixes():
+    assert main_mod._split_variant("google/gemini-4-neon:batch") == ("batch", "google/gemini-4-neon")
+    assert main_mod._split_variant("inclusionai/ling-3.2-flash:free") == ("free", "inclusionai/ling-3.2-flash")
+    assert main_mod._split_variant("openai/gpt-5.2") == (None, "openai/gpt-5.2")
+    # routing modifiers never create a catalogue entry: the id is still the base model
+    assert main_mod._split_variant("openai/gpt-5.2:nitro") == (None, "openai/gpt-5.2:nitro")
+    assert main_mod._split_variant("poolside/laguna:free:nitro") == ("free", "poolside/laguna")
+
+
+def test_news_hides_batch_entries_by_default(monkeypatch):
+    monkeypatch.setattr(main_mod, "_get_cached_or_fetch", lambda force=False: [
+        {"id": "openai/gpt-6.2", "name": "GPT-6.2", "created": 1_900_000_000,
+         "context_length": 200_000, "pricing": {"prompt": 0.000002, "completion": 0.000008},
+         "architecture": {"modality": "text"}, "supported_parameters": []},
+        {"id": "openai/gpt-6.2:batch", "name": "GPT-6.2 (batch)", "created": 1_900_000_100,
+         "context_length": 200_000, "pricing": {"prompt": 0.000001, "completion": 0.000004},
+         "architecture": {"modality": "text"}, "supported_parameters": []},
+    ])
+    monkeypatch.setattr(main_mod, "_load_models", lambda: [])
+    monkeypatch.setattr(main_mod, "_load_price_history", lambda: {})
+
+    ids = [m["id"] for m in client.get(f"{PREFIX}/news").json()["new_models"]]
+    assert ids == ["openai/gpt-6.2"]
+    assert all(m["variant"] is None for m in client.get(f"{PREFIX}/news").json()["new_models"])
+
+    every = client.get(f"{PREFIX}/news?exclude_batch=false").json()["new_models"]
+    assert [m["id"] for m in every] == ["openai/gpt-6.2:batch", "openai/gpt-6.2"]
+    assert every[0]["variant"] == "batch" and every[0]["base_id"] == "openai/gpt-6.2"
+
+
+def test_profiles_exclude_batch_by_default(tmp_path, monkeypatch):
+    monkeypatch.setattr(main_mod, "PROFILES_FILE", tmp_path / "profiles.json")
+    created = client.post(f"{PREFIX}/profiles", json={"id": "batch-test", "name": "Batch test"}).json()
+    assert created["profile"]["exclude_batch"] is True
+
+    updated = client.put(f"{PREFIX}/profiles/batch-test",
+                         json={"id": "batch-test", "name": "Batch test", "exclude_batch": False}).json()
+    assert updated["profile"]["exclude_batch"] is False

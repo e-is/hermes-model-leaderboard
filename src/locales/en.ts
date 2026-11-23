@@ -47,6 +47,13 @@ export const en = {
         outOfContextHint: "This model cannot take the declared prompt size: it is left out of the ranking and the Pareto.",
         columnHint: "Prices include the context tier of the selected profile.",
     },
+        variants: {
+            excludeBatch: "Exclude batch variants",
+            excludeBatchHint: "Batch is the same model served asynchronously at half price; Hermes cannot use it unless a plugin drives the Batch API. Free variants stay in the ranking.",
+            batch: "batch",
+            batchHint: "Asynchronous Batch API entry (half price), not usable by Hermes.",
+        },
+
     removeModel: 'Remove model',
     suppressShort: 'Del?',
     clickToShow: 'Click to show',

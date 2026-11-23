@@ -46,6 +46,13 @@ export const de = {
         outOfContextHint: "Dieses Modell kann die deklarierte Prompt-Größe nicht aufnehmen: es fehlt im Ranking und im Pareto.",
         columnHint: "Die Preise enthalten die Kontextstufe des gewählten Profils.",
     },
+        variants: {
+            excludeBatch: "Batch-Varianten ausschließen",
+            excludeBatchHint: "Batch liefert dasselbe Modell asynchron zum halben Preis; Hermes kann es nur mit einem Plugin für die Batch-API nutzen. Kostenlose Varianten bleiben im Ranking.",
+            batch: "Batch",
+            batchHint: "Asynchroner Batch-API-Eintrag (halber Preis), für Hermes nicht nutzbar.",
+        },
+
     removeModel: 'Modell entfernen',
     suppressShort: 'Löschen?',
     clickToShow: 'Zum Anzeigen klicken',

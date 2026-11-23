@@ -48,6 +48,13 @@ export const zhHant = {
         outOfContextHint: "此模型無法接收所宣告的提示大小，因此不列入排名與 Pareto。",
         columnHint: "價格包含所選設定檔的上下文級距。",
     },
+        variants: {
+            excludeBatch: "排除 batch 變體",
+            excludeBatchHint: "batch 以非同步、半價方式提供同一模型；Hermes 需要支援 Batch API 的外掛才能使用。免費變體仍參與排名。",
+            batch: "batch",
+            batchHint: "非同步 Batch API 項目（半價），Hermes 無法使用。",
+        },
+
     removeModel: '移除模型',
     suppressShort: '刪',
     clickToShow: '點擊顯示',

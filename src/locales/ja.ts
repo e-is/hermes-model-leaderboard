@@ -46,6 +46,13 @@ export const ja = {
         outOfContextHint: "このモデルは指定されたプロンプトサイズを受け取れないため、ランキングと Pareto から除外されます。",
         columnHint: "価格には選択中プロファイルのコンテキスト段階が含まれます。",
     },
+        variants: {
+            excludeBatch: "batch バリアントを除外",
+            excludeBatchHint: "batch は同じモデルを非同期・半額で提供します。Hermes は Batch API 対応プラグインがない限り使えません。無料バリアントは順位に残ります。",
+            batch: "batch",
+            batchHint: "非同期の Batch API エントリ（半額）。Hermes では使用できません。",
+        },
+
     removeModel: 'モデルを削除',
     suppressShort: '削除?',
     clickToShow: 'クリックして表示',

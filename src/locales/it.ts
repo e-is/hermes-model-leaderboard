@@ -46,6 +46,13 @@ export const it = {
         outOfContextHint: "Questo modello non può ricevere la dimensione di prompt dichiarata: è escluso dalla classifica e dal Pareto.",
         columnHint: "I prezzi includono la fascia di contesto del profilo selezionato.",
     },
+        variants: {
+            excludeBatch: "Escludi varianti batch",
+            excludeBatchHint: "Batch serve lo stesso modello in modo asincrono a metà prezzo; Hermes non può usarlo senza un plugin per la Batch API. Le varianti gratuite restano in classifica.",
+            batch: "batch",
+            batchHint: "Voce Batch API asincrona (metà prezzo), non utilizzabile da Hermes.",
+        },
+
     removeModel: 'Rimuovi modello',
     suppressShort: 'Elim.?',
     clickToShow: 'Clicca per mostrare',

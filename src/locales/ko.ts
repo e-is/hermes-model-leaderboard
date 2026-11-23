@@ -47,6 +47,13 @@ export const ko = {
         outOfContextHint: "이 모델은 지정된 프롬프트 크기를 받을 수 없어 순위와 Pareto에서 제외됩니다.",
         columnHint: "가격에는 선택한 프로필의 컨텍스트 단계가 반영됩니다.",
     },
+        variants: {
+            excludeBatch: "batch 변형 제외",
+            excludeBatchHint: "batch는 같은 모델을 비동기로 절반 가격에 제공합니다. Hermes는 Batch API 플러그인 없이는 사용할 수 없습니다. 무료 변형은 순위에 남습니다.",
+            batch: "batch",
+            batchHint: "비동기 Batch API 항목(절반 가격)으로 Hermes에서 사용할 수 없습니다.",
+        },
+
     removeModel: '모델 제거',
     suppressShort: '삭제',
     clickToShow: '클릭하여 표시',

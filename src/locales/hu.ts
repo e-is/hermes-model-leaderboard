@@ -46,6 +46,13 @@ export const hu = {
         outOfContextHint: "Ez a modell nem tudja fogadni a megadott promptméretet: kimarad a rangsorból és a Pareto-görbéről.",
         columnHint: "Az árak a kiválasztott profil kontextussávját tartalmazzák.",
     },
+        variants: {
+            excludeBatch: "Batch-változatok kizárása",
+            excludeBatchHint: "A batch ugyanazt a modellt adja aszinkron módon, fél áron; a Hermes csak Batch API-t támogató pluginnal tudja használni. Az ingyenes változatok a rangsorban maradnak.",
+            batch: "batch",
+            batchHint: "Aszinkron Batch API-bejegyzés (fél ár), a Hermes nem tudja használni.",
+        },
+
     removeModel: 'Modell eltávolítása',
     suppressShort: 'Törlés?',
     clickToShow: 'Kattints a megjelenítéshez',

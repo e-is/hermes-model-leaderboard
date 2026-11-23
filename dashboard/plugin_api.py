@@ -543,6 +543,26 @@ def _aa_key_configured() -> bool:
     return bool(os.environ.get(_AA_KEY_ENV))
 
 
+#: Suffixes that create their own catalogue entry ("catalog variants" in OpenRouter's terms).
+#: Routing modifiers -- :nitro, :floor, :exacto, :online -- never appear as entries, so an id
+#: carrying one is still the base model, and stripping it would change the price we display.
+CATALOG_VARIANTS = ("batch", "free", "thinking", "extended")
+
+
+def _split_variant(model_id: str) -> tuple[str | None, str]:
+    """Return ``(variant, base_id)`` for a catalogue id, ``(None, id)`` for a plain model.
+
+    A batch entry is the same model served asynchronously at half price: it must not be
+    compared with interactive prices, and Hermes cannot drive it. The renderer drops it from
+    the ranking when the profile asks; the API only labels it.
+    """
+    parts = model_id.split(":")
+    for index, part in enumerate(parts[1:], start=1):
+        if part in CATALOG_VARIANTS:
+            return part, ":".join(parts[:index])
+    return None, model_id
+
+
 @router.get("/models")
 def get_models():
     models = _load_models()
@@ -560,6 +580,7 @@ def get_models():
         _complete_indices(m, m["benchmarks"], estimators, references)
         if not m.get("gpu") and m.get("model_size"):
             m["gpu"] = _estimate_gpu(m["model_size"])
+        m["variant"], m["base_id"] = _split_variant(m["id"])
     return {"models": models, "last_refresh": _meta().get("last_refresh"),
             "cache_age_s": _cache_age(),
             # Whether the user declared the optional Artificial Analysis key (Desktop →
@@ -825,7 +846,7 @@ def search_openrouter(q: str = ""):
 
 
 @router.get("/news")
-def get_news():
+def get_news(exclude_batch: bool = True):
     """
     Retourne :
     1. new_models : Les modèles récemment ajoutés au catalogue OpenRouter (triés par date de création décroissante).
@@ -845,8 +866,14 @@ def get_news():
         reverse=True
     )
     
+    # Batch entries are the same model at half price, served asynchronously: they are not
+    # "new models" for an interactive agent, so the profile decides (default: hide them).
+    if exclude_batch:
+        sorted_by_created = [m for m in sorted_by_created if _split_variant(m["id"])[0] != "batch"]
+
     new_models = [
-        {**_candidate_fields(m), "created": m.get("created"), "is_tracked": m["id"] in tracked_ids}
+        {**_candidate_fields(m), "created": m.get("created"), "is_tracked": m["id"] in tracked_ids,
+         "variant": _split_variant(m["id"])[0], "base_id": _split_variant(m["id"])[1]}
         for m in sorted_by_created[:120]
     ]
         
@@ -902,6 +929,10 @@ def get_news():
             "is_tracked": mid in tracked_ids,
         })
 
+    if exclude_batch:
+        price_changes = [c for c in price_changes if _split_variant(c.get("id") or "")[0] != "batch"]
+    for change in price_changes:
+        change["variant"], change["base_id"] = _split_variant(change.get("id") or "")
     price_changes.sort(key=lambda x: x.get("changed_at") or 0, reverse=True)
     
     # 3. Promotions : curated or detected from description/discounted models enriched with model details
@@ -1006,6 +1037,9 @@ class ProfileIn(BaseModel):
     context_tokens: int | None = None
     # 'auto' (default) derives the size from the profile's compaction settings.
     context_mode: str = "auto"
+    # Batch variants (asynchronous API, half price) are not usable by Hermes unless a plugin
+    # drives them, so the default profile hides them from the ranking and from the news.
+    exclude_batch: bool = True
 
 
 
@@ -1297,6 +1331,7 @@ def create_profile(p: ProfileIn):
         "weights": _clean_weights(p.weights),
         "context_tokens": _clean_context_tokens(p.context_tokens),
         "context_mode": _clean_context_mode(p.context_mode),
+        "exclude_batch": bool(p.exclude_batch),
     }
     _save_profiles(profiles)
     return {"status": "ok", "profile": profiles[pid]}
@@ -1345,6 +1380,7 @@ def update_profile(profile_id: str, p: ProfileIn):
     current["weights"] = _clean_weights(p.weights)
     current["context_tokens"] = _clean_context_tokens(p.context_tokens)
     current["context_mode"] = _clean_context_mode(p.context_mode)
+    current["exclude_batch"] = bool(p.exclude_batch)
     profiles[pid] = current
     _save_profiles(profiles)
     return {"status": "ok", "profile": current}

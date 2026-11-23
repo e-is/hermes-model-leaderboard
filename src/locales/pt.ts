@@ -46,6 +46,13 @@ export const pt = {
         outOfContextHint: "Este modelo não aceita o tamanho de prompt declarado: fica fora da classificação e do Pareto.",
         columnHint: "Os preços incluem o escalão de contexto do perfil selecionado.",
     },
+        variants: {
+            excludeBatch: "Excluir variantes batch",
+            excludeBatchHint: "O batch serve o mesmo modelo de forma assíncrona pela metade do preço; o Hermes não consegue usá-lo sem um plugin para a Batch API. As variantes gratuitas continuam no ranking.",
+            batch: "batch",
+            batchHint: "Entrada da Batch API assíncrona (metade do preço), não usável pelo Hermes.",
+        },
+
     removeModel: 'Remover modelo',
     suppressShort: 'Eliminar?',
     clickToShow: 'Clique para mostrar',

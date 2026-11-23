@@ -12,7 +12,7 @@ import {
 } from "@hermes/plugin-sdk";
 
 // src/LeaderboardPage.tsx
-import { useEffect as useEffect3, useMemo as useMemo3, useState as useState5 } from "react";
+import { useEffect as useEffect3, useMemo as useMemo3, useState as useState5, useRef as useRef3 } from "react";
 
 // src/components/charts.tsx
 import { useEffect, useRef, useState } from "react";
@@ -842,6 +842,12 @@ var en = {
     outOfContextHint: "This model cannot take the declared prompt size: it is left out of the ranking and the Pareto.",
     columnHint: "Prices include the context tier of the selected profile."
   },
+  variants: {
+    excludeBatch: "Exclude batch variants",
+    excludeBatchHint: "Batch is the same model served asynchronously at half price; Hermes cannot use it unless a plugin drives the Batch API. Free variants stay in the ranking.",
+    batch: "batch",
+    batchHint: "Asynchronous Batch API entry (half price), not usable by Hermes."
+  },
   removeModel: "Remove model",
   suppressShort: "Del?",
   clickToShow: "Click to show",
@@ -1056,6 +1062,12 @@ var fr = {
     outOfContext: "hors contexte",
     outOfContextHint: "Ce modèle ne peut pas recevoir la taille de prompt déclarée : il est exclu du classement et du Pareto.",
     columnHint: "Les prix tiennent compte du pallier de contexte du profil sélectionné."
+  },
+  variants: {
+    excludeBatch: "Exclure les variantes batch",
+    excludeBatchHint: "Batch sert le même modèle en asynchrone à moitié prix ; Hermes ne peut pas l’utiliser sauf plugin dédié à l’API Batch. Les variantes gratuites restent classées.",
+    batch: "batch",
+    batchHint: "Entrée Batch API asynchrone (moitié prix), inutilisable par Hermes."
   },
   removeModel: "Supprimer le modèle",
   suppressShort: "Suppr?",
@@ -1272,6 +1284,12 @@ var zh = {
     outOfContextHint: "该模型无法接收所声明的提示大小，因此不列入排名和 Pareto。",
     columnHint: "价格包含所选配置档的上下文档位。"
   },
+  variants: {
+    excludeBatch: "排除 batch 变体",
+    excludeBatchHint: "batch 以异步、半价方式提供同一模型；Hermes 需要支持 Batch API 的插件才能使用。免费变体仍参与排名。",
+    batch: "batch",
+    batchHint: "异步 Batch API 条目（半价），Hermes 无法使用。"
+  },
   removeModel: "移除模型",
   suppressShort: "删",
   clickToShow: "点击显示",
@@ -1486,6 +1504,12 @@ var zhHant = {
     outOfContext: "上下文不足",
     outOfContextHint: "此模型無法接收所宣告的提示大小，因此不列入排名與 Pareto。",
     columnHint: "價格包含所選設定檔的上下文級距。"
+  },
+  variants: {
+    excludeBatch: "排除 batch 變體",
+    excludeBatchHint: "batch 以非同步、半價方式提供同一模型；Hermes 需要支援 Batch API 的外掛才能使用。免費變體仍參與排名。",
+    batch: "batch",
+    batchHint: "非同步 Batch API 項目（半價），Hermes 無法使用。"
   },
   removeModel: "移除模型",
   suppressShort: "刪",
@@ -1702,6 +1726,12 @@ var af = {
     outOfContextHint: "Hierdie model kan nie die verklaarde promptgrootte aanvaar nie: dit val buite die ranglys en die Pareto.",
     columnHint: "Pryse sluit die konteksvlak van die gekose profiel in."
   },
+  variants: {
+    excludeBatch: "Sluit batch-variante uit",
+    excludeBatchHint: "Batch lewer dieselfde model asinkroon teen die helfte van die prys; Hermes kan dit net met ’n plugin vir die Batch API gebruik. Gratis variante bly in die ranglys.",
+    batch: "batch",
+    batchHint: "Asinkrone Batch API-inskrywing (halfprys), nie deur Hermes bruikbaar nie."
+  },
   removeModel: "Verwyder model",
   suppressShort: "Wis?",
   clickToShow: "Klik om te wys",
@@ -1916,6 +1946,12 @@ var ar = {
     outOfContext: "خارج السياق",
     outOfContextHint: "لا يستطيع هذا النموذج استقبال حجم الموجّه المعلن، لذا يُستبعد من الترتيب ومخطط Pareto.",
     columnHint: "الأسعار تشمل شريحة السياق للملف الشخصي المحدد."
+  },
+  variants: {
+    excludeBatch: "استبعاد متغيرات batch",
+    excludeBatchHint: "يقدّم batch النموذج نفسه بشكل غير متزامن بنصف السعر، ولا يستطيع Hermes استخدامه إلا بإضافة تدعم Batch API. تبقى المتغيرات المجانية في الترتيب.",
+    batch: "batch",
+    batchHint: "إدخال Batch API غير متزامن (نصف السعر) غير قابل للاستخدام في Hermes."
   },
   removeModel: "إزالة النموذج",
   suppressShort: "حذف؟",
@@ -2132,6 +2168,12 @@ var de = {
     outOfContextHint: "Dieses Modell kann die deklarierte Prompt-Größe nicht aufnehmen: es fehlt im Ranking und im Pareto.",
     columnHint: "Die Preise enthalten die Kontextstufe des gewählten Profils."
   },
+  variants: {
+    excludeBatch: "Batch-Varianten ausschließen",
+    excludeBatchHint: "Batch liefert dasselbe Modell asynchron zum halben Preis; Hermes kann es nur mit einem Plugin für die Batch-API nutzen. Kostenlose Varianten bleiben im Ranking.",
+    batch: "Batch",
+    batchHint: "Asynchroner Batch-API-Eintrag (halber Preis), für Hermes nicht nutzbar."
+  },
   removeModel: "Modell entfernen",
   suppressShort: "Löschen?",
   clickToShow: "Zum Anzeigen klicken",
@@ -2346,6 +2388,12 @@ var es = {
     outOfContext: "fuera de contexto",
     outOfContextHint: "Este modelo no admite el tamaño de prompt declarado: queda fuera del ranking y del Pareto.",
     columnHint: "Los precios incluyen el tramo de contexto del perfil seleccionado."
+  },
+  variants: {
+    excludeBatch: "Excluir variantes batch",
+    excludeBatchHint: "Batch sirve el mismo modelo de forma asíncrona a mitad de precio; Hermes no puede usarlo salvo con un plugin para la API Batch. Las variantes gratuitas siguen clasificadas.",
+    batch: "batch",
+    batchHint: "Entrada de la API Batch asíncrona (mitad de precio), no usable por Hermes."
   },
   removeModel: "Quitar modelo",
   suppressShort: "¿Borrar?",
@@ -2562,6 +2610,12 @@ var ga = {
     outOfContextHint: "Ní féidir leis an múnla seo méid an leide a luaigh tú a ghlacadh: fágadh as an rangú agus as Pareto é.",
     columnHint: "Cuimsíonn na praghsanna leibhéal comhthéacs na próifíle roghnaithe."
   },
+  variants: {
+    excludeBatch: "Eisíoc le leaganacha batch",
+    excludeBatchHint: "Seirbheálann batch an tsamhail chéanna go neamhshioncronach ar leathphraghas; ní féidir le Hermes é a úsáid gan breiseán don Batch API. Fanann leaganacha saora sa rangú.",
+    batch: "batch",
+    batchHint: "Iontráil Batch API neamhshioncronach (leathphraghas), nach féidir le Hermes a úsáid."
+  },
   removeModel: "Bain an tsamhail",
   suppressShort: "Scrios?",
   clickToShow: "Cliceáil le taispeáint",
@@ -2776,6 +2830,12 @@ var hu = {
     outOfContext: "kontextuson kívül",
     outOfContextHint: "Ez a modell nem tudja fogadni a megadott promptméretet: kimarad a rangsorból és a Pareto-görbéről.",
     columnHint: "Az árak a kiválasztott profil kontextussávját tartalmazzák."
+  },
+  variants: {
+    excludeBatch: "Batch-változatok kizárása",
+    excludeBatchHint: "A batch ugyanazt a modellt adja aszinkron módon, fél áron; a Hermes csak Batch API-t támogató pluginnal tudja használni. Az ingyenes változatok a rangsorban maradnak.",
+    batch: "batch",
+    batchHint: "Aszinkron Batch API-bejegyzés (fél ár), a Hermes nem tudja használni."
   },
   removeModel: "Modell eltávolítása",
   suppressShort: "Törlés?",
@@ -2992,6 +3052,12 @@ var it = {
     outOfContextHint: "Questo modello non può ricevere la dimensione di prompt dichiarata: è escluso dalla classifica e dal Pareto.",
     columnHint: "I prezzi includono la fascia di contesto del profilo selezionato."
   },
+  variants: {
+    excludeBatch: "Escludi varianti batch",
+    excludeBatchHint: "Batch serve lo stesso modello in modo asincrono a metà prezzo; Hermes non può usarlo senza un plugin per la Batch API. Le varianti gratuite restano in classifica.",
+    batch: "batch",
+    batchHint: "Voce Batch API asincrona (metà prezzo), non utilizzabile da Hermes."
+  },
   removeModel: "Rimuovi modello",
   suppressShort: "Elim.?",
   clickToShow: "Clicca per mostrare",
@@ -3206,6 +3272,12 @@ var ja = {
     outOfContext: "コンテキスト不足",
     outOfContextHint: "このモデルは指定されたプロンプトサイズを受け取れないため、ランキングと Pareto から除外されます。",
     columnHint: "価格には選択中プロファイルのコンテキスト段階が含まれます。"
+  },
+  variants: {
+    excludeBatch: "batch バリアントを除外",
+    excludeBatchHint: "batch は同じモデルを非同期・半額で提供します。Hermes は Batch API 対応プラグインがない限り使えません。無料バリアントは順位に残ります。",
+    batch: "batch",
+    batchHint: "非同期の Batch API エントリ（半額）。Hermes では使用できません。"
   },
   removeModel: "モデルを削除",
   suppressShort: "削除?",
@@ -3422,6 +3494,12 @@ var ko = {
     outOfContextHint: "이 모델은 지정된 프롬프트 크기를 받을 수 없어 순위와 Pareto에서 제외됩니다.",
     columnHint: "가격에는 선택한 프로필의 컨텍스트 단계가 반영됩니다."
   },
+  variants: {
+    excludeBatch: "batch 변형 제외",
+    excludeBatchHint: "batch는 같은 모델을 비동기로 절반 가격에 제공합니다. Hermes는 Batch API 플러그인 없이는 사용할 수 없습니다. 무료 변형은 순위에 남습니다.",
+    batch: "batch",
+    batchHint: "비동기 Batch API 항목(절반 가격)으로 Hermes에서 사용할 수 없습니다."
+  },
   removeModel: "모델 제거",
   suppressShort: "삭제",
   clickToShow: "클릭하여 표시",
@@ -3636,6 +3714,12 @@ var pt = {
     outOfContext: "fora do contexto",
     outOfContextHint: "Este modelo não aceita o tamanho de prompt declarado: fica fora da classificação e do Pareto.",
     columnHint: "Os preços incluem o escalão de contexto do perfil selecionado."
+  },
+  variants: {
+    excludeBatch: "Excluir variantes batch",
+    excludeBatchHint: "O batch serve o mesmo modelo de forma assíncrona pela metade do preço; o Hermes não consegue usá-lo sem um plugin para a Batch API. As variantes gratuitas continuam no ranking.",
+    batch: "batch",
+    batchHint: "Entrada da Batch API assíncrona (metade do preço), não usável pelo Hermes."
   },
   removeModel: "Remover modelo",
   suppressShort: "Eliminar?",
@@ -3852,6 +3936,12 @@ var ru = {
     outOfContextHint: "Модель не вмещает заявленный размер промпта: она исключена из рейтинга и Парето.",
     columnHint: "Цены учитывают ступень контекста выбранного профиля."
   },
+  variants: {
+    excludeBatch: "Исключить batch-варианты",
+    excludeBatchHint: "batch предлагает ту же модель асинхронно за полцены; Hermes не может её использовать без плагина для Batch API. Бесплатные варианты остаются в рейтинге.",
+    batch: "batch",
+    batchHint: "Асинхронная запись Batch API (полцены), недоступна для Hermes."
+  },
   removeModel: "Удалить модель",
   suppressShort: "Удал.?",
   clickToShow: "Нажмите, чтобы показать",
@@ -4067,6 +4157,12 @@ var tr = {
     outOfContextHint: "Bu model bildirilen prompt boyutunu alamaz: sıralama ve Pareto dışında bırakılır.",
     columnHint: "Fiyatlar seçili profilin bağlam kademesini içerir."
   },
+  variants: {
+    excludeBatch: "batch varyantlarını hariç tut",
+    excludeBatchHint: "batch aynı modeli eşzamansız olarak yarı fiyata sunar; Hermes bunu Batch API eklentisi olmadan kullanamaz. Ücretsiz varyantlar sıralamada kalır.",
+    batch: "batch",
+    batchHint: "Eşzamansız Batch API kaydı (yarı fiyat), Hermes tarafından kullanılamaz."
+  },
   removeModel: "Modeli kaldır",
   suppressShort: "Sil?",
   clickToShow: "Göstermek için tıkla",
@@ -4281,6 +4377,12 @@ var uk = {
     outOfContext: "поза контекстом",
     outOfContextHint: "Модель не вміщає заявлений розмір промпту: її виключено з рейтингу та Парето.",
     columnHint: "Ціни враховують ступінь контексту вибраного профілю."
+  },
+  variants: {
+    excludeBatch: "Виключити batch-варіанти",
+    excludeBatchHint: "batch пропонує ту саму модель асинхронно за пів ціни; Hermes не може її використати без плагіна для Batch API. Безкоштовні варіанти залишаються в рейтингу.",
+    batch: "batch",
+    batchHint: "Асинхронний запис Batch API (пів ціни), недоступний для Hermes."
   },
   removeModel: "Видалити модель",
   suppressShort: "Вил.?",
@@ -5524,13 +5626,13 @@ function App() {
     const uiPoll = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       api("/models").then(applyModels).catch(() => void 0);
-      api("/news").then((d) => setNews(d)).catch(() => void 0);
+      api(newsPathRef.current).then((d) => setNews(d)).catch(() => void 0);
     }, 6e4);
     const dataPull = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       api("/refresh", { method: "POST", body: {} }).then(() => Promise.all([
         api("/models").then(applyModels),
-        api("/news").then((d) => setNews(d))
+        api(newsPathRef.current).then((d) => setNews(d))
       ])).catch(() => void 0);
     }, 10 * 6e4);
     return () => {
@@ -5545,13 +5647,15 @@ function App() {
       if (d.compaction_defaults) setCompactionDefaults(d.compaction_defaults);
     }).catch(() => setHermesProfiles(["default"]));
   }, []);
+  const newsPathRef = useRef3(newsPath);
+  newsPathRef.current = newsPath;
   const fetchNews = () => {
     setLoadingNews(true);
-    api("/news").then((d) => setNews(d)).catch(() => void 0).finally(() => setLoadingNews(false));
+    api(newsPathRef.current).then((d) => setNews(d)).catch(() => void 0).finally(() => setLoadingNews(false));
   };
   useEffect3(() => {
     fetchNews();
-  }, []);
+  }, [newsPath]);
   const refresh = () => {
     setLoading(true);
     api("/refresh", { method: "POST", body: { force: true } }).then(() => api("/models")).then(applyModels).then(() => fetchNews()).catch((err) => {
@@ -5710,6 +5814,8 @@ function App() {
   const ctxSize = currentProfile.context_tokens ?? null;
   const compaction = compactionByProfile[currentProfile.id] || compactionDefaults;
   const ctxScenario = { mode: ctxMode, tokens: ctxSize };
+  const excludeBatch = currentProfile.exclude_batch ?? true;
+  const newsPath = `/news?exclude_batch=${excludeBatch ? 1 : 0}`;
   const priceAt = (m) => {
     const eff = effectivePricesFor(m, ctxScenario, compaction);
     const tokens = scenarioTokens(m, ctxScenario, compaction);
@@ -5721,6 +5827,8 @@ function App() {
       _tier: eff.tier,
       _tier_mult: eff.tier && base ? eff.tier.prompt / base : null,
       _out_of_context: !servesContextFor(m, ctxScenario, compaction),
+      _variant: splitVariant(m.id).variant,
+      _excluded_variant: excludedByVariant(m.id, excludeBatch),
       prompt_price: eff.prompt ?? m.prompt_price,
       completion_price: eff.completion ?? m.completion_price,
       cache_read_price: eff.cache_read ?? m.cache_read_price
@@ -5743,7 +5851,7 @@ function App() {
   }, [news, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens]);
   const visible = pricedModels.filter((m) => !hiddenIds.has(m.id));
   const hidden = pricedModels.filter((m) => hiddenIds.has(m.id));
-  const active = visible.filter((m) => m.available && !m._out_of_context);
+  const active = visible.filter((m) => m.available && !m._out_of_context && !m._excluded_variant);
   const maxes = useMemo3(() => ({
     maxCtx: Math.max(1, ...pricedModels.map((m) => m.context_length || 0)),
     // Scales from the prices actually shown: with a context size declared, the tier prices
@@ -6215,6 +6323,14 @@ function App() {
                 ] }),
                 /* @__PURE__ */ jsxs4("td", { style: { ...S.td, textAlign: "right" }, title: `${(m.context_length || 0).toLocaleString()} tokens`, children: [
                   fmtCtx(m.context_length),
+                  m._variant === "batch" && /* @__PURE__ */ jsx4(
+                    "span",
+                    {
+                      title: i18n.variants.batchHint,
+                      style: { marginLeft: 4, fontSize: 9, padding: "1px 4px", borderRadius: 3, border: "1px dashed var(--ui-stroke-secondary)", color: "var(--ui-text-tertiary)", whiteSpace: "nowrap" },
+                      children: i18n.variants.batch
+                    }
+                  ),
                   m._out_of_context && /* @__PURE__ */ jsx4(
                     "span",
                     {
@@ -6601,7 +6717,25 @@ function App() {
                 i18n.contextSize.autoHint(Math.round((compaction.threshold ?? 0.5) * 100))
               ] })
             ] })
-          ] })
+          ] }),
+          /* @__PURE__ */ jsx4("div", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)", marginTop: 14, paddingTop: 12 }, children: /* @__PURE__ */ jsxs4("label", { style: { display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                type: "checkbox",
+                checked: editingProfile.exclude_batch ?? true,
+                onChange: (e) => editingProfile && setEditingProfile({
+                  ...editingProfile,
+                  exclude_batch: e.target.checked
+                }),
+                style: { marginTop: 2, cursor: "pointer" }
+              }
+            ),
+            /* @__PURE__ */ jsxs4("span", { children: [
+              /* @__PURE__ */ jsx4("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.variants.excludeBatch }),
+              /* @__PURE__ */ jsx4("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4, lineHeight: 1.45 }, children: i18n.variants.excludeBatchHint })
+            ] })
+          ] }) })
         ] })
       ] }),
       /* @__PURE__ */ jsxs4("div", { style: {

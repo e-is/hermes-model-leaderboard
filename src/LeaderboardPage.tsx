@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { BarsVertical, BarsHorizontal, RadarChart } from './components/charts'
 import { NewsPanel } from './components/NewsPanel'
 import { ConfirmDialog } from '@hermes/plugin-sdk'
@@ -57,6 +57,7 @@ export type ProfileConfig = {
   weights: Record<string, number>
   /** Context scenario: how many prompt tokens this profile sends. */
   context_mode?: 'unknown' | 'auto' | 'size'
+  exclude_batch?: boolean
   context_tokens?: number | null
 }
 
@@ -510,7 +511,7 @@ export default function App() {
     const uiPoll = setInterval(() => {
       if (document.visibilityState !== 'visible') return
       api('/models').then(applyModels).catch(() => undefined)
-      api('/news').then(d => setNews(d)).catch(() => undefined)
+      api(newsPathRef.current).then(d => setNews(d)).catch(() => undefined)
     }, 60_000)
     // Real pull: the backend cache is 5 min, so a 10-min tick always refetches
     // prices/benchmarks from OpenRouter (no force — the cache still protects
@@ -520,7 +521,7 @@ export default function App() {
       api('/refresh', { method: 'POST', body: {} })
         .then(() => Promise.all([
           api('/models').then(applyModels),
-          api('/news').then(d => setNews(d)),
+          api(newsPathRef.current).then(d => setNews(d)),
         ]))
         .catch(() => undefined)
     }, 10 * 60_000)
@@ -537,11 +538,14 @@ export default function App() {
       .catch(() => setHermesProfiles(['default']))
   }, [])
 
+  // The polling effects are mounted once; the ref keeps them on the current profile's choice.
+  const newsPathRef = useRef(newsPath)
+  newsPathRef.current = newsPath
   const fetchNews = () => {
     setLoadingNews(true)
-    api('/news').then(d => setNews(d)).catch(() => undefined).finally(() => setLoadingNews(false))
+    api(newsPathRef.current).then(d => setNews(d)).catch(() => undefined).finally(() => setLoadingNews(false))
   }
-  useEffect(() => { fetchNews() }, [])
+  useEffect(() => { fetchNews() }, [newsPath])
 
   const refresh = () => {
     // POST /refresh returns {refreshed, missing} — not the model list:
@@ -772,6 +776,10 @@ export default function App() {
   const ctxSize = (currentProfile as any).context_tokens ?? null
   const compaction = compactionByProfile[currentProfile.id] || compactionDefaults
   const ctxScenario: ContextScenario = { mode: ctxMode, tokens: ctxSize }
+  // Batch entries are the same model at half price, async: unusable by Hermes unless a plugin
+  // drives the Batch API. Absent field = default true (profiles saved before it existed).
+  const excludeBatch = (currentProfile as any).exclude_batch ?? true
+  const newsPath = `/news?exclude_batch=${excludeBatch ? 1 : 0}`
 
   /** Prices to show and score with: the tier that applies at the profile's context size. */
   const priceAt = (m: any) => {
@@ -785,6 +793,8 @@ export default function App() {
       _tier: eff.tier,
       _tier_mult: eff.tier && base ? eff.tier.prompt / base : null,
       _out_of_context: !servesContextFor(m, ctxScenario, compaction),
+      _variant: splitVariant(m.id).variant,
+      _excluded_variant: excludedByVariant(m.id, excludeBatch),
       prompt_price: eff.prompt ?? m.prompt_price,
       completion_price: eff.completion ?? m.completion_price,
       cache_read_price: eff.cache_read ?? m.cache_read_price,
@@ -817,7 +827,8 @@ export default function App() {
   const hidden = pricedModels.filter(m => hiddenIds.has(m.id))
   // A model that cannot take the declared prompt size is out of scope for the ranking and
   // the Pareto: there is no price for a request it cannot serve. It stays in the table, flagged.
-  const active = visible.filter(m => m.available && !(m as any)._out_of_context)
+  const active = visible.filter(m =>
+    m.available && !(m as any)._out_of_context && !(m as any)._excluded_variant)
 
   // Maxes for normalization
   const maxes = useMemo(() => ({
@@ -1256,6 +1267,12 @@ export default function App() {
                             </td>
                             <td style={{ ...S.td, textAlign: 'right' }} title={`${(m.context_length || 0).toLocaleString()} tokens`}>
                               {fmtCtx(m.context_length)}
+                              {(m as any)._variant === 'batch' && (
+                                <span title={i18n.variants.batchHint}
+                                  style={{ marginLeft: 4, fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '1px dashed var(--ui-stroke-secondary)', color: 'var(--ui-text-tertiary)', whiteSpace: 'nowrap' }}>
+                                  {i18n.variants.batch}
+                                </span>
+                              )}
                               {(m as any)._out_of_context && (
                                 <span title={i18n.contextSize.outOfContextHint}
                                   style={{ marginLeft: 4, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'color-mix(in srgb, var(--ui-red) 12%, transparent)', color: 'var(--ui-red)', whiteSpace: 'nowrap' }}>
@@ -1627,6 +1644,28 @@ export default function App() {
                       <> {i18n.contextSize.autoHint(Math.round((compaction.threshold ?? 0.5) * 100))}</>
                     )}
                   </div>
+                </div>
+
+                {/* Variants: :batch is the same model served asynchronously at half price, and
+                    Hermes cannot drive the Batch API unless a plugin does. :free stays in. */}
+                <div style={{ borderTop: '1px solid var(--ui-stroke-tertiary)', marginTop: 14, paddingTop: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                    <input type="checkbox"
+                      checked={((editingProfile as any).exclude_batch ?? true)}
+                      onChange={e => editingProfile && setEditingProfile({
+                        ...editingProfile,
+                        exclude_batch: e.target.checked,
+                      } as any)}
+                      style={{ marginTop: 2, cursor: 'pointer' }} />
+                    <span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ui-text-primary)' }}>
+                        {i18n.variants.excludeBatch}
+                      </span>
+                      <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4, lineHeight: 1.45 }}>
+                        {i18n.variants.excludeBatchHint}
+                      </div>
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>

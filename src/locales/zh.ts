@@ -47,6 +47,13 @@ export const zh = {
         outOfContextHint: "该模型无法接收所声明的提示大小，因此不列入排名和 Pareto。",
         columnHint: "价格包含所选配置档的上下文档位。",
     },
+        variants: {
+            excludeBatch: "排除 batch 变体",
+            excludeBatchHint: "batch 以异步、半价方式提供同一模型；Hermes 需要支持 Batch API 的插件才能使用。免费变体仍参与排名。",
+            batch: "batch",
+            batchHint: "异步 Batch API 条目（半价），Hermes 无法使用。",
+        },
+
     removeModel: '移除模型',
     suppressShort: '删',
     clickToShow: '点击显示',
