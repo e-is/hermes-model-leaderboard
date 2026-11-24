@@ -972,3 +972,31 @@ def test_profiles_exclude_batch_by_default(tmp_path, monkeypatch):
     updated = client.put(f"{PREFIX}/profiles/batch-test",
                          json={"id": "batch-test", "name": "Batch test", "exclude_batch": False}).json()
     assert updated["profile"]["exclude_batch"] is False
+
+
+def test_get_models_exposes_measured_performance(tmp_path, monkeypatch):
+    """Speed and latency come from benchmarks.json and are absent (null) when unmeasured.
+
+    The number must never be invented: OpenRouter relays neither figure, so a model Artificial
+    Analysis does not cover has no value at all — the table shows "–" and the criterion counts
+    it as n/a instead of the best possible latency.
+    """
+    models_file = tmp_path / "models.json"
+    models_file.write_text(json.dumps([
+        {"id": "z-ai/glm-5.3", "label": "GLM 5.3"},
+        {"id": "acme/unmeasured", "label": "Unmeasured"},
+    ]))
+    bench_file = tmp_path / "benchmarks.json"
+    bench_file.write_text(json.dumps({"models": {
+        "z-ai/glm-5.3": {"speed_tps": 67.74, "latency_s": 3.42},
+    }}))
+
+    monkeypatch.setattr(main_mod, "MODELS_FILE", models_file)
+    monkeypatch.setattr(main_mod, "BENCHMARKS_FILE", bench_file)
+    monkeypatch.setattr(main_mod, "_meta", lambda: {"last_refresh": 1})
+
+    data = {m["id"]: m for m in client.get(f"{PREFIX}/models").json()["models"]}
+    assert data["z-ai/glm-5.3"]["speed_tps"] == 67.74
+    assert data["z-ai/glm-5.3"]["latency_s"] == 3.42
+    assert data["acme/unmeasured"]["speed_tps"] is None
+    assert data["acme/unmeasured"]["latency_s"] is None

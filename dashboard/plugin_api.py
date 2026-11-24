@@ -578,6 +578,12 @@ def get_models():
         m["price_tiers"] = tiers_by_id.get(m["id"]) or []
         m["benchmarks"] = benchmarks.get(m["id"], {})
         _complete_indices(m, m["benchmarks"], estimators, references)
+        # Performance is measured by Artificial Analysis and harvested into benchmarks.json:
+        # OpenRouter relays neither number, so the file is the only source, and a model it does
+        # not cover shows "–" rather than an invented figure.
+        for field in ("speed_tps", "latency_s"):
+            value = (m["benchmarks"] or {}).get(field)
+            m[field] = float(value) if isinstance(value, (int, float)) else None
         if not m.get("gpu") and m.get("model_size"):
             m["gpu"] = _estimate_gpu(m["model_size"])
         m["variant"], m["base_id"] = _split_variant(m["id"])

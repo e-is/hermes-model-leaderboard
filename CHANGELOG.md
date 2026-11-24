@@ -1,3 +1,23 @@
+## [Unreleased] — what a model costs per task, and how fast it answers
+
+### Added
+
+- **Three criteria beyond the indices**: `speed` (output tokens per second), `latency` (seconds
+  to the first token) and `cost_task` (dollars for one fixed Hermes task: 20 000 prompt tokens,
+  60 % cached, 2 000 output tokens). Weights start at 0, so no existing profile moves.
+- **Three table columns**: `t/s`, `TTFT`, `$/task` — sortable, with the reference task in the
+  tooltip.
+- **`scripts/harvest_aa.py` now harvests performance too**: `outputSpeed` and
+  `timeToFirstToken` from the same Artificial Analysis page object as the intelligence index,
+  written as `speed_tps` / `latency_s`. Matching strips the reasoning qualifier ("(Low)",
+  "(Max)") and takes the median across the budgets published for one model.
+
+### Fixed
+
+- **The AA data API is retired**: `api/v2/data/llms/models` answers `410 Gone`, which used to
+  abort the harvest when a key was configured. The harvester now says so and falls back to the
+  public page instead of failing.
+
 ## [1.7.0] — 2026-11-05 — batch variants stay out of the ranking
 
 ### Added

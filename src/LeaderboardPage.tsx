@@ -4,7 +4,7 @@ import { NewsPanel } from './components/NewsPanel'
 import { ConfirmDialog } from '@hermes/plugin-sdk'
 import { api } from './doors'
 import { useLeaderboardI18n } from './i18n'
-import { computeGenericScore, criterionValues, type CriterionKey } from './core/scoring'
+import { computeGenericScore, costPerTask, criterionValues, type CriterionKey } from './core/scoring'
 import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
 import { scoreCandidates, top3Threshold as computeTop3Threshold, untrackedOnly } from './core/candidates'
 import { openExternal, linkButtonStyle } from './links.ts'
@@ -30,6 +30,8 @@ type ModelRecord = {
   hugging_face_id?: string | null; open_weights?: boolean
   model_size?: string | null; reasoning?: boolean; hidden?: boolean
   benchmarks?: Record<string, number | null>
+  /** Artificial Analysis performance, harvested into benchmarks.json (null when unmeasured). */
+  speed_tps?: number | null; latency_s?: number | null
   gpu?: GpuInfo
   /** Where each index value comes from (backend `_complete_indices`). */
   sources?: Record<string, IndexSource>
@@ -124,6 +126,9 @@ export const AVAILABLE_CRITERIA = [
   { key: 'intelligence', icon: '🧠' },
   { key: 'coding', icon: '💻' },
   { key: 'agentic', icon: '🤖' },
+  { key: 'speed', icon: '⚡' },
+  { key: 'latency', icon: '⏱️' },
+  { key: 'cost_task', icon: '💰' },
   { key: 'price_in', icon: '📥' },
   { key: 'price_out', icon: '📤' },
   { key: 'cache_read', icon: '⚡' },
@@ -807,7 +812,9 @@ export default function App() {
       ? ` (${contextLabel(ctxSize)})`
       : ''
   const pricedModels = useMemo(
-    () => models.map(priceAt),
+    // `_cost_task` rides on the row so the column can be sorted with the same comparator as
+    // everything else, and so the cell and the criterion read the same number.
+    () => models.map(priceAt).map(m => ({ ...m, _cost_task: costPerTask(m) })),
     [models, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens])
   const priceList = (list: any[]) => list.map(priceAt)
   // The news panel and the search results are catalogue-wide (not per profile): they follow
@@ -844,6 +851,11 @@ export default function App() {
     maxIntel: Math.max(1, ...pricedModels.map(m => measured(m, 'intelligence_index'))),
     maxCoding: Math.max(1, ...pricedModels.map(m => measured(m, 'coding_index'))),
     maxAgentic: Math.max(1, ...pricedModels.map(m => measured(m, 'agentic_index'))),
+    // Performance and cost-per-task scales come from the values actually shown (0 when no model
+    // carries one, which makes the criterion "n/a" instead of grading everyone against nothing).
+    maxSpeed: Math.max(0, ...pricedModels.map(m => m.speed_tps || 0)),
+    maxLatency: Math.max(0, ...pricedModels.map(m => m.latency_s || 0)),
+    maxCostTask: Math.max(0, ...pricedModels.map(m => costPerTask(m) || 0)),
   }), [pricedModels])
 
   // Scores + ranks (using generic scoring algorithm based on currentProfile.weights)
@@ -1239,6 +1251,9 @@ export default function App() {
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('intelligence_index')}>Intel.{sortArrow('intelligence_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('coding_index')}>Coding{sortArrow('coding_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('agentic_index')}>Agentic{sortArrow('agentic_index')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('speed_tps')} title={i18n.table.speedHint}>t/s{sortArrow('speed_tps')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('latency_s')} title={i18n.table.latencyHint}>TTFT{sortArrow('latency_s')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('_cost_task')} title={i18n.table.costTaskHint}>$/task{sortArrow('_cost_task')}</th>
                         <th style={{ ...S.th, textAlign: 'center' }}>SWE</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('has_vision')}>Vision{sortArrow('has_vision')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('open_weights')}>Open{sortArrow('open_weights')}</th>
@@ -1292,6 +1307,13 @@ export default function App() {
                             <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="intelligence_index" t={i18n} /></td>
                             <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="coding_index" t={i18n} /></td>
                             <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="agentic_index" t={i18n} /></td>
+                            <td style={{ ...S.td, textAlign: 'right', color: m.speed_tps ? 'var(--ui-text-secondary)' : 'var(--ui-text-quaternary)' }}>
+                              {m.speed_tps ? m.speed_tps.toFixed(0) : '–'}
+                            </td>
+                            <td style={{ ...S.td, textAlign: 'right', color: m.latency_s ? 'var(--ui-text-secondary)' : 'var(--ui-text-quaternary)' }}>
+                              {m.latency_s ? `${m.latency_s.toFixed(1)} s` : '–'}
+                            </td>
+                            <td style={{ ...S.td, textAlign: 'right' }}>{(m as any)._cost_task != null ? fmtTaskCost((m as any)._cost_task) : '–'}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + '%' : '…'}</td>
                                                         <td style={{ ...S.td, textAlign: 'center' }}>{m.has_vision ? '👁' : ''}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.open_weights ? '✅' : '❌'}</td>

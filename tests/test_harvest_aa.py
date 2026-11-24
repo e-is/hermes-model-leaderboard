@@ -182,3 +182,38 @@ def test_default_store_follows_the_hermes_home(monkeypatch):
     monkeypatch.setitem(sys.modules, "hermes_constants", constants)
 
     assert harvest._default_store() == Path("/tmp/hermes-home/plugin-data/model-leaderboard")
+
+
+# ---- performance (speed, latency) ----------------------------------------------------
+
+SPEEDY = {"slug": "glm-5-3", "name": "GLM 5.3 (Max)", "outputSpeed": 71.86,
+          "timeToFirstToken": 4.38, "intelligenceIndex": 30.1}
+SLOW = {"slug": "glm-5-3-low", "name": "GLM 5.3 (Low)", "outputSpeed": 63.61,
+        "timeToFirstToken": 2.45, "intelligenceIndex": 29.4}
+NO_SPEED = {"slug": "glm-5-3-vision", "name": "GLM 5.3 Vision", "intelligenceIndex": 28.0}
+
+
+def test_performance_is_harvested_from_the_same_object_as_the_index():
+    entries = harvest.extract_models(page([SPEEDY, NO_SPEED]))
+    assert entries[0][harvest.SPEED_FIELD] == pytest.approx(71.86)
+    assert entries[0][harvest.LATENCY_FIELD] == pytest.approx(4.38)
+    assert harvest.SPEED_FIELD not in entries[1], "nothing measured, nothing written"
+
+
+def test_a_reasoning_qualifier_is_a_budget_not_a_model():
+    """AA lists one entry per reasoning budget: the numbers are the median across them."""
+    entries = harvest.extract_models(page([SPEEDY, SLOW]))
+    matched = harvest.match_perf(entries, ["z-ai/glm-5-3"])
+    assert matched["z-ai/glm-5-3"][harvest.SPEED_FIELD] == pytest.approx((71.86 + 63.61) / 2)
+    assert matched["z-ai/glm-5-3"][harvest.LATENCY_FIELD] == pytest.approx((4.38 + 2.45) / 2)
+
+
+def test_merge_perf_never_overwrites_a_value_already_there():
+    benchmarks = {"models": {"z-ai/glm-5-3": {harvest.SPEED_FIELD: 99.0}}}
+    added, kept = harvest.merge_perf(benchmarks, {"z-ai/glm-5-3": {
+        harvest.SPEED_FIELD: 70.0, harvest.LATENCY_FIELD: 3.0}})
+    entry = benchmarks["models"]["z-ai/glm-5-3"]
+    assert entry[harvest.SPEED_FIELD] == 99.0, "a hand-typed value wins over a harvest"
+    assert entry[harvest.LATENCY_FIELD] == 3.0, "the missing field is filled"
+    assert added == ["z-ai/glm-5-3"] and kept == []
+    assert "artificialanalysis" in benchmarks["_sources"][harvest.LATENCY_FIELD]
