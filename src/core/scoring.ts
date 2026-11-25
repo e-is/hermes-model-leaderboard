@@ -36,7 +36,9 @@ export function costPerTask(m: any): number | null {
   const cache = Number.isFinite(m?.cache_read_price) && m.cache_read_price >= 0 ? m.cache_read_price : pin
   const cached = REFERENCE_TASK.prompt_tokens * REFERENCE_TASK.cache_hit_ratio
   const fresh = REFERENCE_TASK.prompt_tokens - cached
-  return fresh * pin + cached * cache + REFERENCE_TASK.completion_tokens * pout
+  // Prices are quoted per million tokens: without the divisor the column showed $14 400 for a
+  // task that costs about two cents.
+  return (fresh * pin + cached * cache + REFERENCE_TASK.completion_tokens * pout) / 1_000_000
 }
 
 export function criterionValues(m: any, maxes: Record<string, number>): Record<CriterionKey, number | null> {

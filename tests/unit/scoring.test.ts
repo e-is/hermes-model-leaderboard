@@ -96,18 +96,19 @@ test('a grade never exceeds 100 even above the reference maximum', async () => {
 // ── cost per task and measured performance (issue: criteria beyond the indices) ─────────
 
 test('cost per task prices ONE reference task, cache included', () => {
-  const model = { prompt_price: 0.000003, completion_price: 0.000015, cache_read_price: 0.0000003 }
+  // Prices are dollars per MILLION tokens, as the catalogue carries them.
+  const model = { prompt_price: 3, completion_price: 15, cache_read_price: 0.3 }
   const cached = REFERENCE_TASK.prompt_tokens * REFERENCE_TASK.cache_hit_ratio
   const fresh = REFERENCE_TASK.prompt_tokens - cached
-  const expected = fresh * 0.000003 + cached * 0.0000003 + REFERENCE_TASK.completion_tokens * 0.000015
+  const expected = (fresh * 3 + cached * 0.3 + REFERENCE_TASK.completion_tokens * 15) / 1_000_000
   assert.equal(Math.round(costPerTask(model)! * 1e9) / 1e9, Math.round(expected * 1e9) / 1e9)
   // 8 000 fresh at $3/M + 12 000 cached at $0.30/M + 2 000 out at $15/M = $0.0576
   assert.ok(Math.abs(costPerTask(model)! - 0.0576) < 1e-9)
 })
 
 test('cost per task falls back to the prompt price when no cache price is published', () => {
-  const model = { prompt_price: 0.000002, completion_price: 0.00001 }
-  assert.equal(Math.round(costPerTask(model)! * 1e9) / 1e9, Math.round((20_000 * 0.000002 + 2_000 * 0.00001) * 1e9) / 1e9)
+  const model = { prompt_price: 2, completion_price: 10 }
+  assert.equal(Math.round(costPerTask(model)! * 1e9) / 1e9, Math.round(((20_000 * 2 + 2_000 * 10) / 1_000_000) * 1e9) / 1e9)
   assert.equal(costPerTask({ prompt_price: null, completion_price: 1 }), null)
 })
 

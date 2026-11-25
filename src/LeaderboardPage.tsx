@@ -8,6 +8,7 @@ import { computeGenericScore, costPerTask, criterionValues, type CriterionKey } 
 import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
 import { scoreCandidates, top3Threshold as computeTop3Threshold, untrackedOnly } from './core/candidates'
 import { openExternal, linkButtonStyle } from './links.ts'
+import { excludedByVariant, splitVariant } from './core/variants'
 import {
   CONTEXT_SIZES, autoPromptTokens, contextLabel, effectivePricesFor, scenarioTokens,
   servesContextFor, type CompactionConfig, type ContextScenario,
@@ -175,6 +176,13 @@ function fmtPrice(v: number | null | undefined): string {
   if (v == null) return '…'
   if (v === 0) return '$0'
   return '$' + v.toFixed(2) + '/M tk'
+}
+
+/** A whole reference task's price, in dollars: small enough that 3 decimals matter. */
+function fmtTaskCost(v: number | null | undefined): string {
+  if (v == null) return '–'
+  if (v === 0) return '$0'
+  return v < 0.1 ? '$' + v.toFixed(3) : '$' + v.toFixed(2)
 }
 
 /** An index cell that says where its value comes from: "~62" estimated, "62✎" manual. */
@@ -458,6 +466,12 @@ export default function App() {
       context_mode: 'auto',
     }
   }, [effectiveProfiles, selectedProfileId])
+
+  // Declared before the polling effects below: they read it through a ref, and a const read
+  // before its declaration is a TDZ crash on first render ("Cannot access 'newsPath' before
+  // initialization").
+  const excludeBatch = (currentProfile as any).exclude_batch ?? true
+  const newsPath = `/news?exclude_batch=${excludeBatch ? 1 : 0}`
 
   const toggleNews = () => {
     setShowNews(prev => {
@@ -783,9 +797,6 @@ export default function App() {
   const ctxScenario: ContextScenario = { mode: ctxMode, tokens: ctxSize }
   // Batch entries are the same model at half price, async: unusable by Hermes unless a plugin
   // drives the Batch API. Absent field = default true (profiles saved before it existed).
-  const excludeBatch = (currentProfile as any).exclude_batch ?? true
-  const newsPath = `/news?exclude_batch=${excludeBatch ? 1 : 0}`
-
   /** Prices to show and score with: the tier that applies at the profile's context size. */
   const priceAt = (m: any) => {
     const eff = effectivePricesFor(m, ctxScenario, compaction)
