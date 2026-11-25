@@ -57,8 +57,14 @@ Send `"value": null` to remove an override. A model the leaderboard shows as
 ## Performance (speed, latency)
 
 `scripts/harvest_aa.py --write` fills `speed_tps` and `latency_s` in the same run as the
-intelligence index: both live on the same Artificial Analysis page object, so there is nothing
-extra to fetch. Two rules matter:
+intelligence index. It reads the **data API** when a key is configured —
+`GET /api/v2/language/models/free` with `x-api-key`, free tier, 100 requests per 24 h, 4 pages
+for 766 models, `performance.median_output_tokens_per_second` and
+`median_time_to_first_token_seconds` — and falls back to the public page when there is none.
+Note the paths: `/api/v2/data/llms/models` is `410 Gone` (v1), `/api/v2/language/models` is Pro
+and answers `403` on a free key, and `/api/v2/language/models/free` is the one that works.
+
+Two rules matter:
 
 * the qualifier in a model's name — `(Low)`, `(Max)`, `(Non-reasoning)` — is a reasoning
   **budget**, not a different model, so matching strips it and the two figures are the median

@@ -107,7 +107,7 @@ bug, not a plugin one).
 | Prices, context, modalities, AA indices | OpenRouter `GET /api/v1/models` | auto (5 min cache) |
 | News: promos, price changes, new models | derived from the same cache + local price history | auto |
 | SWE-bench Verified | **curated** in `dashboard/data/benchmarks.json` | manual |
-| Output speed, time to first token | Artificial Analysis, through `scripts/harvest_aa.py` → the **user's** `plugin-data/` copy | on demand |
+| Output speed, time to first token | Artificial Analysis **data API** (free tier, `/api/v2/language/models/free`), through `scripts/harvest_aa.py` → the **user's** `plugin-data/` copy | on demand (4 requests) |
 | Cost per task | computed from the prices above, for one fixed reference task | live |
 
 (The multilingual-coverage criterion was removed: OpenRouter exposes no language field and HF
@@ -126,12 +126,17 @@ Why the benchmark columns are curated rather than synced — measured, not assum
 - **Output speed and time to first token** are the two numbers a leaderboard usually does not
   carry, and OpenRouter's own per-endpoint `latency_last_30m` / `throughput_last_30m` came back
   empty for every tracked model when this was written. Artificial Analysis measures both on its
-  own harness — one page read, 170 of its 186 entries carry them — and `scripts/harvest_aa.py`
-  writes them under `speed_tps` / `latency_s`. They are **not** committed: AA's data is
-  non-redistributable, so the harvest lands in the user's `plugin-data/` copy. A model nobody
-  measured shows "–", and the criterion counts as n/a rather than grading it as the fastest.
-  When AA publishes several reasoning budgets for one model ("(Low)", "(Max)"), the two figures
-  are the **median across them**: the qualifier is a budget, not a model.
+  own harness and serves them in the **data API**, free tier:
+  `GET /api/v2/language/models/free` with `x-api-key` — `performance.median_output_tokens_per_second`
+  and `..._median_time_to_first_token_seconds` — 766 models over 4 pages, i.e. 4 requests out of
+  the free 100 per 24 h window. (`/api/v1/data/…` is `410 Gone`; `/api/v2/language/models` is the Pro
+  endpoint and answers `403` on a free key; the `/free` sibling has the same shape minus the
+  per-benchmark evaluations.) `scripts/harvest_aa.py` writes them under `speed_tps` / `latency_s`.
+  They are **not** committed: AA's data is non-redistributable, so the harvest lands in the user's
+  `plugin-data/` copy. A model nobody measured shows "–", and the criterion counts as n/a rather
+  than grading it as the fastest. When AA publishes several reasoning budgets for one model
+  ("(Low)", "(Max)"), the two figures are the **median across them**: the qualifier is a budget,
+  not a model — the API rows are matched the same way the page rows are.
 - **Cost per task** needs no new source: it prices one fixed task — 20 000 prompt tokens, 60 %
   of them cached, and 2 000 output tokens — with the model's own prices. Two models are then
   compared on the same work instead of on the same price sheet (`price_in` / `price_out` weight

@@ -150,7 +150,7 @@ def test_end_to_end_merge_from_api_payload():
     updated, added, kept = harvest.merge({}, matches, source_url=harvest.API_URL)
     assert added == ["z-ai/glm-5.3-flash"]
     assert updated["models"]["z-ai/glm-5.3-flash"][harvest.FIELD] == 27.8
-    assert "api/v2/data/llms/models" in updated["_sources"][harvest.FIELD]
+    assert "api/v2/language/models/free" in updated["_sources"][harvest.FIELD]
 
 
 def test_relayed_models_are_not_shadowed(monkeypatch, tmp_path):
@@ -217,3 +217,47 @@ def test_merge_perf_never_overwrites_a_value_already_there():
     assert entry[harvest.LATENCY_FIELD] == 3.0, "the missing field is filled"
     assert added == ["z-ai/glm-5-3"] and kept == []
     assert "artificialanalysis" in benchmarks["_sources"][harvest.LATENCY_FIELD]
+
+
+def test_the_free_payload_carries_median_performance():
+    """The API's `performance` block is the whole reason to prefer it over the page."""
+    entries = harvest.entries_from_api({"data": [{
+        "slug": "glm-5-3", "name": "GLM 5.3",
+        "model_creator": {"id": "c", "name": "Z AI"},
+        "evaluations": {"artificial_analysis_intelligence_index": 31.2, "artificial_analysis_legal_index": 40.0},
+        "performance": {"median_output_tokens_per_second": 67.74,
+                        "median_time_to_first_token_seconds": 3.42,
+                        "median_end_to_end_response_time_seconds": 12.0},
+    }]})
+    assert entries[0][harvest.SPEED_FIELD] == pytest.approx(67.74)
+    assert entries[0][harvest.LATENCY_FIELD] == pytest.approx(3.42)
+    assert entries[0][harvest.FIELD] == pytest.approx(31.2)
+
+
+def test_zero_performance_is_a_hole_not_a_measurement():
+    entries = harvest.entries_from_api({"data": [{
+        "slug": "x", "name": "X", "evaluations": {},
+        "performance": {"median_output_tokens_per_second": 0, "median_time_to_first_token_seconds": 0},
+    }]})
+    assert harvest.SPEED_FIELD not in entries[0] and harvest.LATENCY_FIELD not in entries[0]
+
+
+def test_api_pagination_reads_every_page(monkeypatch):
+    """766 models span 4 pages: reading page 1 only would rank an alphabetical third."""
+    pages = {
+        1: {"data": [{"slug": "a", "name": "A", "evaluations": {"artificial_analysis_intelligence_index": 10}}],
+            "pagination": {"has_more": True}},
+        2: {"data": [{"slug": "b", "name": "B", "evaluations": {"artificial_analysis_intelligence_index": 20}}],
+            "pagination": {"has_more": False}},
+    }
+    seen = []
+
+    def fake_fetch(url, timeout=40, headers=None):
+        page = int(url.split("page=")[1].split("&")[0])
+        seen.append((page, (headers or {}).get("x-api-key")))
+        return json.dumps(pages[page])
+
+    monkeypatch.setattr(harvest, "fetch", fake_fetch)
+    entries = harvest.fetch_api_models("k")
+    assert [e["slug"] for e in entries] == ["a", "b"]
+    assert seen == [(1, "k"), (2, "k")], "the key travels on every page"

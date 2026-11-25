@@ -45,10 +45,13 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-#: The free API (an account key, x-api-key, 100–1000 requests/day depending on the doc
-#: generation you read — one request per run either way). Preferred over the page: JSON,
-#: stable field names, and `model_creator` to disambiguate two models with one name.
-API_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
+#: The data API, free tier (x-api-key, 100 requests per 24 h window). Preferred over the page:
+#: JSON, stable snake_case field names documented in an OpenAPI spec, and the same numbers the
+#: leaderboard shows. `/api/v2/data/llms/models` — the v1 path this script used to call — is
+#: retired (`410 Gone` since 2026-12-16) and `/api/v2/language/models` is the Pro endpoint
+#: (`403` on a free key); `/language/models/free` is its free-tier sibling, same shape minus the
+#: per-benchmark evaluations. One harvest costs 4 requests (766 models, page_size 200).
+API_URL = "https://artificialanalysis.ai/api/v2/language/models/free"
 #: The env var the key is read from — the same name plugin.yaml declares as a `secret`
 #: setting, so a key saved in Desktop → Settings → Plugins is the one this script uses.
 API_KEY_ENV = "ARTIFICIAL_ANALYSIS_API_KEY"
@@ -76,21 +79,50 @@ def fetch(url: str, timeout: int = 40, headers: dict | None = None) -> str:
 def entries_from_api(payload: dict) -> list[dict]:
     """The free API's rows → the same shape the page parser returns.
 
-    `artificial_analysis_coding_index` / `..._agentic_index` are documented as always
-    null ("AA no longer publishes a Coding Index or an Agentic Index"): this source can
-    only fill the intelligence index, and the backend's inheritance covers the rest.
+    The free tier carries the headline indices, the median performance and the prices; the
+    per-benchmark evaluations (GPQA, Terminal-Bench, IFBench, …) are Pro. `coding_index` and
+    `agentic_index` are documented as always null here — AA no longer publishes them — and the
+    backend's inheritance covers that gap.
     """
     out = []
     for model in payload.get("data") or []:
         evaluations = model.get("evaluations") or {}
+        # The free shape has `model_creator: {id, name}` (the Pro one adds a slug).
         creator = (model.get("model_creator") or {}).get("slug") or ""
-        out.append({
+        performance = model.get("performance") or {}
+        entry = {
             "slug": model.get("slug") or "",
             "name": model.get("name") or "",
             "creator": creator,
-            FIELD: evaluations.get(INTEL_FIELD),
-        })
+        }
+        # The field is always present (null when unmeasured): `match()` skips non-numbers, and a
+        # caller reading the entry does not have to guess whether the model was scored at all.
+        entry[FIELD] = evaluations.get(INTEL_FIELD)
+        speed = performance.get("median_output_tokens_per_second")
+        latency = performance.get("median_time_to_first_token_seconds")
+        if isinstance(speed, (int, float)) and speed > 0:
+            entry[SPEED_FIELD] = speed
+        if isinstance(latency, (int, float)) and latency > 0:
+            entry[LATENCY_FIELD] = latency
+        out.append(entry)
     return out
+
+
+def fetch_api_models(api_key: str, page_size: int = 200, max_pages: int = 10) -> list[dict]:
+    """Every row of the free models list, page by page.
+
+    Paginated (766 models at the time of writing, 4 pages): reading only page 1 would silently
+    rank the first alphabetical third of the catalogue.
+    """
+    entries: list[dict] = []
+    for page in range(1, max_pages + 1):
+        url = f"{API_URL}?page={page}&page_size={page_size}"
+        payload = json.loads(fetch(url, headers={"x-api-key": api_key}))
+        entries.extend(entries_from_api(payload))
+        pagination = payload.get("pagination") or {}
+        if not pagination.get("has_more"):
+            break
+    return entries
 
 
 # ---- parsing -------------------------------------------------------------------------
@@ -283,7 +315,7 @@ def merge_perf(benchmarks: dict, perf: dict[str, dict], source_url: str = PAGE_U
                 continue
             entry[field] = round(value, 2)
             wrote.append(field)
-            sources[field] = f"{source_url} — public leaderboard (page payload)"
+            sources[field] = f"{source_url} — Artificial Analysis"
         (added if wrote else kept).append(model_id)
     benchmarks["_sources"] = sources
     return added, kept
@@ -306,7 +338,7 @@ def merge(benchmarks: dict, matches: dict[str, float], source_url: str = PAGE_UR
         entry[FIELD] = value
         added.append(model_id)
     benchmarks["_sources"] = {**(benchmarks.get("_sources") or {}),
-                              FIELD: f"{source_url} — public leaderboard (page payload)"}
+                              FIELD: f"{source_url} — Artificial Analysis"}
     benchmarks["_last_updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return benchmarks, added, kept
 
@@ -356,14 +388,13 @@ def main(argv: list[str] | None = None) -> int:
     source = args.url
     if args.api_key:
         try:
-            entries = entries_from_api(json.loads(fetch(API_URL, headers={"x-api-key": args.api_key})))
+            entries = fetch_api_models(args.api_key)
             source = API_URL
         except urllib.error.HTTPError as exc:
-            # 410 Gone: the v2 data API was retired. A key that no longer buys anything must
-            # not stop the harvest — the public page carries the same numbers, and performance
-            # only exists there.
-            print(f"AA API answered {exc.code} ({exc.reason}) — the v2 data API is retired; "
-                  "falling back to the public page", file=sys.stderr)
+            # 401/403: a key that does not cover this endpoint buys nothing, and 410: a retired
+            # path. Neither must stop the harvest — the public page carries the same numbers.
+            print(f"AA API answered {exc.code} ({exc.reason}) — falling back to the public page "
+                  f"({exc.url or API_URL})", file=sys.stderr)
             entries = []
     if not entries:
         print("no AA API key: falling back to the public page (brittle, please prefer the "
