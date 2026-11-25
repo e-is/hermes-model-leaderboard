@@ -256,6 +256,14 @@ def match(entries: list[dict], openrouter_ids: list[str]) -> dict[str, float]:
 _VARIANT_SUFFIX = re.compile(r"\s*\([^)]*\)\s*$")
 
 
+#: OpenRouter id → Artificial Analysis slug, for the handful of models the two catalogues name
+#: differently. Reviewed by hand: an exact slug pair, never a partial match.
+ALIASES: dict[str, str] = {
+    "qwen/qwen3-coder": "qwen3-coder-480b-a35b-instruct",
+    "mistralai/mistral-large-4-0": "mistral-large-4",
+}
+
+
 def _base_name(text: str | None) -> str:
     return _VARIANT_SUFFIX.sub("", text or "").strip()
 
@@ -284,6 +292,20 @@ def match_perf(entries: list[dict], openrouter_ids: list[str]) -> dict[str, dict
         keys.discard("")
         for key in keys:
             for model_id in by_name.get(key, []):
+                grouped.setdefault(model_id, []).append(measured)
+
+    # A few OpenRouter slugs carry a tier or a size suffix Artificial Analysis writes differently
+    # ("qwen3-coder" is the 480B A35B flagship; "mistral-large-4-0" is "Mistral Large 4"). These
+    # are explicit, reviewed pairs — never a fuzzy guess, because a wrong speed reads as a fact.
+    for model_id, slug in ALIASES.items():
+        if model_id in grouped or model_id not in openrouter_ids:
+            continue
+        for entry in entries:
+            if normalise(entry.get("slug") or "") != normalise(slug):
+                continue
+            measured = {field: float(entry[field]) for field in (SPEED_FIELD, LATENCY_FIELD)
+                        if isinstance(entry.get(field), (int, float)) and entry[field] > 0}
+            if measured:
                 grouped.setdefault(model_id, []).append(measured)
 
     out: dict[str, dict] = {}

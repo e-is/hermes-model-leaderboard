@@ -261,3 +261,17 @@ def test_api_pagination_reads_every_page(monkeypatch):
     entries = harvest.fetch_api_models("k")
     assert [e["slug"] for e in entries] == ["a", "b"]
     assert seen == [(1, "k"), (2, "k")], "the key travels on every page"
+
+
+def test_match_perf_uses_the_reviewed_alias_pairs():
+    """A slug Artificial Analysis spells differently is reached by an explicit pair, not fuzzily."""
+    entries = [
+        {"slug": "qwen3-coder-480b-a35b-instruct", "name": "Qwen3 Coder 480B A35B Instruct",
+         "speed_tps": 102.1, "latency_s": 1.2},
+        {"slug": "mistral-large-4", "name": "Mistral Large 4 (Medium)",
+         "speed_tps": 89.6, "latency_s": 0.9},
+    ]
+    perf = harvest.match_perf(entries, ["qwen/qwen3-coder", "mistralai/mistral-large-4-0", "other/model"])
+    assert perf["qwen/qwen3-coder"]["speed_tps"] == 102.1
+    assert perf["mistralai/mistral-large-4-0"]["speed_tps"] == 89.6
+    assert "other/model" not in perf
