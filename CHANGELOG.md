@@ -1,3 +1,46 @@
+## [Unreleased] — what a model costs per task, and how fast it answers
+
+### Added
+
+- **Three criteria beyond the indices**: `speed` (output tokens per second), `latency` (seconds
+  to the first token) and `cost_task` (dollars for one fixed Hermes task: 20 000 prompt tokens,
+  60 % cached, 2 000 output tokens). Weights start at 0, so no existing profile moves.
+- **Three table columns**: `t/s`, `TTFT`, `$/task` — sortable, with the reference task in the
+  tooltip.
+- **`scripts/harvest_aa.py` now harvests performance too**, and reads it from the **data API**
+  rather than from the page: `GET /api/v2/language/models/free` (free tier, `x-api-key`) returns
+  `performance.median_output_tokens_per_second` and `median_time_to_first_token_seconds` next to
+  the intelligence index, 766 models over 4 pages. Written as `speed_tps` / `latency_s`. Matching
+  strips the reasoning qualifier ("(Low)", "(Max)") and takes the median across the budgets
+  published for one model. The page parser is kept as a fallback for a keyless run.
+
+### Fixed
+
+- **The retired AA path no longer aborts the harvest**: `api/v2/data/llms/models` answers
+  `410 Gone` (v1, removed 2026-12-16) and `/api/v2/language/models` answers `403` on a free key.
+  The harvester now names the endpoint it tried and falls back to the public page instead of
+  dying on an `HTTPError`.
+
+## [1.7.0] — 2026-11-05 — batch variants stay out of the ranking
+
+### Added
+
+- **"Exclude batch variants"**, a per-profile switch in the criteria dialog, **on by default**.
+  A `:batch` entry is the same model served asynchronously at half price: Hermes cannot drive the
+  Batch API unless a plugin does, so a cheap async price must not compete with interactive prices
+  in the ranking, the Pareto frontier, the weighted cost or the news. The table still lists them
+  (with a `batch` badge) so you can see what you are leaving out.
+- **`:free` stays in.** A good free model must never be penalised for being free; the switch only
+  concerns `:batch`.
+- `/models` and `/news` now expose `variant` and `base_id` per entry, and
+  `/news?exclude_batch=` follows the profile. Only *catalog* variants (`:batch`, `:free`,
+  `:thinking`, `:extended`) are recognised; routing modifiers (`:nitro`, `:floor`, `:exacto`,
+  `:online`) are part of the base id and are never stripped.
+
+### Notes
+
+- Profiles saved before this release default to excluding batch (absent field = on).
+
 ## [1.6.2] — 2026-11-05 — catalog review: public surfaces only
 
 ### Changed

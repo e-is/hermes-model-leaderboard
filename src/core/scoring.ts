@@ -3,10 +3,22 @@
 /** Every scoring criterion, in display order. */
 export const CRITERIA_KEYS = [
   'intelligence', 'coding', 'agentic',
+  'speed', 'latency', 'cost_task',
   'price_in', 'price_out', 'cache_read',
   'context', 'tools', 'has_vision',
   'open_weights', 'fits_64gb',
 ] as const
+
+/**
+ * The reference task a "cost per task" figure is computed for: one Hermes turn on a real
+ * card — 20 000 prompt tokens (a system prompt plus a few tool results) and 2 000 completion
+ * tokens, 60 % of the prompt served from the cache.
+ *
+ * It is a stated convention, not a measurement. What makes the number comparable is that
+ * every model is priced for the SAME task: `price_in` and `price_out` alone weight the two
+ * directions equally, which prices a chat model like an agent one.
+ */
+export const REFERENCE_TASK = { prompt_tokens: 20_000, completion_tokens: 2_000, cache_hit_ratio: 0.6 }
 
 export type CriterionKey = typeof CRITERIA_KEYS[number]
 
@@ -16,14 +28,35 @@ export type CriterionKey = typeof CRITERIA_KEYS[number]
  * yet): the score counts it as 0, the views show it as "n/a" so a low score
  * caused by a hole in the data is not mistaken for a weak model.
  */
+/** Dollars for one reference task, or null when the model has no price at all. */
+export function costPerTask(m: any): number | null {
+  const pin = m?.prompt_price
+  const pout = m?.completion_price
+  if (!Number.isFinite(pin) || !Number.isFinite(pout)) return null
+  const cache = Number.isFinite(m?.cache_read_price) && m.cache_read_price >= 0 ? m.cache_read_price : pin
+  const cached = REFERENCE_TASK.prompt_tokens * REFERENCE_TASK.cache_hit_ratio
+  const fresh = REFERENCE_TASK.prompt_tokens - cached
+  // Prices are quoted per million tokens: without the divisor the column showed $14 400 for a
+  // task that costs about two cents.
+  return (fresh * pin + cached * cache + REFERENCE_TASK.completion_tokens * pout) / 1_000_000
+}
+
 export function criterionValues(m: any, maxes: Record<string, number>): Record<CriterionKey, number | null> {
   const ratio = (v: number | null | undefined, max: number) => (v == null ? null : Math.min(1, v / (max || 1)))
   const cheap = (v: number | null | undefined, max: number) => (max > 0 ? 1 - Math.min(1, (v ?? 0) / max) : 1)
+  // "Lower is better" where MISSING must stay missing: `cheap()` reads a hole as a zero, which
+  // is right for a free model and wrong for an unmeasured one — an unmeasured latency is not
+  // the fastest latency in the table.
+  const low = (v: number | null | undefined, max: number) => (v == null ? null : max > 0 ? 1 - Math.min(1, v / max) : null)
 
   return {
     intelligence: ratio(m.intelligence_index, maxes.maxIntel),
     coding: ratio(m.coding_index, maxes.maxCoding),
     agentic: ratio(m.agentic_index, maxes.maxAgentic),
+    // Measured by Artificial Analysis: absent for a model nobody published a measurement for.
+    speed: ratio(m.speed_tps, maxes.maxSpeed),
+    latency: low(m.latency_s, maxes.maxLatency),
+    cost_task: low(costPerTask(m), maxes.maxCostTask),
     price_in: cheap(m.prompt_price, maxes.maxPrice),
     price_out: cheap(m.completion_price, maxes.maxPrice),
     cache_read: cheap(m.cache_read_price, maxes.maxPriceCache || 1),

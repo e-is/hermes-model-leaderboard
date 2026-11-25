@@ -28,6 +28,8 @@ Shape (one entry per model, keyed by the OpenRouter model id):
 }
 ```
 
+* `speed_tps` — output tokens per second, measured by Artificial Analysis.
+* `latency_s` — seconds before the first token, measured by Artificial Analysis.
 * `swebench_verified` — % of resolved issues on SWE-bench Verified (0–100).
 * `livecodebench` — % pass@1 on LiveCodeBench (0–100), or `null` when unmeasured.
 * `null` is meaningful: it means "not published for this model". Never invent a
@@ -51,6 +53,26 @@ Take them from <https://artificialanalysis.ai/models> (same scale as
 OpenRouter's: the Intelligence / Coding / Agentic Index of the model page).
 Send `"value": null` to remove an override. A model the leaderboard shows as
 `n/a` on every index has nothing to estimate from: those are the priority.
+
+## Performance (speed, latency)
+
+`scripts/harvest_aa.py --write` fills `speed_tps` and `latency_s` in the same run as the
+intelligence index. It reads the **data API** when a key is configured —
+`GET /api/v2/language/models/free` with `x-api-key`, free tier, 100 requests per 24 h, 4 pages
+for 766 models, `performance.median_output_tokens_per_second` and
+`median_time_to_first_token_seconds` — and falls back to the public page when there is none.
+Note the paths: `/api/v2/data/llms/models` is `410 Gone` (v1), `/api/v2/language/models` is Pro
+and answers `403` on a free key, and `/api/v2/language/models/free` is the one that works.
+
+Two rules matter:
+
+* the qualifier in a model's name — `(Low)`, `(Max)`, `(Non-reasoning)` — is a reasoning
+  **budget**, not a different model, so matching strips it and the two figures are the median
+  across the budgets AA publishes;
+* the values are **not** committed: AA's data is non-redistributable, so the harvest writes to
+  the user's `plugin-data/model-leaderboard/benchmarks.json`, never to `dashboard/data/`.
+
+Only a model with no measurement shows `–` in the table, and its criterion counts as n/a.
 
 ## Procedure
 

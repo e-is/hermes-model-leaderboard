@@ -150,7 +150,7 @@ def test_end_to_end_merge_from_api_payload():
     updated, added, kept = harvest.merge({}, matches, source_url=harvest.API_URL)
     assert added == ["z-ai/glm-5.3-flash"]
     assert updated["models"]["z-ai/glm-5.3-flash"][harvest.FIELD] == 27.8
-    assert "api/v2/data/llms/models" in updated["_sources"][harvest.FIELD]
+    assert "api/v2/language/models/free" in updated["_sources"][harvest.FIELD]
 
 
 def test_relayed_models_are_not_shadowed(monkeypatch, tmp_path):
@@ -182,3 +182,96 @@ def test_default_store_follows_the_hermes_home(monkeypatch):
     monkeypatch.setitem(sys.modules, "hermes_constants", constants)
 
     assert harvest._default_store() == Path("/tmp/hermes-home/plugin-data/model-leaderboard")
+
+
+# ---- performance (speed, latency) ----------------------------------------------------
+
+SPEEDY = {"slug": "glm-5-3", "name": "GLM 5.3 (Max)", "outputSpeed": 71.86,
+          "timeToFirstToken": 4.38, "intelligenceIndex": 30.1}
+SLOW = {"slug": "glm-5-3-low", "name": "GLM 5.3 (Low)", "outputSpeed": 63.61,
+        "timeToFirstToken": 2.45, "intelligenceIndex": 29.4}
+NO_SPEED = {"slug": "glm-5-3-vision", "name": "GLM 5.3 Vision", "intelligenceIndex": 28.0}
+
+
+def test_performance_is_harvested_from_the_same_object_as_the_index():
+    entries = harvest.extract_models(page([SPEEDY, NO_SPEED]))
+    assert entries[0][harvest.SPEED_FIELD] == pytest.approx(71.86)
+    assert entries[0][harvest.LATENCY_FIELD] == pytest.approx(4.38)
+    assert harvest.SPEED_FIELD not in entries[1], "nothing measured, nothing written"
+
+
+def test_a_reasoning_qualifier_is_a_budget_not_a_model():
+    """AA lists one entry per reasoning budget: the numbers are the median across them."""
+    entries = harvest.extract_models(page([SPEEDY, SLOW]))
+    matched = harvest.match_perf(entries, ["z-ai/glm-5-3"])
+    assert matched["z-ai/glm-5-3"][harvest.SPEED_FIELD] == pytest.approx((71.86 + 63.61) / 2)
+    assert matched["z-ai/glm-5-3"][harvest.LATENCY_FIELD] == pytest.approx((4.38 + 2.45) / 2)
+
+
+def test_merge_perf_never_overwrites_a_value_already_there():
+    benchmarks = {"models": {"z-ai/glm-5-3": {harvest.SPEED_FIELD: 99.0}}}
+    added, kept = harvest.merge_perf(benchmarks, {"z-ai/glm-5-3": {
+        harvest.SPEED_FIELD: 70.0, harvest.LATENCY_FIELD: 3.0}})
+    entry = benchmarks["models"]["z-ai/glm-5-3"]
+    assert entry[harvest.SPEED_FIELD] == 99.0, "a hand-typed value wins over a harvest"
+    assert entry[harvest.LATENCY_FIELD] == 3.0, "the missing field is filled"
+    assert added == ["z-ai/glm-5-3"] and kept == []
+    assert "artificialanalysis" in benchmarks["_sources"][harvest.LATENCY_FIELD]
+
+
+def test_the_free_payload_carries_median_performance():
+    """The API's `performance` block is the whole reason to prefer it over the page."""
+    entries = harvest.entries_from_api({"data": [{
+        "slug": "glm-5-3", "name": "GLM 5.3",
+        "model_creator": {"id": "c", "name": "Z AI"},
+        "evaluations": {"artificial_analysis_intelligence_index": 31.2, "artificial_analysis_legal_index": 40.0},
+        "performance": {"median_output_tokens_per_second": 67.74,
+                        "median_time_to_first_token_seconds": 3.42,
+                        "median_end_to_end_response_time_seconds": 12.0},
+    }]})
+    assert entries[0][harvest.SPEED_FIELD] == pytest.approx(67.74)
+    assert entries[0][harvest.LATENCY_FIELD] == pytest.approx(3.42)
+    assert entries[0][harvest.FIELD] == pytest.approx(31.2)
+
+
+def test_zero_performance_is_a_hole_not_a_measurement():
+    entries = harvest.entries_from_api({"data": [{
+        "slug": "x", "name": "X", "evaluations": {},
+        "performance": {"median_output_tokens_per_second": 0, "median_time_to_first_token_seconds": 0},
+    }]})
+    assert harvest.SPEED_FIELD not in entries[0] and harvest.LATENCY_FIELD not in entries[0]
+
+
+def test_api_pagination_reads_every_page(monkeypatch):
+    """766 models span 4 pages: reading page 1 only would rank an alphabetical third."""
+    pages = {
+        1: {"data": [{"slug": "a", "name": "A", "evaluations": {"artificial_analysis_intelligence_index": 10}}],
+            "pagination": {"has_more": True}},
+        2: {"data": [{"slug": "b", "name": "B", "evaluations": {"artificial_analysis_intelligence_index": 20}}],
+            "pagination": {"has_more": False}},
+    }
+    seen = []
+
+    def fake_fetch(url, timeout=40, headers=None):
+        page = int(url.split("page=")[1].split("&")[0])
+        seen.append((page, (headers or {}).get("x-api-key")))
+        return json.dumps(pages[page])
+
+    monkeypatch.setattr(harvest, "fetch", fake_fetch)
+    entries = harvest.fetch_api_models("k")
+    assert [e["slug"] for e in entries] == ["a", "b"]
+    assert seen == [(1, "k"), (2, "k")], "the key travels on every page"
+
+
+def test_match_perf_uses_the_reviewed_alias_pairs():
+    """A slug Artificial Analysis spells differently is reached by an explicit pair, not fuzzily."""
+    entries = [
+        {"slug": "qwen3-coder-480b-a35b-instruct", "name": "Qwen3 Coder 480B A35B Instruct",
+         "speed_tps": 102.1, "latency_s": 1.2},
+        {"slug": "mistral-large-4", "name": "Mistral Large 4 (Medium)",
+         "speed_tps": 89.6, "latency_s": 0.9},
+    ]
+    perf = harvest.match_perf(entries, ["qwen/qwen3-coder", "mistralai/mistral-large-4-0", "other/model"])
+    assert perf["qwen/qwen3-coder"]["speed_tps"] == 102.1
+    assert perf["mistralai/mistral-large-4-0"]["speed_tps"] == 89.6
+    assert "other/model" not in perf

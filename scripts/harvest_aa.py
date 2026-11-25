@@ -38,16 +38,20 @@ import argparse
 import json
 import os
 import re
+import statistics
 import sys
 import unicodedata
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-#: The free API (an account key, x-api-key, 100–1000 requests/day depending on the doc
-#: generation you read — one request per run either way). Preferred over the page: JSON,
-#: stable field names, and `model_creator` to disambiguate two models with one name.
-API_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
+#: The data API, free tier (x-api-key, 100 requests per 24 h window). Preferred over the page:
+#: JSON, stable snake_case field names documented in an OpenAPI spec, and the same numbers the
+#: leaderboard shows. `/api/v2/data/llms/models` — the v1 path this script used to call — is
+#: retired (`410 Gone` since 2026-12-16) and `/api/v2/language/models` is the Pro endpoint
+#: (`403` on a free key); `/language/models/free` is its free-tier sibling, same shape minus the
+#: per-benchmark evaluations. One harvest costs 4 requests (766 models, page_size 200).
+API_URL = "https://artificialanalysis.ai/api/v2/language/models/free"
 #: The env var the key is read from — the same name plugin.yaml declares as a `secret`
 #: setting, so a key saved in Desktop → Settings → Plugins is the one this script uses.
 API_KEY_ENV = "ARTIFICIAL_ANALYSIS_API_KEY"
@@ -57,6 +61,11 @@ PAGE_URL = "https://artificialanalysis.ai/leaderboards/models"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/models"
 USER_AGENT = "hermes-model-leaderboard-harvester/1.0 (+https://github.com/e-is/hermes-model-leaderboard)"
 FIELD = "intelligence_index"
+#: Performance, from the same page object: tokens/s and seconds to first token. Artificial
+#: Analysis measures them on its own harness, so they are comparable across models — which a
+#: vendor's "up to X tokens/s" is not.
+SPEED_FIELD = "speed_tps"
+LATENCY_FIELD = "latency_s"
 
 
 # ---- fetching ------------------------------------------------------------------------
@@ -70,21 +79,50 @@ def fetch(url: str, timeout: int = 40, headers: dict | None = None) -> str:
 def entries_from_api(payload: dict) -> list[dict]:
     """The free API's rows → the same shape the page parser returns.
 
-    `artificial_analysis_coding_index` / `..._agentic_index` are documented as always
-    null ("AA no longer publishes a Coding Index or an Agentic Index"): this source can
-    only fill the intelligence index, and the backend's inheritance covers the rest.
+    The free tier carries the headline indices, the median performance and the prices; the
+    per-benchmark evaluations (GPQA, Terminal-Bench, IFBench, …) are Pro. `coding_index` and
+    `agentic_index` are documented as always null here — AA no longer publishes them — and the
+    backend's inheritance covers that gap.
     """
     out = []
     for model in payload.get("data") or []:
         evaluations = model.get("evaluations") or {}
+        # The free shape has `model_creator: {id, name}` (the Pro one adds a slug).
         creator = (model.get("model_creator") or {}).get("slug") or ""
-        out.append({
+        performance = model.get("performance") or {}
+        entry = {
             "slug": model.get("slug") or "",
             "name": model.get("name") or "",
             "creator": creator,
-            FIELD: evaluations.get(INTEL_FIELD),
-        })
+        }
+        # The field is always present (null when unmeasured): `match()` skips non-numbers, and a
+        # caller reading the entry does not have to guess whether the model was scored at all.
+        entry[FIELD] = evaluations.get(INTEL_FIELD)
+        speed = performance.get("median_output_tokens_per_second")
+        latency = performance.get("median_time_to_first_token_seconds")
+        if isinstance(speed, (int, float)) and speed > 0:
+            entry[SPEED_FIELD] = speed
+        if isinstance(latency, (int, float)) and latency > 0:
+            entry[LATENCY_FIELD] = latency
+        out.append(entry)
     return out
+
+
+def fetch_api_models(api_key: str, page_size: int = 200, max_pages: int = 10) -> list[dict]:
+    """Every row of the free models list, page by page.
+
+    Paginated (766 models at the time of writing, 4 pages): reading only page 1 would silently
+    rank the first alphabetical third of the catalogue.
+    """
+    entries: list[dict] = []
+    for page in range(1, max_pages + 1):
+        url = f"{API_URL}?page={page}&page_size={page_size}"
+        payload = json.loads(fetch(url, headers={"x-api-key": api_key}))
+        entries.extend(entries_from_api(payload))
+        pagination = payload.get("pagination") or {}
+        if not pagination.get("has_more"):
+            break
+    return entries
 
 
 # ---- parsing -------------------------------------------------------------------------
@@ -151,18 +189,30 @@ def extract_models(html: str) -> list[dict]:
         except json.JSONDecodeError:
             continue
         value = model.get("intelligenceIndex")
+        speed = model.get("outputSpeed")
+        latency = model.get("timeToFirstToken")
         name = model.get("slug") or model.get("name") or ""
-        if not name or name in seen or not isinstance(value, (int, float)):
+        if not name or name in seen:
+            continue
+        if not isinstance(value, (int, float)) and not isinstance(speed, (int, float)):
+            # A model with neither an index nor a measured speed has nothing to harvest.
             continue
         seen.add(name)
         # Same internal shape as entries_from_api(), so matching has one input format.
-        out.append({
+        entry = {
             "slug": model.get("slug") or "",
             "name": model.get("name") or "",
             "shortName": model.get("shortName") or "",
             "creator": "",
-            FIELD: value,
-        })
+        }
+        if isinstance(value, (int, float)):
+            entry[FIELD] = value
+        # Performance lives on the SAME object as the index: one page read, three numbers.
+        if isinstance(speed, (int, float)):
+            entry[SPEED_FIELD] = speed
+        if isinstance(latency, (int, float)):
+            entry[LATENCY_FIELD] = latency
+        out.append(entry)
     return out
 
 
@@ -201,6 +251,98 @@ def match(entries: list[dict], openrouter_ids: list[str]) -> dict[str, float]:
     return matches
 
 
+#: Artificial Analysis lists one entry per reasoning budget: "GLM-5.3 (Low)", "(Max)",
+#: "(Non-reasoning)". The qualifier is a configuration, not a different model.
+_VARIANT_SUFFIX = re.compile(r"\s*\([^)]*\)\s*$")
+
+
+#: OpenRouter id → Artificial Analysis slug, for the handful of models the two catalogues name
+#: differently. Reviewed by hand: an exact slug pair, never a partial match.
+ALIASES: dict[str, str] = {
+    "qwen/qwen3-coder": "qwen3-coder-480b-a35b-instruct",
+    "mistralai/mistral-large-4-0": "mistral-large-4",
+}
+
+
+def _base_name(text: str | None) -> str:
+    return _VARIANT_SUFFIX.sub("", text or "").strip()
+
+
+def match_perf(entries: list[dict], openrouter_ids: list[str]) -> dict[str, dict]:
+    """Artificial Analysis entries → {openrouter id: {speed_tps, latency_s}}.
+
+    Matching is on the BASE name (the reasoning qualifier stripped), because the qualifier is a
+    budget, not a model. When several budgets are published the two numbers are the MEDIAN
+    across them: picking one would report a configuration Hermes did not choose, and the spread
+    between "(Non-reasoning)" and "(Max)" is real. The two numbers travel together — they are
+    measured on the same run of the same harness.
+    """
+    by_name: dict[str, list[str]] = {}
+    for model_id in openrouter_ids:
+        by_name.setdefault(normalise(model_id.split("/")[-1]), []).append(model_id)
+        by_name.setdefault(normalise(model_id), []).append(model_id)
+
+    grouped: dict[str, list[dict]] = {}
+    for entry in entries:
+        measured = {field: float(entry[field]) for field in (SPEED_FIELD, LATENCY_FIELD)
+                    if isinstance(entry.get(field), (int, float)) and entry[field] > 0}
+        if not measured:
+            continue
+        keys = {normalise(_base_name(entry.get("name"))), normalise(_base_name(entry.get("slug")))}
+        keys.discard("")
+        for key in keys:
+            for model_id in by_name.get(key, []):
+                grouped.setdefault(model_id, []).append(measured)
+
+    # A few OpenRouter slugs carry a tier or a size suffix Artificial Analysis writes differently
+    # ("qwen3-coder" is the 480B A35B flagship; "mistral-large-4-0" is "Mistral Large 4"). These
+    # are explicit, reviewed pairs — never a fuzzy guess, because a wrong speed reads as a fact.
+    for model_id, slug in ALIASES.items():
+        if model_id in grouped or model_id not in openrouter_ids:
+            continue
+        for entry in entries:
+            if normalise(entry.get("slug") or "") != normalise(slug):
+                continue
+            measured = {field: float(entry[field]) for field in (SPEED_FIELD, LATENCY_FIELD)
+                        if isinstance(entry.get(field), (int, float)) and entry[field] > 0}
+            if measured:
+                grouped.setdefault(model_id, []).append(measured)
+
+    out: dict[str, dict] = {}
+    for model_id, rows in grouped.items():
+        fields = {}
+        for field in (SPEED_FIELD, LATENCY_FIELD):
+            values = [row[field] for row in rows if field in row]
+            if values:
+                fields[field] = statistics.median(values)
+        if fields:
+            out[model_id] = fields
+    return out
+
+
+def merge_perf(benchmarks: dict, perf: dict[str, dict], source_url: str = PAGE_URL) -> tuple[list[str], list[str]]:
+    """Write the performance numbers, never overwriting a value already present.
+
+    Returns (added, kept) as ids. Performance is NOT relayed by OpenRouter, so there is no
+    "shadowing the live source" caveat here — only the user's own typed values.
+    """
+    models = benchmarks.setdefault("models", {})
+    added, kept = [], []
+    sources = dict(benchmarks.get("_sources") or {})
+    for model_id, fields in sorted(perf.items()):
+        entry = models.setdefault(model_id, {})
+        wrote = []
+        for field, value in fields.items():
+            if isinstance(entry.get(field), (int, float)):
+                continue
+            entry[field] = round(value, 2)
+            wrote.append(field)
+            sources[field] = f"{source_url} — Artificial Analysis"
+        (added if wrote else kept).append(model_id)
+    benchmarks["_sources"] = sources
+    return added, kept
+
+
 # ---- merging -------------------------------------------------------------------------
 
 def merge(benchmarks: dict, matches: dict[str, float], source_url: str = PAGE_URL):
@@ -218,7 +360,7 @@ def merge(benchmarks: dict, matches: dict[str, float], source_url: str = PAGE_UR
         entry[FIELD] = value
         added.append(model_id)
     benchmarks["_sources"] = {**(benchmarks.get("_sources") or {}),
-                              FIELD: f"{source_url} — public leaderboard (page payload)"}
+                              FIELD: f"{source_url} — Artificial Analysis"}
     benchmarks["_last_updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return benchmarks, added, kept
 
@@ -264,10 +406,19 @@ def main(argv: list[str] | None = None) -> int:
                              "without one, the public page is parsed instead")
     args = parser.parse_args(argv)
 
+    entries = []
+    source = args.url
     if args.api_key:
-        entries = entries_from_api(json.loads(fetch(API_URL, headers={"x-api-key": args.api_key})))
-        source = API_URL
-    else:
+        try:
+            entries = fetch_api_models(args.api_key)
+            source = API_URL
+        except urllib.error.HTTPError as exc:
+            # 401/403: a key that does not cover this endpoint buys nothing, and 410: a retired
+            # path. Neither must stop the harvest — the public page carries the same numbers.
+            print(f"AA API answered {exc.code} ({exc.reason}) — falling back to the public page "
+                  f"({exc.url or API_URL})", file=sys.stderr)
+            entries = []
+    if not entries:
         print("no AA API key: falling back to the public page (brittle, please prefer the "
               "free key — attribution to artificialanalysis.ai is required either way)",
               file=sys.stderr)
@@ -284,9 +435,12 @@ def main(argv: list[str] | None = None) -> int:
     benchmarks_file = args.store / "benchmarks.json"
     benchmarks = json.loads(benchmarks_file.read_text()) if benchmarks_file.exists() else {}
     benchmarks, added, kept = merge(benchmarks, matches, source_url=source)
+    perf = match_perf(entries, ids)
+    perf_added, perf_kept = merge_perf(benchmarks, perf, source_url=source)
 
     print(f"{len(entries)} models on the page, {len(matches)} matched to OpenRouter, "
           f"{len(added)} to add, {len(kept)} already known")
+    print(f"performance: {len(perf)} matched, {len(perf_added)} to add, {len(perf_kept)} already known")
     for model_id in added[:20]:
         print(f"  + {model_id:<36} {matches[model_id]}")
     if len(added) > 20:

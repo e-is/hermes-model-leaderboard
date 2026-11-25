@@ -12,7 +12,7 @@ import {
 } from "@hermes/plugin-sdk";
 
 // src/LeaderboardPage.tsx
-import { useEffect as useEffect3, useMemo as useMemo3, useState as useState5 } from "react";
+import { useEffect as useEffect3, useMemo as useMemo3, useState as useState5, useRef as useRef3 } from "react";
 
 // src/components/charts.tsx
 import { useEffect, useRef, useState } from "react";
@@ -842,6 +842,12 @@ var en = {
     outOfContextHint: "This model cannot take the declared prompt size: it is left out of the ranking and the Pareto.",
     columnHint: "Prices include the context tier of the selected profile."
   },
+  variants: {
+    excludeBatch: "Exclude batch variants",
+    excludeBatchHint: "Batch is the same model served asynchronously at half price; Hermes cannot use it unless a plugin drives the Batch API. Free variants stay in the ranking.",
+    batch: "batch",
+    batchHint: "Asynchronous Batch API entry (half price), not usable by Hermes."
+  },
   removeModel: "Remove model",
   suppressShort: "Del?",
   clickToShow: "Click to show",
@@ -866,12 +872,18 @@ var en = {
     intel: "Intel.",
     coding: "Coding",
     agentic: "Agentic",
+    speed: "Output speed",
+    latency: "First token",
+    cost_task: "Cost per task",
     swe: "SWE",
     vision: "Vision",
     open: "Open",
     size: "Size",
     gpuOk: "GPU OK",
     tools: "Tools",
+    speedHint: "Output tokens per second, measured by Artificial Analysis (median across its reasoning variants).",
+    latencyHint: "Seconds before the first token, measured by Artificial Analysis.",
+    costTaskHint: "What one reference Hermes task costs: 20k prompt tokens (60 % cached) + 2k output tokens.",
     score: "Score"
   },
   views: {
@@ -889,6 +901,9 @@ var en = {
       intelligence: "Intelligence",
       coding: "Coding",
       agentic: "Agentic",
+      speed: "Output speed",
+      latency: "First token",
+      cost_task: "Cost per task",
       price_in: "Price in",
       price_out: "Price out",
       cache_read: "Cache price",
@@ -993,6 +1008,9 @@ var en = {
     intelligence: "Intelligence",
     coding: "Coding",
     agentic: "Agentic",
+    speed: "Output speed",
+    latency: "First token",
+    cost_task: "Cost per task",
     price_in: "Price ↓ input",
     price_out: "Price ↓ output",
     cache_read: "Price ↓ cache",
@@ -1004,6 +1022,9 @@ var en = {
     d_intelligence: "Global reasoning and knowledge depth",
     d_coding: "Code generation quality",
     d_agentic: "Agentic capabilities (multi-step autonomy)",
+    d_speed: "Raw output speed: a slow model makes a long tool chain feel broken.",
+    d_latency: "Time to first token: what a user waits for before anything appears.",
+    d_cost_task: "Computed for one fixed Hermes task (see the column tooltip), so models are compared on the same work rather than on the same price sheet.",
     d_price_in: "Importance of cheap input tokens",
     d_price_out: "Importance of cheap output tokens",
     d_cache_read: "Importance of cheap cached input",
@@ -1057,6 +1078,12 @@ var fr = {
     outOfContextHint: "Ce modèle ne peut pas recevoir la taille de prompt déclarée : il est exclu du classement et du Pareto.",
     columnHint: "Les prix tiennent compte du pallier de contexte du profil sélectionné."
   },
+  variants: {
+    excludeBatch: "Exclure les variantes batch",
+    excludeBatchHint: "Batch sert le même modèle en asynchrone à moitié prix ; Hermes ne peut pas l’utiliser sauf plugin dédié à l’API Batch. Les variantes gratuites restent classées.",
+    batch: "batch",
+    batchHint: "Entrée Batch API asynchrone (moitié prix), inutilisable par Hermes."
+  },
   removeModel: "Supprimer le modèle",
   suppressShort: "Suppr?",
   clickToShow: "Cliquer pour afficher",
@@ -1081,11 +1108,17 @@ var fr = {
     intel: "Intel.",
     coding: "Code",
     agentic: "Agentique",
+    speed: "Vitesse de sortie",
+    latency: "Premier token",
+    cost_task: "Coût par tâche",
     swe: "SWE",
     vision: "Vision",
     open: "Ouvert",
     size: "Taille",
     gpuOk: "GPU OK",
+    speedHint: "Tokens de sortie par seconde, mesurés par Artificial Analysis (médiane de ses variantes de raisonnement).",
+    latencyHint: "Secondes avant le premier token, mesurées par Artificial Analysis.",
+    costTaskHint: "Ce que coûte une tâche Hermes de référence : 20 k tokens d'entrée (60 % en cache) + 2 k de sortie.",
     tools: "Outils",
     score: "Note"
   },
@@ -1104,6 +1137,9 @@ var fr = {
       intelligence: "Intelligence",
       coding: "Code",
       agentic: "Agentique",
+      speed: "Vitesse de sortie",
+      latency: "Premier token",
+      cost_task: "Coût par tâche",
       price_in: "Prix entrée",
       price_out: "Prix sortie",
       cache_read: "Prix cache",
@@ -1208,6 +1244,9 @@ var fr = {
     intelligence: "Intelligence",
     coding: "Génération de code",
     agentic: "Capacités agentiques",
+    speed: "Vitesse de sortie",
+    latency: "Premier token",
+    cost_task: "Coût par tâche",
     price_in: "Prix↓input",
     price_out: "Prix↓output",
     cache_read: "Prix↓cache",
@@ -1219,6 +1258,9 @@ var fr = {
     d_intelligence: "Intelligence globale",
     d_coding: "Génération de code",
     d_agentic: "Capacités agentiques",
+    d_speed: "Vitesse brute de sortie : un modèle lent rend une longue chaîne d'outils pénible.",
+    d_latency: "Temps jusqu'au premier token : ce que l'utilisateur attend avant que quelque chose apparaisse.",
+    d_cost_task: "Calculé sur une tâche Hermes fixe (voir l'infobulle de la colonne) : les modèles sont comparés sur le même travail, pas sur la même grille tarifaire.",
     d_price_in: "Importance d’un prix bas des tokens d’entrée",
     d_price_out: "Importance d’un prix bas des tokens de sortie",
     d_cache_read: "Importance d’un prix bas du cache en lecture",
@@ -1272,6 +1314,12 @@ var zh = {
     outOfContextHint: "该模型无法接收所声明的提示大小，因此不列入排名和 Pareto。",
     columnHint: "价格包含所选配置档的上下文档位。"
   },
+  variants: {
+    excludeBatch: "排除 batch 变体",
+    excludeBatchHint: "batch 以异步、半价方式提供同一模型；Hermes 需要支持 Batch API 的插件才能使用。免费变体仍参与排名。",
+    batch: "batch",
+    batchHint: "异步 Batch API 条目（半价），Hermes 无法使用。"
+  },
   removeModel: "移除模型",
   suppressShort: "删",
   clickToShow: "点击显示",
@@ -1296,11 +1344,17 @@ var zh = {
     intel: "智能",
     coding: "编程",
     agentic: "智能体",
+    speed: "输出速度",
+    latency: "首字延迟",
+    cost_task: "每任务成本",
     swe: "SWE",
     vision: "视觉",
     open: "开放",
     size: "规模",
     gpuOk: "GPU 可用",
+    speedHint: "每秒输出 token 数，由 Artificial Analysis 测量（取其推理变体的中位数）。",
+    latencyHint: "首个 token 之前的秒数，由 Artificial Analysis 测量。",
+    costTaskHint: "一次参考 Hermes 任务的成本：2 万输入 token（60% 命中缓存）+ 2 千输出 token。",
     tools: "工具",
     score: "得分"
   },
@@ -1319,6 +1373,9 @@ var zh = {
       intelligence: "智能",
       coding: "编程",
       agentic: "智能体",
+      speed: "输出速度",
+      latency: "首字延迟",
+      cost_task: "每任务成本",
       price_in: "输入价格",
       price_out: "输出价格",
       cache_read: "缓存价格",
@@ -1423,6 +1480,9 @@ var zh = {
     intelligence: "智能",
     coding: "编程",
     agentic: "智能体",
+    speed: "输出速度",
+    latency: "首字延迟",
+    cost_task: "每任务成本",
     price_in: "价格 ↓ 输入",
     price_out: "价格 ↓ 输出",
     cache_read: "价格 ↓ 缓存",
@@ -1434,6 +1494,9 @@ var zh = {
     d_intelligence: "整体推理与知识深度",
     d_coding: "代码生成质量",
     d_agentic: "智能体能力（多步自主）",
+    d_speed: "原始输出速度：慢模型会让长工具链显得卡死。",
+    d_latency: "首个 token 的等待时间：用户等待界面出现内容的时间。",
+    d_cost_task: "按固定 Hermes 任务计算（见列提示）：比较的是同样的工作，而不是同样的价目表。",
     d_price_in: "低输入 token 价格的重要性",
     d_price_out: "低输出 token 价格的重要性",
     d_cache_read: "低缓存读取价格的重要性",
@@ -1487,6 +1550,12 @@ var zhHant = {
     outOfContextHint: "此模型無法接收所宣告的提示大小，因此不列入排名與 Pareto。",
     columnHint: "價格包含所選設定檔的上下文級距。"
   },
+  variants: {
+    excludeBatch: "排除 batch 變體",
+    excludeBatchHint: "batch 以非同步、半價方式提供同一模型；Hermes 需要支援 Batch API 的外掛才能使用。免費變體仍參與排名。",
+    batch: "batch",
+    batchHint: "非同步 Batch API 項目（半價），Hermes 無法使用。"
+  },
   removeModel: "移除模型",
   suppressShort: "刪",
   clickToShow: "點擊顯示",
@@ -1511,11 +1580,17 @@ var zhHant = {
     intel: "智能",
     coding: "程式",
     agentic: "代理",
+    speed: "輸出速度",
+    latency: "首字延遲",
+    cost_task: "每任務成本",
     swe: "SWE",
     vision: "視覺",
     open: "開放",
     size: "規模",
     gpuOk: "GPU 可用",
+    speedHint: "每秒輸出 token 數，由 Artificial Analysis 測量（取其推理變體的中位數）。",
+    latencyHint: "首個 token 之前的秒數，由 Artificial Analysis 測量。",
+    costTaskHint: "一次參考 Hermes 任務的成本：2 萬輸入 token（60% 命中快取）+ 2 千輸出 token。",
     tools: "工具",
     score: "分數"
   },
@@ -1534,6 +1609,9 @@ var zhHant = {
       intelligence: "智能",
       coding: "程式",
       agentic: "代理",
+      speed: "輸出速度",
+      latency: "首字延遲",
+      cost_task: "每任務成本",
       price_in: "輸入價格",
       price_out: "輸出價格",
       cache_read: "快取價格",
@@ -1638,6 +1716,9 @@ var zhHant = {
     intelligence: "智能",
     coding: "程式",
     agentic: "代理",
+    speed: "輸出速度",
+    latency: "首字延遲",
+    cost_task: "每任務成本",
     price_in: "價格 ↓ 輸入",
     price_out: "價格 ↓ 輸出",
     cache_read: "價格 ↓ 快取",
@@ -1649,6 +1730,9 @@ var zhHant = {
     d_intelligence: "整體推理與知識深度",
     d_coding: "程式碼生成品質",
     d_agentic: "代理能力（多步驟自主）",
+    d_speed: "原始輸出速度：慢模型會讓長工具鏈顯得卡死。",
+    d_latency: "首個 token 的等待時間：使用者等待畫面出現內容的時間。",
+    d_cost_task: "按固定 Hermes 任務計算（見欄位提示）：比較的是同樣的工作，而不是同樣的價目表。",
     d_price_in: "輸入 token 價格便宜的重要性",
     d_price_out: "輸出 token 價格便宜的重要性",
     d_cache_read: "快取輸入價格便宜的重要性",
@@ -1702,6 +1786,12 @@ var af = {
     outOfContextHint: "Hierdie model kan nie die verklaarde promptgrootte aanvaar nie: dit val buite die ranglys en die Pareto.",
     columnHint: "Pryse sluit die konteksvlak van die gekose profiel in."
   },
+  variants: {
+    excludeBatch: "Sluit batch-variante uit",
+    excludeBatchHint: "Batch lewer dieselfde model asinkroon teen die helfte van die prys; Hermes kan dit net met ’n plugin vir die Batch API gebruik. Gratis variante bly in die ranglys.",
+    batch: "batch",
+    batchHint: "Asinkrone Batch API-inskrywing (halfprys), nie deur Hermes bruikbaar nie."
+  },
   removeModel: "Verwyder model",
   suppressShort: "Wis?",
   clickToShow: "Klik om te wys",
@@ -1726,11 +1816,17 @@ var af = {
     intel: "Intellig.",
     coding: "Kodering",
     agentic: "Agenties",
+    speed: "Uitsetspoed",
+    latency: "Eerste teken",
+    cost_task: "Koste per taak",
     swe: "SWE",
     vision: "Visie",
     open: "Oop",
     size: "Grootte",
     gpuOk: "GPU OK",
+    speedHint: "Uitsettekens per sekonde, gemeet deur Artificial Analysis (mediaan oor sy redenasie-variante).",
+    latencyHint: "Sekondes voor die eerste teken, gemeet deur Artificial Analysis.",
+    costTaskHint: "Wat een verwysings-Hermes-taak kos: 20k prompttekens (60 % gekas) + 2k uitsettekens.",
     tools: "Gereedskap",
     score: "Punte"
   },
@@ -1749,6 +1845,9 @@ var af = {
       intelligence: "Intelligensie",
       coding: "Kodering",
       agentic: "Agenties",
+      speed: "Uitsetspoed",
+      latency: "Eerste teken",
+      cost_task: "Koste per taak",
       price_in: "Prys in",
       price_out: "Prys uit",
       cache_read: "Kasprys",
@@ -1853,6 +1952,9 @@ var af = {
     intelligence: "Intelligensie",
     coding: "Kodering",
     agentic: "Agenties",
+    speed: "Uitsetspoed",
+    latency: "Eerste teken",
+    cost_task: "Koste per taak",
     price_in: "Prys ↓ inset",
     price_out: "Prys ↓ uitset",
     cache_read: "Prys ↓ kas",
@@ -1864,6 +1966,9 @@ var af = {
     d_intelligence: "Globale redenering en kennisdiepte",
     d_coding: "Gehalte van kodegenerering",
     d_agentic: "Agentiese vermoëns (meerstap-outonomie)",
+    d_speed: "Rou uitsetspoed: 'n stadige model laat 'n lang nutsgoedketting stukkend lyk.",
+    d_latency: "Tyd tot die eerste teken: waarvoor 'n gebruiker wag voordat iets verskyn.",
+    d_cost_task: "Bereken op 'n vaste Hermes-taak (sien die kolomwenk): dieselfde werk word vergelyk, nie dieselfde pryslys nie.",
     d_price_in: "Belangrikheid van goedkoop inset-tokens",
     d_price_out: "Belangrikheid van goedkoop uitset-tokens",
     d_cache_read: "Belangrikheid van goedkoop gekaste inset",
@@ -1917,6 +2022,12 @@ var ar = {
     outOfContextHint: "لا يستطيع هذا النموذج استقبال حجم الموجّه المعلن، لذا يُستبعد من الترتيب ومخطط Pareto.",
     columnHint: "الأسعار تشمل شريحة السياق للملف الشخصي المحدد."
   },
+  variants: {
+    excludeBatch: "استبعاد متغيرات batch",
+    excludeBatchHint: "يقدّم batch النموذج نفسه بشكل غير متزامن بنصف السعر، ولا يستطيع Hermes استخدامه إلا بإضافة تدعم Batch API. تبقى المتغيرات المجانية في الترتيب.",
+    batch: "batch",
+    batchHint: "إدخال Batch API غير متزامن (نصف السعر) غير قابل للاستخدام في Hermes."
+  },
   removeModel: "إزالة النموذج",
   suppressShort: "حذف؟",
   clickToShow: "انقر للإظهار",
@@ -1941,11 +2052,17 @@ var ar = {
     intel: "الذكاء",
     coding: "البرمجة",
     agentic: "وكيلي",
+    speed: "سرعة الإخراج",
+    latency: "الرمز الأول",
+    cost_task: "تكلفة المهمة",
     swe: "SWE",
     vision: "الصور",
     open: "مفتوح",
     size: "الحجم",
     gpuOk: "GPU OK",
+    speedHint: "رموز الإخراج في الثانية، بقياس Artificial Analysis (الوسيط عبر نسخ الاستدلال).",
+    latencyHint: "الثواني حتى الرمز الأول، بقياس Artificial Analysis.",
+    costTaskHint: "تكلفة مهمة Hermes مرجعية واحدة: 20 ألف رمز إدخال (60 % من الذاكرة المؤقتة) + 2000 رمز إخراج.",
     tools: "الأدوات",
     score: "النقاط"
   },
@@ -1964,6 +2081,9 @@ var ar = {
       intelligence: "الذكاء",
       coding: "البرمجة",
       agentic: "وكيلي",
+      speed: "سرعة الإخراج",
+      latency: "الرمز الأول",
+      cost_task: "تكلفة المهمة",
       price_in: "سعر المدخل",
       price_out: "سعر المخرج",
       cache_read: "سعر الذاكرة",
@@ -2068,6 +2188,9 @@ var ar = {
     intelligence: "الذكاء",
     coding: "البرمجة",
     agentic: "القدرات الوكيلية",
+    speed: "سرعة الإخراج",
+    latency: "الرمز الأول",
+    cost_task: "تكلفة المهمة",
     price_in: "السعر ↓ المدخل",
     price_out: "السعر ↓ المخرج",
     cache_read: "السعر ↓ الذاكرة المؤقتة",
@@ -2079,6 +2202,9 @@ var ar = {
     d_intelligence: "التفكير العام وعمق المعرفة",
     d_coding: "جودة توليد الشيفرة",
     d_agentic: "القدرات الوكيلية (استقلالية متعددة الخطوات)",
+    d_speed: "سرعة الإخراج الخام: النموذج البطيء يجعل سلسلة أدوات طويلة تبدو معطّلة.",
+    d_latency: "الوقت حتى الرمز الأول: ما ينتظره المستخدم قبل أن يظهر أي شيء.",
+    d_cost_task: "يُحسب على مهمة Hermes ثابتة (انظر تلميح العمود): نقارن العمل نفسه لا قائمة الأسعار نفسها.",
     d_price_in: "أهمية رخص رموز الإدخال",
     d_price_out: "أهمية رخص رموز الإخراج",
     d_cache_read: "أهمية رخص الإدخال المخزَّن مؤقتًا",
@@ -2132,6 +2258,12 @@ var de = {
     outOfContextHint: "Dieses Modell kann die deklarierte Prompt-Größe nicht aufnehmen: es fehlt im Ranking und im Pareto.",
     columnHint: "Die Preise enthalten die Kontextstufe des gewählten Profils."
   },
+  variants: {
+    excludeBatch: "Batch-Varianten ausschließen",
+    excludeBatchHint: "Batch liefert dasselbe Modell asynchron zum halben Preis; Hermes kann es nur mit einem Plugin für die Batch-API nutzen. Kostenlose Varianten bleiben im Ranking.",
+    batch: "Batch",
+    batchHint: "Asynchroner Batch-API-Eintrag (halber Preis), für Hermes nicht nutzbar."
+  },
   removeModel: "Modell entfernen",
   suppressShort: "Löschen?",
   clickToShow: "Zum Anzeigen klicken",
@@ -2156,11 +2288,17 @@ var de = {
     intel: "Intell.",
     coding: "Code",
     agentic: "Agentisch",
+    speed: "Ausgabegeschwindigkeit",
+    latency: "Erstes Token",
+    cost_task: "Kosten pro Aufgabe",
     swe: "SWE",
     vision: "Bilder",
     open: "Offen",
     size: "Größe",
     gpuOk: "GPU OK",
+    speedHint: "Ausgabe-Tokens pro Sekunde, gemessen von Artificial Analysis (Median über die Reasoning-Varianten).",
+    latencyHint: "Sekunden bis zum ersten Token, gemessen von Artificial Analysis.",
+    costTaskHint: "Was eine Referenz-Hermes-Aufgabe kostet: 20k Prompt-Tokens (60 % gecacht) + 2k Ausgabe-Tokens.",
     tools: "Werkzeuge",
     score: "Punkte"
   },
@@ -2179,6 +2317,9 @@ var de = {
       intelligence: "Intelligenz",
       coding: "Code",
       agentic: "Agentisch",
+      speed: "Ausgabegeschwindigkeit",
+      latency: "Erstes Token",
+      cost_task: "Kosten pro Aufgabe",
       price_in: "Preis Input",
       price_out: "Preis Output",
       cache_read: "Preis Cache",
@@ -2283,6 +2424,9 @@ var de = {
     intelligence: "Intelligenz",
     coding: "Codeerzeugung",
     agentic: "Agentische Fähigkeiten",
+    speed: "Ausgabegeschwindigkeit",
+    latency: "Erstes Token",
+    cost_task: "Kosten pro Aufgabe",
     price_in: "Preis ↓ Eingabe",
     price_out: "Preis ↓ Ausgabe",
     cache_read: "Preis ↓ Cache",
@@ -2294,6 +2438,9 @@ var de = {
     d_intelligence: "Globale Denkfähigkeit und Wissenstiefe",
     d_coding: "Qualität der Codeerzeugung",
     d_agentic: "Agentische Fähigkeiten (mehrstufige Autonomie)",
+    d_speed: "Rohe Ausgabegeschwindigkeit: Ein langsames Modell lässt eine lange Werkzeugkette kaputt wirken.",
+    d_latency: "Zeit bis zum ersten Token: worauf man wartet, bevor etwas erscheint.",
+    d_cost_task: "Berechnet an einer festen Hermes-Aufgabe (siehe Spalten-Tooltip): Verglichen wird die gleiche Arbeit, nicht der gleiche Preiszettel.",
     d_price_in: "Bedeutung günstiger Input-Tokens",
     d_price_out: "Bedeutung günstiger Output-Tokens",
     d_cache_read: "Bedeutung günstiger gecachter Eingaben",
@@ -2347,6 +2494,12 @@ var es = {
     outOfContextHint: "Este modelo no admite el tamaño de prompt declarado: queda fuera del ranking y del Pareto.",
     columnHint: "Los precios incluyen el tramo de contexto del perfil seleccionado."
   },
+  variants: {
+    excludeBatch: "Excluir variantes batch",
+    excludeBatchHint: "Batch sirve el mismo modelo de forma asíncrona a mitad de precio; Hermes no puede usarlo salvo con un plugin para la API Batch. Las variantes gratuitas siguen clasificadas.",
+    batch: "batch",
+    batchHint: "Entrada de la API Batch asíncrona (mitad de precio), no usable por Hermes."
+  },
   removeModel: "Quitar modelo",
   suppressShort: "¿Borrar?",
   clickToShow: "Clic para mostrar",
@@ -2371,11 +2524,17 @@ var es = {
     intel: "Intel.",
     coding: "Código",
     agentic: "Agéntico",
+    speed: "Velocidad de salida",
+    latency: "Primer token",
+    cost_task: "Coste por tarea",
     swe: "SWE",
     vision: "Visión",
     open: "Abierto",
     size: "Tamaño",
     gpuOk: "GPU OK",
+    speedHint: "Tokens de salida por segundo, medidos por Artificial Analysis (mediana de sus variantes de razonamiento).",
+    latencyHint: "Segundos hasta el primer token, medidos por Artificial Analysis.",
+    costTaskHint: "Lo que cuesta una tarea Hermes de referencia: 20 k tokens de entrada (60 % en caché) + 2 k de salida.",
     tools: "Herramientas",
     score: "Puntos"
   },
@@ -2394,6 +2553,9 @@ var es = {
       intelligence: "Inteligencia",
       coding: "Código",
       agentic: "Agéntico",
+      speed: "Velocidad de salida",
+      latency: "Primer token",
+      cost_task: "Coste por tarea",
       price_in: "Precio entrada",
       price_out: "Precio salida",
       cache_read: "Precio caché",
@@ -2498,6 +2660,9 @@ var es = {
     intelligence: "Inteligencia",
     coding: "Código",
     agentic: "Agéntico",
+    speed: "Velocidad de salida",
+    latency: "Primer token",
+    cost_task: "Coste por tarea",
     price_in: "Precio ↓ entrada",
     price_out: "Precio ↓ salida",
     cache_read: "Precio ↓ caché",
@@ -2509,6 +2674,9 @@ var es = {
     d_intelligence: "Razonamiento global y profundidad de conocimiento",
     d_coding: "Calidad de generación de código",
     d_agentic: "Capacidades agénticas (autonomía multipaso)",
+    d_speed: "Velocidad bruta de salida: un modelo lento hace que una cadena larga de herramientas parezca rota.",
+    d_latency: "Tiempo hasta el primer token: lo que se espera antes de que aparezca algo.",
+    d_cost_task: "Calculado sobre una tarea Hermes fija (ver la ayuda de la columna): se compara el mismo trabajo, no la misma tarifa.",
     d_price_in: "Importancia de unos tokens de entrada baratos",
     d_price_out: "Importancia de unos tokens de salida baratos",
     d_cache_read: "Importancia de una entrada en caché barata",
@@ -2562,6 +2730,12 @@ var ga = {
     outOfContextHint: "Ní féidir leis an múnla seo méid an leide a luaigh tú a ghlacadh: fágadh as an rangú agus as Pareto é.",
     columnHint: "Cuimsíonn na praghsanna leibhéal comhthéacs na próifíle roghnaithe."
   },
+  variants: {
+    excludeBatch: "Eisíoc le leaganacha batch",
+    excludeBatchHint: "Seirbheálann batch an tsamhail chéanna go neamhshioncronach ar leathphraghas; ní féidir le Hermes é a úsáid gan breiseán don Batch API. Fanann leaganacha saora sa rangú.",
+    batch: "batch",
+    batchHint: "Iontráil Batch API neamhshioncronach (leathphraghas), nach féidir le Hermes a úsáid."
+  },
   removeModel: "Bain an tsamhail",
   suppressShort: "Scrios?",
   clickToShow: "Cliceáil le taispeáint",
@@ -2586,11 +2760,17 @@ var ga = {
     intel: "Intel.",
     coding: "Códú",
     agentic: "Gníomhaíoch",
+    speed: "Luas aschuir",
+    latency: "Céad chomhartha",
+    cost_task: "Costas in aghaidh an táisc",
     swe: "SWE",
     vision: "Radharc",
     open: "Oscailte",
     size: "Méid",
     gpuOk: "GPU OK",
+    speedHint: "Comharthaí aschuir in aghaidh an tsoicind, tomhaiste ag Artificial Analysis (airmheánach thar a chuid leaganacha réasúnaíochta).",
+    latencyHint: "Soicindí roimh an gcéad chomhartha, tomhaiste ag Artificial Analysis.",
+    costTaskHint: "Costas aon táisc thagartha Hermes: 20k comhartha ionchuir (60 % i dtaisce) + 2k comhartha aschuir.",
     tools: "Uirlisí",
     score: "Scór"
   },
@@ -2609,6 +2789,9 @@ var ga = {
       intelligence: "Intleacht",
       coding: "Códú",
       agentic: "Gníomhaíoch",
+      speed: "Luas aschuir",
+      latency: "Céad chomhartha",
+      cost_task: "Costas in aghaidh an táisc",
       price_in: "Praghas ionchuir",
       price_out: "Praghas aschuir",
       cache_read: "Praghas taisce",
@@ -2713,6 +2896,9 @@ var ga = {
     intelligence: "Intleacht",
     coding: "Códú",
     agentic: "Gníomhaíocht",
+    speed: "Luas aschuir",
+    latency: "Céad chomhartha",
+    cost_task: "Costas in aghaidh an táisc",
     price_in: "Praghas ↓ ionchur",
     price_out: "Praghas ↓ aschur",
     cache_read: "Praghas ↓ taisce",
@@ -2724,6 +2910,9 @@ var ga = {
     d_intelligence: "Réasúnaíocht dhomhanda agus doimhneacht eolais",
     d_coding: "Cáilíocht na giniúna cóid",
     d_agentic: "Cumais ghníomhaíocha (neamhspleáchas ilchéime)",
+    d_speed: "Luas aschuir amh: déanann múnla mall slabhra uirlisí fada a fheiceáil briste.",
+    d_latency: "Am go dtí an chéad chomhartha: an rud a fhanann úsáideoir air sula dtagann aon rud chun solais.",
+    d_cost_task: "Ríomhtar ar thasc seasta Hermes (féach leid an cholúin): cuirtear an obair chéanna i gcomparáid, ní an phraghasliosta chéanna.",
     d_price_in: "Tábhacht tokens ionchuir saoire",
     d_price_out: "Tábhacht tokens aschuir saoire",
     d_cache_read: "Tábhacht ionchuir thaiscthe shaor",
@@ -2777,6 +2966,12 @@ var hu = {
     outOfContextHint: "Ez a modell nem tudja fogadni a megadott promptméretet: kimarad a rangsorból és a Pareto-görbéről.",
     columnHint: "Az árak a kiválasztott profil kontextussávját tartalmazzák."
   },
+  variants: {
+    excludeBatch: "Batch-változatok kizárása",
+    excludeBatchHint: "A batch ugyanazt a modellt adja aszinkron módon, fél áron; a Hermes csak Batch API-t támogató pluginnal tudja használni. Az ingyenes változatok a rangsorban maradnak.",
+    batch: "batch",
+    batchHint: "Aszinkron Batch API-bejegyzés (fél ár), a Hermes nem tudja használni."
+  },
   removeModel: "Modell eltávolítása",
   suppressShort: "Törlés?",
   clickToShow: "Kattints a megjelenítéshez",
@@ -2801,11 +2996,17 @@ var hu = {
     intel: "Intell.",
     coding: "Kódolás",
     agentic: "Ügynök",
+    speed: "Kimeneti sebesség",
+    latency: "Első token",
+    cost_task: "Feladatonkénti költség",
     swe: "SWE",
     vision: "Látás",
     open: "Nyílt",
     size: "Méret",
     gpuOk: "GPU OK",
+    speedHint: "Kimeneti token per másodperc, az Artificial Analysis mérése (az érvelési változatok mediánja).",
+    latencyHint: "Másodperc az első tokenig, az Artificial Analysis mérése.",
+    costTaskHint: "Egy referencia Hermes-feladat költsége: 20k bemeneti token (60 % gyorsítótárból) + 2k kimeneti token.",
     tools: "Eszközök",
     score: "Pontszám"
   },
@@ -2824,6 +3025,9 @@ var hu = {
       intelligence: "Intelligencia",
       coding: "Kódolás",
       agentic: "Ügynök",
+      speed: "Kimeneti sebesség",
+      latency: "Első token",
+      cost_task: "Feladatonkénti költség",
       price_in: "Bemeneti ár",
       price_out: "Kimeneti ár",
       cache_read: "Gyorsítótár ára",
@@ -2928,6 +3132,9 @@ var hu = {
     intelligence: "Intelligencia",
     coding: "Kódolás",
     agentic: "Ügynök",
+    speed: "Kimeneti sebesség",
+    latency: "Első token",
+    cost_task: "Feladatonkénti költség",
     price_in: "Ár ↓ bemenet",
     price_out: "Ár ↓ kimenet",
     cache_read: "Ár ↓ gyorsítótár",
@@ -2939,6 +3146,9 @@ var hu = {
     d_intelligence: "Általános érvelés és tudásmélység",
     d_coding: "Kódgenerálás minősége",
     d_agentic: "Ügynökképességek (többlépéses autonómia)",
+    d_speed: "Nyers kimeneti sebesség: egy lassú modell mellett a hosszú eszközlánc hibásnak tűnik.",
+    d_latency: "Idő az első tokenig: mennyit vár a felhasználó, mire bármi megjelenik.",
+    d_cost_task: "Rögzített Hermes-feladaton számítva (lásd az oszlop tippjét): ugyanazt a munkát hasonlítjuk össze, nem ugyanazt az árlistát.",
     d_price_in: "Az olcsó bemeneti tokenek fontossága",
     d_price_out: "Az olcsó kimeneti tokenek fontossága",
     d_cache_read: "Az olcsó gyorsítótárazott bemenet fontossága",
@@ -2992,6 +3202,12 @@ var it = {
     outOfContextHint: "Questo modello non può ricevere la dimensione di prompt dichiarata: è escluso dalla classifica e dal Pareto.",
     columnHint: "I prezzi includono la fascia di contesto del profilo selezionato."
   },
+  variants: {
+    excludeBatch: "Escludi varianti batch",
+    excludeBatchHint: "Batch serve lo stesso modello in modo asincrono a metà prezzo; Hermes non può usarlo senza un plugin per la Batch API. Le varianti gratuite restano in classifica.",
+    batch: "batch",
+    batchHint: "Voce Batch API asincrona (metà prezzo), non utilizzabile da Hermes."
+  },
   removeModel: "Rimuovi modello",
   suppressShort: "Elim.?",
   clickToShow: "Clicca per mostrare",
@@ -3016,11 +3232,17 @@ var it = {
     intel: "Intell.",
     coding: "Codice",
     agentic: "Agentico",
+    speed: "Velocità di output",
+    latency: "Primo token",
+    cost_task: "Costo per attività",
     swe: "SWE",
     vision: "Visione",
     open: "Aperto",
     size: "Dimensione",
     gpuOk: "GPU OK",
+    speedHint: "Token di output al secondo, misurati da Artificial Analysis (mediana delle varianti di ragionamento).",
+    latencyHint: "Secondi prima del primo token, misurati da Artificial Analysis.",
+    costTaskHint: "Quanto costa un'attività Hermes di riferimento: 20k token di input (60 % in cache) + 2k di output.",
     tools: "Strumenti",
     score: "Punteggio"
   },
@@ -3039,6 +3261,9 @@ var it = {
       intelligence: "Intelligenza",
       coding: "Codice",
       agentic: "Agentico",
+      speed: "Velocità di output",
+      latency: "Primo token",
+      cost_task: "Costo per attività",
       price_in: "Prezzo input",
       price_out: "Prezzo output",
       cache_read: "Prezzo cache",
@@ -3143,6 +3368,9 @@ var it = {
     intelligence: "Intelligenza",
     coding: "Generazione di codice",
     agentic: "Capacità agentiche",
+    speed: "Velocità di output",
+    latency: "Primo token",
+    cost_task: "Costo per attività",
     price_in: "Prezzo ↓ input",
     price_out: "Prezzo ↓ output",
     cache_read: "Prezzo ↓ cache",
@@ -3154,6 +3382,9 @@ var it = {
     d_intelligence: "Capacità di ragionamento e profondità di conoscenza",
     d_coding: "Qualità della generazione di codice",
     d_agentic: "Capacità agentiche (autonomia multi-step)",
+    d_speed: "Velocità grezza di output: un modello lento rende penosa una lunga catena di strumenti.",
+    d_latency: "Tempo al primo token: quanto si aspetta prima che compaia qualcosa.",
+    d_cost_task: "Calcolato su un'attività Hermes fissa (vedi il tooltip della colonna): si confronta lo stesso lavoro, non lo stesso listino.",
     d_price_in: "Importanza di token di input economici",
     d_price_out: "Importanza di token di output economici",
     d_cache_read: "Importanza di input in cache economici",
@@ -3207,6 +3438,12 @@ var ja = {
     outOfContextHint: "このモデルは指定されたプロンプトサイズを受け取れないため、ランキングと Pareto から除外されます。",
     columnHint: "価格には選択中プロファイルのコンテキスト段階が含まれます。"
   },
+  variants: {
+    excludeBatch: "batch バリアントを除外",
+    excludeBatchHint: "batch は同じモデルを非同期・半額で提供します。Hermes は Batch API 対応プラグインがない限り使えません。無料バリアントは順位に残ります。",
+    batch: "batch",
+    batchHint: "非同期の Batch API エントリ（半額）。Hermes では使用できません。"
+  },
   removeModel: "モデルを削除",
   suppressShort: "削除?",
   clickToShow: "クリックして表示",
@@ -3231,11 +3468,17 @@ var ja = {
     intel: "知能",
     coding: "コーディング",
     agentic: "エージェント",
+    speed: "出力速度",
+    latency: "初回トークン",
+    cost_task: "タスクあたりのコスト",
     swe: "SWE",
     vision: "画像",
     open: "オープン",
     size: "サイズ",
     gpuOk: "GPU OK",
+    speedHint: "1 秒あたりの出力トークン数（Artificial Analysis の計測、推論バリアントの中央値）。",
+    latencyHint: "最初のトークンまでの秒数（Artificial Analysis の計測）。",
+    costTaskHint: "基準となる Hermes タスク 1 回のコスト：入力 20k トークン（60% はキャッシュ）+ 出力 2k トークン。",
     tools: "ツール",
     score: "スコア"
   },
@@ -3254,6 +3497,9 @@ var ja = {
       intelligence: "知能",
       coding: "コーディング",
       agentic: "エージェント",
+      speed: "出力速度",
+      latency: "初回トークン",
+      cost_task: "タスクあたりのコスト",
       price_in: "入力価格",
       price_out: "出力価格",
       cache_read: "キャッシュ価格",
@@ -3358,6 +3604,9 @@ var ja = {
     intelligence: "知能",
     coding: "コーディング",
     agentic: "エージェント能力",
+    speed: "出力速度",
+    latency: "初回トークン",
+    cost_task: "タスクあたりのコスト",
     price_in: "価格 ↓ 入力",
     price_out: "価格 ↓ 出力",
     cache_read: "価格 ↓ キャッシュ",
@@ -3369,6 +3618,9 @@ var ja = {
     d_intelligence: "汎用的な推論力と知識の深さ",
     d_coding: "コード生成の品質",
     d_agentic: "エージェント能力（多段階の自律性）",
+    d_speed: "素の出力速度：遅いモデルは長いツール連鎖を壊れて見せる。",
+    d_latency: "最初のトークンまでの時間：何かが表示されるまでの待ち時間。",
+    d_cost_task: "固定の Hermes タスクで算出（列のツールチップ参照）：同じ価格表ではなく同じ作業で比較する。",
     d_price_in: "入力トークンの安さの重要度",
     d_price_out: "出力トークンの安さの重要度",
     d_cache_read: "キャッシュ入力の安さの重要度",
@@ -3422,6 +3674,12 @@ var ko = {
     outOfContextHint: "이 모델은 지정된 프롬프트 크기를 받을 수 없어 순위와 Pareto에서 제외됩니다.",
     columnHint: "가격에는 선택한 프로필의 컨텍스트 단계가 반영됩니다."
   },
+  variants: {
+    excludeBatch: "batch 변형 제외",
+    excludeBatchHint: "batch는 같은 모델을 비동기로 절반 가격에 제공합니다. Hermes는 Batch API 플러그인 없이는 사용할 수 없습니다. 무료 변형은 순위에 남습니다.",
+    batch: "batch",
+    batchHint: "비동기 Batch API 항목(절반 가격)으로 Hermes에서 사용할 수 없습니다."
+  },
   removeModel: "모델 제거",
   suppressShort: "삭제",
   clickToShow: "클릭하여 표시",
@@ -3446,11 +3704,17 @@ var ko = {
     intel: "지능",
     coding: "코딩",
     agentic: "에이전트",
+    speed: "출력 속도",
+    latency: "첫 토큰",
+    cost_task: "작업당 비용",
     swe: "SWE",
     vision: "비전",
     open: "개방",
     size: "크기",
     gpuOk: "GPU 지원",
+    speedHint: "초당 출력 토큰 수 (Artificial Analysis 측정, 추론 변형의 중앙값).",
+    latencyHint: "첫 토큰까지 걸리는 시간 (초, Artificial Analysis 측정).",
+    costTaskHint: "기준 Hermes 작업 1회 비용: 입력 20k 토큰(60% 캐시) + 출력 2k 토큰.",
     tools: "도구",
     score: "점수"
   },
@@ -3469,6 +3733,9 @@ var ko = {
       intelligence: "지능",
       coding: "코딩",
       agentic: "에이전트",
+      speed: "출력 속도",
+      latency: "첫 토큰",
+      cost_task: "작업당 비용",
       price_in: "입력 가격",
       price_out: "출력 가격",
       cache_read: "캐시 가격",
@@ -3573,6 +3840,9 @@ var ko = {
     intelligence: "지능",
     coding: "코딩",
     agentic: "에이전트",
+    speed: "출력 속도",
+    latency: "첫 토큰",
+    cost_task: "작업당 비용",
     price_in: "가격 ↓ 입력",
     price_out: "가격 ↓ 출력",
     cache_read: "가격 ↓ 캐시",
@@ -3584,6 +3854,9 @@ var ko = {
     d_intelligence: "전반적인 추론 및 지식 깊이",
     d_coding: "코드 생성 품질",
     d_agentic: "에이전트 역량(다단계 자율성)",
+    d_speed: "순수 출력 속도: 느린 모델은 긴 도구 체인을 고장 난 것처럼 보이게 한다.",
+    d_latency: "첫 토큰까지의 시간: 무언가 나타나기 전까지 기다리는 시간.",
+    d_cost_task: "고정된 Hermes 작업으로 계산(열 툴팁 참조): 같은 가격표가 아니라 같은 작업을 비교한다.",
     d_price_in: "저렴한 입력 토큰의 중요도",
     d_price_out: "저렴한 출력 토큰의 중요도",
     d_cache_read: "저렴한 캐시 입력의 중요도",
@@ -3637,6 +3910,12 @@ var pt = {
     outOfContextHint: "Este modelo não aceita o tamanho de prompt declarado: fica fora da classificação e do Pareto.",
     columnHint: "Os preços incluem o escalão de contexto do perfil selecionado."
   },
+  variants: {
+    excludeBatch: "Excluir variantes batch",
+    excludeBatchHint: "O batch serve o mesmo modelo de forma assíncrona pela metade do preço; o Hermes não consegue usá-lo sem um plugin para a Batch API. As variantes gratuitas continuam no ranking.",
+    batch: "batch",
+    batchHint: "Entrada da Batch API assíncrona (metade do preço), não usável pelo Hermes."
+  },
   removeModel: "Remover modelo",
   suppressShort: "Eliminar?",
   clickToShow: "Clique para mostrar",
@@ -3661,11 +3940,17 @@ var pt = {
     intel: "Intel.",
     coding: "Código",
     agentic: "Agéntico",
+    speed: "Velocidade de saída",
+    latency: "Primeiro token",
+    cost_task: "Custo por tarefa",
     swe: "SWE",
     vision: "Visão",
     open: "Aberto",
     size: "Tamanho",
     gpuOk: "GPU OK",
+    speedHint: "Tokens de saída por segundo, medidos pela Artificial Analysis (mediana das variantes de raciocínio).",
+    latencyHint: "Segundos até ao primeiro token, medidos pela Artificial Analysis.",
+    costTaskHint: "O que custa uma tarefa Hermes de referência: 20k tokens de entrada (60 % em cache) + 2k de saída.",
     tools: "Ferramentas",
     score: "Pontuação"
   },
@@ -3684,6 +3969,9 @@ var pt = {
       intelligence: "Inteligência",
       coding: "Código",
       agentic: "Agéntico",
+      speed: "Velocidade de saída",
+      latency: "Primeiro token",
+      cost_task: "Custo por tarefa",
       price_in: "Preço entrada",
       price_out: "Preço saída",
       cache_read: "Preço cache",
@@ -3788,6 +4076,9 @@ var pt = {
     intelligence: "Inteligência",
     coding: "Código",
     agentic: "Agéntico",
+    speed: "Velocidade de saída",
+    latency: "Primeiro token",
+    cost_task: "Custo por tarefa",
     price_in: "Preço ↓ entrada",
     price_out: "Preço ↓ saída",
     cache_read: "Preço ↓ cache",
@@ -3799,6 +4090,9 @@ var pt = {
     d_intelligence: "Raciocínio global e profundidade de conhecimento",
     d_coding: "Qualidade da geração de código",
     d_agentic: "Capacidades agénticas (autonomia em vários passos)",
+    d_speed: "Velocidade bruta de saída: um modelo lento torna penosa uma longa cadeia de ferramentas.",
+    d_latency: "Tempo até ao primeiro token: o que se espera antes de aparecer algo.",
+    d_cost_task: "Calculado numa tarefa Hermes fixa (ver a dica da coluna): compara-se o mesmo trabalho, não a mesma tabela de preços.",
     d_price_in: "Importância de tokens de entrada baratos",
     d_price_out: "Importância de tokens de saída baratos",
     d_cache_read: "Importância de uma entrada em cache barata",
@@ -3852,6 +4146,12 @@ var ru = {
     outOfContextHint: "Модель не вмещает заявленный размер промпта: она исключена из рейтинга и Парето.",
     columnHint: "Цены учитывают ступень контекста выбранного профиля."
   },
+  variants: {
+    excludeBatch: "Исключить batch-варианты",
+    excludeBatchHint: "batch предлагает ту же модель асинхронно за полцены; Hermes не может её использовать без плагина для Batch API. Бесплатные варианты остаются в рейтинге.",
+    batch: "batch",
+    batchHint: "Асинхронная запись Batch API (полцены), недоступна для Hermes."
+  },
   removeModel: "Удалить модель",
   suppressShort: "Удал.?",
   clickToShow: "Нажмите, чтобы показать",
@@ -3876,11 +4176,17 @@ var ru = {
     intel: "Интел.",
     coding: "Кодинг",
     agentic: "Агентные",
+    speed: "Скорость вывода",
+    latency: "Первый токен",
+    cost_task: "Стоимость задачи",
     swe: "SWE",
     vision: "Изображения",
     open: "Открытые",
     size: "Размер",
     gpuOk: "GPU OK",
+    speedHint: "Токенов вывода в секунду, измерено Artificial Analysis (медиана по вариантам рассуждения).",
+    latencyHint: "Секунды до первого токена, измерено Artificial Analysis.",
+    costTaskHint: "Сколько стоит одна эталонная задача Hermes: 20k входных токенов (60 % из кэша) + 2k выходных.",
     tools: "Инструменты",
     score: "Балл"
   },
@@ -3899,6 +4205,9 @@ var ru = {
       intelligence: "Интеллект",
       coding: "Кодинг",
       agentic: "Агентные",
+      speed: "Скорость вывода",
+      latency: "Первый токен",
+      cost_task: "Стоимость задачи",
       price_in: "Цена ввода",
       price_out: "Цена вывода",
       cache_read: "Цена кэша",
@@ -4003,6 +4312,9 @@ var ru = {
     intelligence: "Интеллект",
     coding: "Кодинг",
     agentic: "Агентные",
+    speed: "Скорость вывода",
+    latency: "Первый токен",
+    cost_task: "Стоимость задачи",
     price_in: "Цена ↓ ввод",
     price_out: "Цена ↓ вывод",
     cache_read: "Цена ↓ кэш",
@@ -4014,6 +4326,9 @@ var ru = {
     d_intelligence: "Общая глубина рассуждений и знаний",
     d_coding: "Качество генерации кода",
     d_agentic: "Агентные возможности (многошаговая автономность)",
+    d_speed: "Чистая скорость вывода: на медленной модели длинная цепочка инструментов кажется сломанной.",
+    d_latency: "Время до первого токена: сколько ждёт пользователь, прежде чем что-то появится.",
+    d_cost_task: "Считается по фиксированной задаче Hermes (см. подсказку столбца): сравнивается одна и та же работа, а не один и тот же прайс.",
     d_price_in: "Важность дешёвых входных токенов",
     d_price_out: "Важность дешёвых выходных токенов",
     d_cache_read: "Важность дешёвого кэшированного ввода",
@@ -4067,6 +4382,12 @@ var tr = {
     outOfContextHint: "Bu model bildirilen prompt boyutunu alamaz: sıralama ve Pareto dışında bırakılır.",
     columnHint: "Fiyatlar seçili profilin bağlam kademesini içerir."
   },
+  variants: {
+    excludeBatch: "batch varyantlarını hariç tut",
+    excludeBatchHint: "batch aynı modeli eşzamansız olarak yarı fiyata sunar; Hermes bunu Batch API eklentisi olmadan kullanamaz. Ücretsiz varyantlar sıralamada kalır.",
+    batch: "batch",
+    batchHint: "Eşzamansız Batch API kaydı (yarı fiyat), Hermes tarafından kullanılamaz."
+  },
   removeModel: "Modeli kaldır",
   suppressShort: "Sil?",
   clickToShow: "Göstermek için tıkla",
@@ -4091,11 +4412,17 @@ var tr = {
     intel: "Zeka",
     coding: "Kodlama",
     agentic: "Ajan",
+    speed: "Çıktı hızı",
+    latency: "İlk token",
+    cost_task: "Görev başına maliyet",
     swe: "SWE",
     vision: "Görsel",
     open: "Açık",
     size: "Boyut",
     gpuOk: "GPU OK",
+    speedHint: "Saniyedeki çıktı token sayısı, Artificial Analysis ölçümü (akıl yürütme varyantlarının medyanı).",
+    latencyHint: "İlk token'a kadar geçen saniye, Artificial Analysis ölçümü.",
+    costTaskHint: "Bir referans Hermes görevinin maliyeti: 20k girdi token (60 % önbellekten) + 2k çıktı token.",
     tools: "Araçlar",
     score: "Puan"
   },
@@ -4114,6 +4441,9 @@ var tr = {
       intelligence: "Zeka",
       coding: "Kodlama",
       agentic: "Ajan",
+      speed: "Çıktı hızı",
+      latency: "İlk token",
+      cost_task: "Görev başına maliyet",
       price_in: "Giriş fiyatı",
       price_out: "Çıkış fiyatı",
       cache_read: "Önbellek fiyatı",
@@ -4218,6 +4548,9 @@ var tr = {
     intelligence: "Zeka",
     coding: "Kodlama",
     agentic: "Ajan",
+    speed: "Çıktı hızı",
+    latency: "İlk token",
+    cost_task: "Görev başına maliyet",
     price_in: "Fiyat ↓ giriş",
     price_out: "Fiyat ↓ çıkış",
     cache_read: "Fiyat ↓ önbellek",
@@ -4229,6 +4562,9 @@ var tr = {
     d_intelligence: "Genel akıl yürütme ve bilgi derinliği",
     d_coding: "Kod üretim kalitesi",
     d_agentic: "Ajan yetenekleri (çok adımlı özerklik)",
+    d_speed: "Ham çıktı hızı: yavaş bir model uzun bir araç zincirini bozuk gösterir.",
+    d_latency: "İlk token'a kadar geçen süre: bir şey görünene kadar beklenen süre.",
+    d_cost_task: "Sabit bir Hermes görevi üzerinden hesaplanır (sütun ipucuna bakın): aynı iş karşılaştırılır, aynı fiyat listesi değil.",
     d_price_in: "Ucuz giriş tokenlarının önemi",
     d_price_out: "Ucuz çıkış tokenlarının önemi",
     d_cache_read: "Ucuz önbelleklenmiş girişin önemi",
@@ -4282,6 +4618,12 @@ var uk = {
     outOfContextHint: "Модель не вміщає заявлений розмір промпту: її виключено з рейтингу та Парето.",
     columnHint: "Ціни враховують ступінь контексту вибраного профілю."
   },
+  variants: {
+    excludeBatch: "Виключити batch-варіанти",
+    excludeBatchHint: "batch пропонує ту саму модель асинхронно за пів ціни; Hermes не може її використати без плагіна для Batch API. Безкоштовні варіанти залишаються в рейтингу.",
+    batch: "batch",
+    batchHint: "Асинхронний запис Batch API (пів ціни), недоступний для Hermes."
+  },
   removeModel: "Видалити модель",
   suppressShort: "Вил.?",
   clickToShow: "Натисніть, щоб показати",
@@ -4306,11 +4648,17 @@ var uk = {
     intel: "Інтел.",
     coding: "Кодування",
     agentic: "Агентність",
+    speed: "Швидкість виводу",
+    latency: "Перший токен",
+    cost_task: "Вартість задачі",
     swe: "SWE",
     vision: "Зображення",
     open: "Відкриті",
     size: "Розмір",
     gpuOk: "GPU OK",
+    speedHint: "Токенів виводу за секунду, виміряно Artificial Analysis (медіана за варіантами міркування).",
+    latencyHint: "Секунди до першого токена, виміряно Artificial Analysis.",
+    costTaskHint: "Скільки коштує одне еталонне завдання Hermes: 20k вхідних токенів (60 % з кешу) + 2k вихідних.",
     tools: "Інструменти",
     score: "Бал"
   },
@@ -4329,6 +4677,9 @@ var uk = {
       intelligence: "Інтелект",
       coding: "Кодування",
       agentic: "Агентність",
+      speed: "Швидкість виводу",
+      latency: "Перший токен",
+      cost_task: "Вартість задачі",
       price_in: "Ціна вводу",
       price_out: "Ціна виводу",
       cache_read: "Ціна кешу",
@@ -4433,6 +4784,9 @@ var uk = {
     intelligence: "Інтелект",
     coding: "Кодування",
     agentic: "Агентність",
+    speed: "Швидкість виводу",
+    latency: "Перший токен",
+    cost_task: "Вартість задачі",
     price_in: "Ціна ↓ ввід",
     price_out: "Ціна ↓ вивід",
     cache_read: "Ціна ↓ кеш",
@@ -4444,6 +4798,9 @@ var uk = {
     d_intelligence: "Загальна глибина міркувань і знань",
     d_coding: "Якість генерації коду",
     d_agentic: "Агентні можливості (багатокрокова автономність)",
+    d_speed: "Чиста швидкість виводу: на повільній моделі довгий ланцюг інструментів здається зламаним.",
+    d_latency: "Час до першого токена: скільки чекає користувач, перш ніж щось з'явиться.",
+    d_cost_task: "Рахується за фіксованим завданням Hermes (див. підказку стовпця): порівнюється та сама робота, а не той самий прайс.",
     d_price_in: "Важливість дешевих вхідних токенів",
     d_price_out: "Важливість дешевих вихідних токенів",
     d_cache_read: "Важливість дешевого кешованого вводу",
@@ -4494,6 +4851,9 @@ var CRITERIA_KEYS = [
   "intelligence",
   "coding",
   "agentic",
+  "speed",
+  "latency",
+  "cost_task",
   "price_in",
   "price_out",
   "cache_read",
@@ -4503,13 +4863,28 @@ var CRITERIA_KEYS = [
   "open_weights",
   "fits_64gb"
 ];
+var REFERENCE_TASK = { prompt_tokens: 2e4, completion_tokens: 2e3, cache_hit_ratio: 0.6 };
+function costPerTask(m) {
+  const pin = m?.prompt_price;
+  const pout = m?.completion_price;
+  if (!Number.isFinite(pin) || !Number.isFinite(pout)) return null;
+  const cache = Number.isFinite(m?.cache_read_price) && m.cache_read_price >= 0 ? m.cache_read_price : pin;
+  const cached = REFERENCE_TASK.prompt_tokens * REFERENCE_TASK.cache_hit_ratio;
+  const fresh = REFERENCE_TASK.prompt_tokens - cached;
+  return fresh * pin + cached * cache + REFERENCE_TASK.completion_tokens * pout;
+}
 function criterionValues(m, maxes) {
   const ratio = (v, max) => v == null ? null : Math.min(1, v / (max || 1));
   const cheap = (v, max) => max > 0 ? 1 - Math.min(1, (v ?? 0) / max) : 1;
+  const low = (v, max) => v == null ? null : max > 0 ? 1 - Math.min(1, v / max) : null;
   return {
     intelligence: ratio(m.intelligence_index, maxes.maxIntel),
     coding: ratio(m.coding_index, maxes.maxCoding),
     agentic: ratio(m.agentic_index, maxes.maxAgentic),
+    // Measured by Artificial Analysis: absent for a model nobody published a measurement for.
+    speed: ratio(m.speed_tps, maxes.maxSpeed),
+    latency: low(m.latency_s, maxes.maxLatency),
+    cost_task: low(costPerTask(m), maxes.maxCostTask),
     price_in: cheap(m.prompt_price, maxes.maxPrice),
     price_out: cheap(m.completion_price, maxes.maxPrice),
     cache_read: cheap(m.cache_read_price, maxes.maxPriceCache || 1),
@@ -5160,6 +5535,9 @@ var AVAILABLE_CRITERIA = [
   { key: "intelligence", icon: "🧠" },
   { key: "coding", icon: "💻" },
   { key: "agentic", icon: "🤖" },
+  { key: "speed", icon: "⚡" },
+  { key: "latency", icon: "⏱️" },
+  { key: "cost_task", icon: "💰" },
   { key: "price_in", icon: "📥" },
   { key: "price_out", icon: "📤" },
   { key: "cache_read", icon: "⚡" },
@@ -5524,13 +5902,13 @@ function App() {
     const uiPoll = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       api("/models").then(applyModels).catch(() => void 0);
-      api("/news").then((d) => setNews(d)).catch(() => void 0);
+      api(newsPathRef.current).then((d) => setNews(d)).catch(() => void 0);
     }, 6e4);
     const dataPull = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       api("/refresh", { method: "POST", body: {} }).then(() => Promise.all([
         api("/models").then(applyModels),
-        api("/news").then((d) => setNews(d))
+        api(newsPathRef.current).then((d) => setNews(d))
       ])).catch(() => void 0);
     }, 10 * 6e4);
     return () => {
@@ -5545,13 +5923,15 @@ function App() {
       if (d.compaction_defaults) setCompactionDefaults(d.compaction_defaults);
     }).catch(() => setHermesProfiles(["default"]));
   }, []);
+  const newsPathRef = useRef3(newsPath);
+  newsPathRef.current = newsPath;
   const fetchNews = () => {
     setLoadingNews(true);
-    api("/news").then((d) => setNews(d)).catch(() => void 0).finally(() => setLoadingNews(false));
+    api(newsPathRef.current).then((d) => setNews(d)).catch(() => void 0).finally(() => setLoadingNews(false));
   };
   useEffect3(() => {
     fetchNews();
-  }, []);
+  }, [newsPath]);
   const refresh = () => {
     setLoading(true);
     api("/refresh", { method: "POST", body: { force: true } }).then(() => api("/models")).then(applyModels).then(() => fetchNews()).catch((err) => {
@@ -5710,6 +6090,8 @@ function App() {
   const ctxSize = currentProfile.context_tokens ?? null;
   const compaction = compactionByProfile[currentProfile.id] || compactionDefaults;
   const ctxScenario = { mode: ctxMode, tokens: ctxSize };
+  const excludeBatch = currentProfile.exclude_batch ?? true;
+  const newsPath = `/news?exclude_batch=${excludeBatch ? 1 : 0}`;
   const priceAt = (m) => {
     const eff = effectivePricesFor(m, ctxScenario, compaction);
     const tokens = scenarioTokens(m, ctxScenario, compaction);
@@ -5721,6 +6103,8 @@ function App() {
       _tier: eff.tier,
       _tier_mult: eff.tier && base ? eff.tier.prompt / base : null,
       _out_of_context: !servesContextFor(m, ctxScenario, compaction),
+      _variant: splitVariant(m.id).variant,
+      _excluded_variant: excludedByVariant(m.id, excludeBatch),
       prompt_price: eff.prompt ?? m.prompt_price,
       completion_price: eff.completion ?? m.completion_price,
       cache_read_price: eff.cache_read ?? m.cache_read_price
@@ -5728,7 +6112,9 @@ function App() {
   };
   const scenarioTag = ctxMode === "auto" ? ` (${i18n.contextSize.autoShort})` : ctxMode === "size" && ctxSize ? ` (${contextLabel(ctxSize)})` : "";
   const pricedModels = useMemo3(
-    () => models.map(priceAt),
+    // `_cost_task` rides on the row so the column can be sorted with the same comparator as
+    // everything else, and so the cell and the criterion read the same number.
+    () => models.map(priceAt).map((m) => ({ ...m, _cost_task: costPerTask(m) })),
     [models, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens]
   );
   const priceList = (list) => list.map(priceAt);
@@ -5743,7 +6129,7 @@ function App() {
   }, [news, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens]);
   const visible = pricedModels.filter((m) => !hiddenIds.has(m.id));
   const hidden = pricedModels.filter((m) => hiddenIds.has(m.id));
-  const active = visible.filter((m) => m.available && !m._out_of_context);
+  const active = visible.filter((m) => m.available && !m._out_of_context && !m._excluded_variant);
   const maxes = useMemo3(() => ({
     maxCtx: Math.max(1, ...pricedModels.map((m) => m.context_length || 0)),
     // Scales from the prices actually shown: with a context size declared, the tier prices
@@ -5756,7 +6142,12 @@ function App() {
     // 100 % mark that every other model is graded against.
     maxIntel: Math.max(1, ...pricedModels.map((m) => measured(m, "intelligence_index"))),
     maxCoding: Math.max(1, ...pricedModels.map((m) => measured(m, "coding_index"))),
-    maxAgentic: Math.max(1, ...pricedModels.map((m) => measured(m, "agentic_index")))
+    maxAgentic: Math.max(1, ...pricedModels.map((m) => measured(m, "agentic_index"))),
+    // Performance and cost-per-task scales come from the values actually shown (0 when no model
+    // carries one, which makes the criterion "n/a" instead of grading everyone against nothing).
+    maxSpeed: Math.max(0, ...pricedModels.map((m) => m.speed_tps || 0)),
+    maxLatency: Math.max(0, ...pricedModels.map((m) => m.latency_s || 0)),
+    maxCostTask: Math.max(0, ...pricedModels.map((m) => costPerTask(m) || 0))
   }), [pricedModels]);
   const scoredModels = useMemo3(() => {
     const withScores = active.map((m) => ({
@@ -6181,6 +6572,18 @@ function App() {
                 "Agentic",
                 sortArrow("agentic_index")
               ] }),
+              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("speed_tps"), title: i18n.table.speedHint, children: [
+                "t/s",
+                sortArrow("speed_tps")
+              ] }),
+              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("latency_s"), title: i18n.table.latencyHint, children: [
+                "TTFT",
+                sortArrow("latency_s")
+              ] }),
+              /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "right", cursor: "pointer" }, onClick: () => toggleSort("_cost_task"), title: i18n.table.costTaskHint, children: [
+                "$/task",
+                sortArrow("_cost_task")
+              ] }),
               /* @__PURE__ */ jsx4("th", { style: { ...S.th, textAlign: "center" }, children: "SWE" }),
               /* @__PURE__ */ jsxs4("th", { style: { ...S.th, textAlign: "center", cursor: "pointer" }, onClick: () => toggleSort("has_vision"), children: [
                 "Vision",
@@ -6215,6 +6618,14 @@ function App() {
                 ] }),
                 /* @__PURE__ */ jsxs4("td", { style: { ...S.td, textAlign: "right" }, title: `${(m.context_length || 0).toLocaleString()} tokens`, children: [
                   fmtCtx(m.context_length),
+                  m._variant === "batch" && /* @__PURE__ */ jsx4(
+                    "span",
+                    {
+                      title: i18n.variants.batchHint,
+                      style: { marginLeft: 4, fontSize: 9, padding: "1px 4px", borderRadius: 3, border: "1px dashed var(--ui-stroke-secondary)", color: "var(--ui-text-tertiary)", whiteSpace: "nowrap" },
+                      children: i18n.variants.batch
+                    }
+                  ),
                   m._out_of_context && /* @__PURE__ */ jsx4(
                     "span",
                     {
@@ -6236,6 +6647,9 @@ function App() {
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx4(SourcedIdx, { m, field: "intelligence_index", t: i18n }) }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx4(SourcedIdx, { m, field: "coding_index", t: i18n }) }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: /* @__PURE__ */ jsx4(SourcedIdx, { m, field: "agentic_index", t: i18n }) }),
+                /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right", color: m.speed_tps ? "var(--ui-text-secondary)" : "var(--ui-text-quaternary)" }, children: m.speed_tps ? m.speed_tps.toFixed(0) : "–" }),
+                /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right", color: m.latency_s ? "var(--ui-text-secondary)" : "var(--ui-text-quaternary)" }, children: m.latency_s ? `${m.latency_s.toFixed(1)} s` : "–" }),
+                /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "right" }, children: m._cost_task != null ? fmtTaskCost(m._cost_task) : "–" }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + "%" : "…" }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: m.has_vision ? "👁" : "" }),
                 /* @__PURE__ */ jsx4("td", { style: { ...S.td, textAlign: "center" }, children: m.open_weights ? "✅" : "❌" }),
@@ -6601,7 +7015,25 @@ function App() {
                 i18n.contextSize.autoHint(Math.round((compaction.threshold ?? 0.5) * 100))
               ] })
             ] })
-          ] })
+          ] }),
+          /* @__PURE__ */ jsx4("div", { style: { borderTop: "1px solid var(--ui-stroke-tertiary)", marginTop: 14, paddingTop: 12 }, children: /* @__PURE__ */ jsxs4("label", { style: { display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                type: "checkbox",
+                checked: editingProfile.exclude_batch ?? true,
+                onChange: (e) => editingProfile && setEditingProfile({
+                  ...editingProfile,
+                  exclude_batch: e.target.checked
+                }),
+                style: { marginTop: 2, cursor: "pointer" }
+              }
+            ),
+            /* @__PURE__ */ jsxs4("span", { children: [
+              /* @__PURE__ */ jsx4("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-text-primary)" }, children: i18n.variants.excludeBatch }),
+              /* @__PURE__ */ jsx4("div", { style: { fontSize: 11, color: "var(--ui-text-tertiary)", marginTop: 4, lineHeight: 1.45 }, children: i18n.variants.excludeBatchHint })
+            ] })
+          ] }) })
         ] })
       ] }),
       /* @__PURE__ */ jsxs4("div", { style: {

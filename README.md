@@ -45,8 +45,8 @@ that file to re-seed.
 
 ## Features
 
-- 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
-- ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 11 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
+- 📊 **Model comparison** — context window, input/output/cache prices, Artificial Analysis indices (intelligence, coding, agentic), measured **output speed** (t/s) and **time to first token**, a **cost per task** computed for one fixed Hermes task, an SWE-bench Verified column, vision/tools support, open-weights, local VRAM estimate.
+- ⭐ **Per-profile scoring** — one chip per **Hermes profile** (and `default`), 0–5 weights on 14 criteria, instant re-ranking + top-5 cards. A profile with no saved criteria starts from a sane default (intelligence 5, price 3, rest 0).
 - 📈 **Six score views** — Cards, Score bars (points earned per criterion), Histograms (grade × weight), Heatmap (grade 0–100, heaviest criteria first; click a cell to enter a real value), Duel (two models, criterion by criterion), and **Quality / cost**: a scatter with the weighted cost on a log axis, the quality on the other, and the **Pareto frontier** dashed through the best trade-offs. Each grade says where it came from — OpenRouter, an estimate fitted on the other models, or a value you typed.
 - 🤖 **Auto-fill** — a button in the criteria dialog asks Hermes' own LLM (`ctx.llm.complete_structured`, the model the user is already running — no subprocess, no API key in the plugin) to propose weights for that profile; the answer is validated against a JSON schema. Never automatic, always user-triggered.
 - 🧠 **Shipped skill** — `skill_view('model-leaderboard:refresh-benchmarks')` walks an agent through refreshing the hand-curated benchmark indices (SWE-bench Verified, LiveCodeBench) from the public leaderboards and writing them back. Read-only, loaded on demand.
@@ -107,6 +107,8 @@ bug, not a plugin one).
 | Prices, context, modalities, AA indices | OpenRouter `GET /api/v1/models` | auto (5 min cache) |
 | News: promos, price changes, new models | derived from the same cache + local price history | auto |
 | SWE-bench Verified | **curated** in `dashboard/data/benchmarks.json` | manual |
+| Output speed, time to first token | Artificial Analysis **data API** (free tier, `/api/v2/language/models/free`), through `scripts/harvest_aa.py` → the **user's** `plugin-data/` copy | on demand (4 requests) |
+| Cost per task | computed from the prices above, for one fixed reference task | live |
 
 (The multilingual-coverage criterion was removed: OpenRouter exposes no language field and HF
 `cardData.language` is empty for current models — see the roadmap below.)
@@ -121,6 +123,24 @@ Why the benchmark columns are curated rather than synced — measured, not assum
 - **SWE-bench Verified** has no API. The raw data lives in `SWE-bench/experiments`
   (`evaluation/verified/<run>/{metadata.yaml,results/}`, 4355 files) where the headline
   figure depends on the scaffold/agent you pick — an editorial choice, not a derivation.
+- **Output speed and time to first token** are the two numbers a leaderboard usually does not
+  carry, and OpenRouter's own per-endpoint `latency_last_30m` / `throughput_last_30m` came back
+  empty for every tracked model when this was written. Artificial Analysis measures both on its
+  own harness and serves them in the **data API**, free tier:
+  `GET /api/v2/language/models/free` with `x-api-key` — `performance.median_output_tokens_per_second`
+  and `..._median_time_to_first_token_seconds` — 766 models over 4 pages, i.e. 4 requests out of
+  the free 100 per 24 h window. (`/api/v1/data/…` is `410 Gone`; `/api/v2/language/models` is the Pro
+  endpoint and answers `403` on a free key; the `/free` sibling has the same shape minus the
+  per-benchmark evaluations.) `scripts/harvest_aa.py` writes them under `speed_tps` / `latency_s`.
+  They are **not** committed: AA's data is non-redistributable, so the harvest lands in the user's
+  `plugin-data/` copy. A model nobody measured shows "–", and the criterion counts as n/a rather
+  than grading it as the fastest. When AA publishes several reasoning budgets for one model
+  ("(Low)", "(Max)"), the two figures are the **median across them**: the qualifier is a budget,
+  not a model — the API rows are matched the same way the page rows are.
+- **Cost per task** needs no new source: it prices one fixed task — 20 000 prompt tokens, 60 %
+  of them cached, and 2 000 output tokens — with the model's own prices. Two models are then
+  compared on the same work instead of on the same price sheet (`price_in` / `price_out` weight
+  the two directions equally, which prices a chat model like an agent one).
 - **Artificial Analysis** indices are already covered through OpenRouter, which also
   exposes `GET /api/v1/benchmarks?source=artificial-analysis` (154 models, `meta.citation`)
   covering 12/19 tracked models — usable as a gap-filler. Their own Data API is free

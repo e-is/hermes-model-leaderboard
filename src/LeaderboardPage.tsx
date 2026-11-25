@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { BarsVertical, BarsHorizontal, RadarChart } from './components/charts'
 import { NewsPanel } from './components/NewsPanel'
 import { ConfirmDialog } from '@hermes/plugin-sdk'
 import { api } from './doors'
 import { useLeaderboardI18n } from './i18n'
-import { computeGenericScore, criterionValues, type CriterionKey } from './core/scoring'
+import { computeGenericScore, costPerTask, criterionValues, type CriterionKey } from './core/scoring'
 import { ScoreView, SCORE_VIEWS, type ScoreViewId } from './components/ScoreViews'
 import { scoreCandidates, top3Threshold as computeTop3Threshold, untrackedOnly } from './core/candidates'
 import { openExternal, linkButtonStyle } from './links.ts'
+import { excludedByVariant, splitVariant } from './core/variants'
 import {
   CONTEXT_SIZES, autoPromptTokens, contextLabel, effectivePricesFor, scenarioTokens,
   servesContextFor, type CompactionConfig, type ContextScenario,
@@ -30,6 +31,8 @@ type ModelRecord = {
   hugging_face_id?: string | null; open_weights?: boolean
   model_size?: string | null; reasoning?: boolean; hidden?: boolean
   benchmarks?: Record<string, number | null>
+  /** Artificial Analysis performance, harvested into benchmarks.json (null when unmeasured). */
+  speed_tps?: number | null; latency_s?: number | null
   gpu?: GpuInfo
   /** Where each index value comes from (backend `_complete_indices`). */
   sources?: Record<string, IndexSource>
@@ -57,6 +60,7 @@ export type ProfileConfig = {
   weights: Record<string, number>
   /** Context scenario: how many prompt tokens this profile sends. */
   context_mode?: 'unknown' | 'auto' | 'size'
+  exclude_batch?: boolean
   context_tokens?: number | null
 }
 
@@ -123,6 +127,9 @@ export const AVAILABLE_CRITERIA = [
   { key: 'intelligence', icon: '🧠' },
   { key: 'coding', icon: '💻' },
   { key: 'agentic', icon: '🤖' },
+  { key: 'speed', icon: '⚡' },
+  { key: 'latency', icon: '⏱️' },
+  { key: 'cost_task', icon: '💰' },
   { key: 'price_in', icon: '📥' },
   { key: 'price_out', icon: '📤' },
   { key: 'cache_read', icon: '⚡' },
@@ -169,6 +176,13 @@ function fmtPrice(v: number | null | undefined): string {
   if (v == null) return '…'
   if (v === 0) return '$0'
   return '$' + v.toFixed(2) + '/M tk'
+}
+
+/** A whole reference task's price, in dollars: small enough that 3 decimals matter. */
+function fmtTaskCost(v: number | null | undefined): string {
+  if (v == null) return '–'
+  if (v === 0) return '$0'
+  return v < 0.1 ? '$' + v.toFixed(3) : '$' + v.toFixed(2)
 }
 
 /** An index cell that says where its value comes from: "~62" estimated, "62✎" manual. */
@@ -453,6 +467,12 @@ export default function App() {
     }
   }, [effectiveProfiles, selectedProfileId])
 
+  // Declared before the polling effects below: they read it through a ref, and a const read
+  // before its declaration is a TDZ crash on first render ("Cannot access 'newsPath' before
+  // initialization").
+  const excludeBatch = (currentProfile as any).exclude_batch ?? true
+  const newsPath = `/news?exclude_batch=${excludeBatch ? 1 : 0}`
+
   const toggleNews = () => {
     setShowNews(prev => {
       const next = !prev
@@ -510,7 +530,7 @@ export default function App() {
     const uiPoll = setInterval(() => {
       if (document.visibilityState !== 'visible') return
       api('/models').then(applyModels).catch(() => undefined)
-      api('/news').then(d => setNews(d)).catch(() => undefined)
+      api(newsPathRef.current).then(d => setNews(d)).catch(() => undefined)
     }, 60_000)
     // Real pull: the backend cache is 5 min, so a 10-min tick always refetches
     // prices/benchmarks from OpenRouter (no force — the cache still protects
@@ -520,7 +540,7 @@ export default function App() {
       api('/refresh', { method: 'POST', body: {} })
         .then(() => Promise.all([
           api('/models').then(applyModels),
-          api('/news').then(d => setNews(d)),
+          api(newsPathRef.current).then(d => setNews(d)),
         ]))
         .catch(() => undefined)
     }, 10 * 60_000)
@@ -537,11 +557,14 @@ export default function App() {
       .catch(() => setHermesProfiles(['default']))
   }, [])
 
+  // The polling effects are mounted once; the ref keeps them on the current profile's choice.
+  const newsPathRef = useRef(newsPath)
+  newsPathRef.current = newsPath
   const fetchNews = () => {
     setLoadingNews(true)
-    api('/news').then(d => setNews(d)).catch(() => undefined).finally(() => setLoadingNews(false))
+    api(newsPathRef.current).then(d => setNews(d)).catch(() => undefined).finally(() => setLoadingNews(false))
   }
-  useEffect(() => { fetchNews() }, [])
+  useEffect(() => { fetchNews() }, [newsPath])
 
   const refresh = () => {
     // POST /refresh returns {refreshed, missing} — not the model list:
@@ -772,7 +795,8 @@ export default function App() {
   const ctxSize = (currentProfile as any).context_tokens ?? null
   const compaction = compactionByProfile[currentProfile.id] || compactionDefaults
   const ctxScenario: ContextScenario = { mode: ctxMode, tokens: ctxSize }
-
+  // Batch entries are the same model at half price, async: unusable by Hermes unless a plugin
+  // drives the Batch API. Absent field = default true (profiles saved before it existed).
   /** Prices to show and score with: the tier that applies at the profile's context size. */
   const priceAt = (m: any) => {
     const eff = effectivePricesFor(m, ctxScenario, compaction)
@@ -785,6 +809,8 @@ export default function App() {
       _tier: eff.tier,
       _tier_mult: eff.tier && base ? eff.tier.prompt / base : null,
       _out_of_context: !servesContextFor(m, ctxScenario, compaction),
+      _variant: splitVariant(m.id).variant,
+      _excluded_variant: excludedByVariant(m.id, excludeBatch),
       prompt_price: eff.prompt ?? m.prompt_price,
       completion_price: eff.completion ?? m.completion_price,
       cache_read_price: eff.cache_read ?? m.cache_read_price,
@@ -797,7 +823,9 @@ export default function App() {
       ? ` (${contextLabel(ctxSize)})`
       : ''
   const pricedModels = useMemo(
-    () => models.map(priceAt),
+    // `_cost_task` rides on the row so the column can be sorted with the same comparator as
+    // everything else, and so the cell and the criterion read the same number.
+    () => models.map(priceAt).map(m => ({ ...m, _cost_task: costPerTask(m) })),
     [models, ctxMode, ctxSize, compaction.threshold, compaction.threshold_tokens])
   const priceList = (list: any[]) => list.map(priceAt)
   // The news panel and the search results are catalogue-wide (not per profile): they follow
@@ -817,7 +845,8 @@ export default function App() {
   const hidden = pricedModels.filter(m => hiddenIds.has(m.id))
   // A model that cannot take the declared prompt size is out of scope for the ranking and
   // the Pareto: there is no price for a request it cannot serve. It stays in the table, flagged.
-  const active = visible.filter(m => m.available && !(m as any)._out_of_context)
+  const active = visible.filter(m =>
+    m.available && !(m as any)._out_of_context && !(m as any)._excluded_variant)
 
   // Maxes for normalization
   const maxes = useMemo(() => ({
@@ -833,6 +862,11 @@ export default function App() {
     maxIntel: Math.max(1, ...pricedModels.map(m => measured(m, 'intelligence_index'))),
     maxCoding: Math.max(1, ...pricedModels.map(m => measured(m, 'coding_index'))),
     maxAgentic: Math.max(1, ...pricedModels.map(m => measured(m, 'agentic_index'))),
+    // Performance and cost-per-task scales come from the values actually shown (0 when no model
+    // carries one, which makes the criterion "n/a" instead of grading everyone against nothing).
+    maxSpeed: Math.max(0, ...pricedModels.map(m => m.speed_tps || 0)),
+    maxLatency: Math.max(0, ...pricedModels.map(m => m.latency_s || 0)),
+    maxCostTask: Math.max(0, ...pricedModels.map(m => costPerTask(m) || 0)),
   }), [pricedModels])
 
   // Scores + ranks (using generic scoring algorithm based on currentProfile.weights)
@@ -1228,6 +1262,9 @@ export default function App() {
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('intelligence_index')}>Intel.{sortArrow('intelligence_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('coding_index')}>Coding{sortArrow('coding_index')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('agentic_index')}>Agentic{sortArrow('agentic_index')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('speed_tps')} title={i18n.table.speedHint}>t/s{sortArrow('speed_tps')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('latency_s')} title={i18n.table.latencyHint}>TTFT{sortArrow('latency_s')}</th>
+                        <th style={{ ...S.th, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('_cost_task')} title={i18n.table.costTaskHint}>$/task{sortArrow('_cost_task')}</th>
                         <th style={{ ...S.th, textAlign: 'center' }}>SWE</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('has_vision')}>Vision{sortArrow('has_vision')}</th>
                         <th style={{ ...S.th, textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleSort('open_weights')}>Open{sortArrow('open_weights')}</th>
@@ -1256,6 +1293,12 @@ export default function App() {
                             </td>
                             <td style={{ ...S.td, textAlign: 'right' }} title={`${(m.context_length || 0).toLocaleString()} tokens`}>
                               {fmtCtx(m.context_length)}
+                              {(m as any)._variant === 'batch' && (
+                                <span title={i18n.variants.batchHint}
+                                  style={{ marginLeft: 4, fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '1px dashed var(--ui-stroke-secondary)', color: 'var(--ui-text-tertiary)', whiteSpace: 'nowrap' }}>
+                                  {i18n.variants.batch}
+                                </span>
+                              )}
                               {(m as any)._out_of_context && (
                                 <span title={i18n.contextSize.outOfContextHint}
                                   style={{ marginLeft: 4, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'color-mix(in srgb, var(--ui-red) 12%, transparent)', color: 'var(--ui-red)', whiteSpace: 'nowrap' }}>
@@ -1275,6 +1318,13 @@ export default function App() {
                             <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="intelligence_index" t={i18n} /></td>
                             <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="coding_index" t={i18n} /></td>
                             <td style={{ ...S.td, textAlign: 'center' }}><SourcedIdx m={m} field="agentic_index" t={i18n} /></td>
+                            <td style={{ ...S.td, textAlign: 'right', color: m.speed_tps ? 'var(--ui-text-secondary)' : 'var(--ui-text-quaternary)' }}>
+                              {m.speed_tps ? m.speed_tps.toFixed(0) : '–'}
+                            </td>
+                            <td style={{ ...S.td, textAlign: 'right', color: m.latency_s ? 'var(--ui-text-secondary)' : 'var(--ui-text-quaternary)' }}>
+                              {m.latency_s ? `${m.latency_s.toFixed(1)} s` : '–'}
+                            </td>
+                            <td style={{ ...S.td, textAlign: 'right' }}>{(m as any)._cost_task != null ? fmtTaskCost((m as any)._cost_task) : '–'}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.benchmarks?.swebench_verified != null ? m.benchmarks.swebench_verified + '%' : '…'}</td>
                                                         <td style={{ ...S.td, textAlign: 'center' }}>{m.has_vision ? '👁' : ''}</td>
                             <td style={{ ...S.td, textAlign: 'center' }}>{m.open_weights ? '✅' : '❌'}</td>
@@ -1627,6 +1677,28 @@ export default function App() {
                       <> {i18n.contextSize.autoHint(Math.round((compaction.threshold ?? 0.5) * 100))}</>
                     )}
                   </div>
+                </div>
+
+                {/* Variants: :batch is the same model served asynchronously at half price, and
+                    Hermes cannot drive the Batch API unless a plugin does. :free stays in. */}
+                <div style={{ borderTop: '1px solid var(--ui-stroke-tertiary)', marginTop: 14, paddingTop: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                    <input type="checkbox"
+                      checked={((editingProfile as any).exclude_batch ?? true)}
+                      onChange={e => editingProfile && setEditingProfile({
+                        ...editingProfile,
+                        exclude_batch: e.target.checked,
+                      } as any)}
+                      style={{ marginTop: 2, cursor: 'pointer' }} />
+                    <span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ui-text-primary)' }}>
+                        {i18n.variants.excludeBatch}
+                      </span>
+                      <div style={{ fontSize: 11, color: 'var(--ui-text-tertiary)', marginTop: 4, lineHeight: 1.45 }}>
+                        {i18n.variants.excludeBatchHint}
+                      </div>
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>
